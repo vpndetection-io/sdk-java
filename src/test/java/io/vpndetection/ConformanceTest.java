@@ -29,7 +29,7 @@ import java.util.Optional;
 /**
  * Asserts the shared conformance corpus that every VPNDetection SDK asserts.
  *
- * <p>The corpus is generated into testdata/ and is identical across languages, so a behaviour that
+ * <p>The corpus is generated into testdata/ and is identical across languages, so a behavior that
  * drifts here fails here rather than surfacing as two client libraries quietly disagreeing about
  * the same address.
  */
