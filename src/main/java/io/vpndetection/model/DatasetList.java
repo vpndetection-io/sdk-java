@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.vpndetection.model.Download;
+import io.vpndetection.model.LicensedDataset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,54 +33,54 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import io.vpndetection.internal.ApiClient;
 /**
- * ListDownloads200Response
+ * DatasetList
  */
 @JsonPropertyOrder({
-  ListDownloads200Response.JSON_PROPERTY_DOWNLOADS
+  DatasetList.JSON_PROPERTY_DATASETS
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
-public class ListDownloads200Response {
-  public static final String JSON_PROPERTY_DOWNLOADS = "downloads";
+public class DatasetList {
+  public static final String JSON_PROPERTY_DATASETS = "datasets";
   @javax.annotation.Nonnull
-  private List<Download> downloads = new ArrayList<>();
+  private List<LicensedDataset> datasets = new ArrayList<>();
 
-  public ListDownloads200Response() { 
+  public DatasetList() { 
   }
 
-  public ListDownloads200Response downloads(@javax.annotation.Nonnull List<Download> downloads) {
-    this.downloads = downloads;
+  public DatasetList datasets(@javax.annotation.Nonnull List<LicensedDataset> datasets) {
+    this.datasets = datasets;
     return this;
   }
 
-  public ListDownloads200Response addDownloadsItem(Download downloadsItem) {
-    if (this.downloads == null) {
-      this.downloads = new ArrayList<>();
+  public DatasetList addDatasetsItem(LicensedDataset datasetsItem) {
+    if (this.datasets == null) {
+      this.datasets = new ArrayList<>();
     }
-    this.downloads.add(downloadsItem);
+    this.datasets.add(datasetsItem);
     return this;
   }
 
   /**
-   * Get downloads
-   * @return downloads
+   * Get datasets
+   * @return datasets
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_DOWNLOADS, required = true)
+  @JsonProperty(value = JSON_PROPERTY_DATASETS, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public List<Download> getDownloads() {
-    return downloads;
+  public List<LicensedDataset> getDatasets() {
+    return datasets;
   }
 
 
-  @JsonProperty(value = JSON_PROPERTY_DOWNLOADS, required = true)
+  @JsonProperty(value = JSON_PROPERTY_DATASETS, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDownloads(@javax.annotation.Nonnull List<Download> downloads) {
-    this.downloads = downloads;
+  public void setDatasets(@javax.annotation.Nonnull List<LicensedDataset> datasets) {
+    this.datasets = datasets;
   }
 
 
   /**
-   * Return true if this listDownloads_200_response object is equal to o.
+   * Return true if this DatasetList object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -90,20 +90,20 @@ public class ListDownloads200Response {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ListDownloads200Response listDownloads200Response = (ListDownloads200Response) o;
-    return Objects.equals(this.downloads, listDownloads200Response.downloads);
+    DatasetList datasetList = (DatasetList) o;
+    return Objects.equals(this.datasets, datasetList.datasets);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(downloads);
+    return Objects.hash(datasets);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ListDownloads200Response {\n");
-    sb.append("    downloads: ").append(toIndentedString(downloads)).append("\n");
+    sb.append("class DatasetList {\n");
+    sb.append("    datasets: ").append(toIndentedString(datasets)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -148,11 +148,11 @@ public class ListDownloads200Response {
 
     StringJoiner joiner = new StringJoiner("&");
 
-    // add `downloads` to the URL query string
-    if (getDownloads() != null) {
-      for (int i = 0; i < getDownloads().size(); i++) {
-        if (getDownloads().get(i) != null) {
-          joiner.add(getDownloads().get(i).toUrlQueryString(String.format(java.util.Locale.ROOT, "%sdownloads%s%s", prefix, suffix,
+    // add `datasets` to the URL query string
+    if (getDatasets() != null) {
+      for (int i = 0; i < getDatasets().size(); i++) {
+        if (getDatasets().get(i) != null) {
+          joiner.add(getDatasets().get(i).toUrlQueryString(String.format(java.util.Locale.ROOT, "%sdatasets%s%s", prefix, suffix,
           "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix))));
         }
       }

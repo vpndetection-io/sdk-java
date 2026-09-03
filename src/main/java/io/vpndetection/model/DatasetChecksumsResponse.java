@@ -24,22 +24,22 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.vpndetection.model.DatabaseChecksum200ResponseChecksums;
+import io.vpndetection.model.DatasetChecksums;
 import java.util.Arrays;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import io.vpndetection.internal.ApiClient;
 /**
- * DatabaseChecksum200Response
+ * DatasetChecksumsResponse
  */
 @JsonPropertyOrder({
-  DatabaseChecksum200Response.JSON_PROPERTY_ID,
-  DatabaseChecksum200Response.JSON_PROPERTY_FORMAT,
-  DatabaseChecksum200Response.JSON_PROPERTY_CHECKSUMS
+  DatasetChecksumsResponse.JSON_PROPERTY_ID,
+  DatasetChecksumsResponse.JSON_PROPERTY_FORMAT,
+  DatasetChecksumsResponse.JSON_PROPERTY_CHECKSUMS
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
-public class DatabaseChecksum200Response {
+public class DatasetChecksumsResponse {
   public static final String JSON_PROPERTY_ID = "id";
   @javax.annotation.Nonnull
   private String id;
@@ -50,12 +50,12 @@ public class DatabaseChecksum200Response {
 
   public static final String JSON_PROPERTY_CHECKSUMS = "checksums";
   @javax.annotation.Nonnull
-  private DatabaseChecksum200ResponseChecksums checksums;
+  private DatasetChecksums checksums;
 
-  public DatabaseChecksum200Response() { 
+  public DatasetChecksumsResponse() { 
   }
 
-  public DatabaseChecksum200Response id(@javax.annotation.Nonnull String id) {
+  public DatasetChecksumsResponse id(@javax.annotation.Nonnull String id) {
     this.id = id;
     return this;
   }
@@ -79,7 +79,7 @@ public class DatabaseChecksum200Response {
   }
 
 
-  public DatabaseChecksum200Response format(@javax.annotation.Nonnull String format) {
+  public DatasetChecksumsResponse format(@javax.annotation.Nonnull String format) {
     this.format = format;
     return this;
   }
@@ -103,7 +103,7 @@ public class DatabaseChecksum200Response {
   }
 
 
-  public DatabaseChecksum200Response checksums(@javax.annotation.Nonnull DatabaseChecksum200ResponseChecksums checksums) {
+  public DatasetChecksumsResponse checksums(@javax.annotation.Nonnull DatasetChecksums checksums) {
     this.checksums = checksums;
     return this;
   }
@@ -115,20 +115,20 @@ public class DatabaseChecksum200Response {
   @javax.annotation.Nonnull
   @JsonProperty(value = JSON_PROPERTY_CHECKSUMS, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public DatabaseChecksum200ResponseChecksums getChecksums() {
+  public DatasetChecksums getChecksums() {
     return checksums;
   }
 
 
   @JsonProperty(value = JSON_PROPERTY_CHECKSUMS, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setChecksums(@javax.annotation.Nonnull DatabaseChecksum200ResponseChecksums checksums) {
+  public void setChecksums(@javax.annotation.Nonnull DatasetChecksums checksums) {
     this.checksums = checksums;
   }
 
 
   /**
-   * Return true if this databaseChecksum_200_response object is equal to o.
+   * Return true if this DatasetChecksumsResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -138,10 +138,10 @@ public class DatabaseChecksum200Response {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    DatabaseChecksum200Response databaseChecksum200Response = (DatabaseChecksum200Response) o;
-    return Objects.equals(this.id, databaseChecksum200Response.id) &&
-        Objects.equals(this.format, databaseChecksum200Response.format) &&
-        Objects.equals(this.checksums, databaseChecksum200Response.checksums);
+    DatasetChecksumsResponse datasetChecksumsResponse = (DatasetChecksumsResponse) o;
+    return Objects.equals(this.id, datasetChecksumsResponse.id) &&
+        Objects.equals(this.format, datasetChecksumsResponse.format) &&
+        Objects.equals(this.checksums, datasetChecksumsResponse.checksums);
   }
 
   @Override
@@ -152,7 +152,7 @@ public class DatabaseChecksum200Response {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class DatabaseChecksum200Response {\n");
+    sb.append("class DatasetChecksumsResponse {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    format: ").append(toIndentedString(format)).append("\n");
     sb.append("    checksums: ").append(toIndentedString(checksums)).append("\n");

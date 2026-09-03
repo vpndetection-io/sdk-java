@@ -3,6 +3,7 @@ package io.vpndetection;
 import io.vpndetection.api.DatabaseApi;
 import io.vpndetection.internal.ApiClient;
 import io.vpndetection.internal.ApiException;
+import io.vpndetection.model.DatasetChecksums;
 import io.vpndetection.model.DatasetMetadata;
 import io.vpndetection.model.Download;
 import io.vpndetection.model.LicensedDataset;
@@ -41,12 +42,17 @@ public final class Database {
         return Wire.execute(retries, () -> api.databaseMetadata(id));
     }
 
-    /** The SHA-256 of one published file, to verify a download. */
-    public String checksum(String id, DatasetFormat format) {
+    /**
+     * The digests of one published file, to verify a download.
+     *
+     * <p>The whole set is returned rather than one digest: which ones a dataset publishes is the
+     * API's choice, not this library's.
+     */
+    public DatasetChecksums checksums(String id, DatasetFormat format) {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(format, "format");
         return Wire.execute(retries,
-                () -> api.databaseChecksum(id, format.wireValue()).getChecksums().getSha256());
+                () -> api.databaseChecksum(id, format.wireValue()).getChecksums());
     }
 
     /** Your organization's recent download attempts, newest first. */

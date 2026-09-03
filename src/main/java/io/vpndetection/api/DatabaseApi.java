@@ -18,11 +18,11 @@ import io.vpndetection.internal.ApiResponse;
 import io.vpndetection.internal.Configuration;
 import io.vpndetection.internal.Pair;
 
-import io.vpndetection.model.DatabaseChecksum200Response;
+import io.vpndetection.model.DatasetChecksumsResponse;
+import io.vpndetection.model.DatasetList;
 import io.vpndetection.model.DatasetMetadata;
+import io.vpndetection.model.DownloadList;
 import io.vpndetection.model.Error;
-import io.vpndetection.model.ListDatabases200Response;
-import io.vpndetection.model.ListDownloads200Response;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -171,10 +171,10 @@ public class DatabaseApi {
    * 
    * @param id  (required)
    * @param format  (required)
-   * @return DatabaseChecksum200Response
+   * @return DatasetChecksumsResponse
    * @throws ApiException if fails to make API call
    */
-  public DatabaseChecksum200Response databaseChecksum(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format) throws ApiException {
+  public DatasetChecksumsResponse databaseChecksum(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format) throws ApiException {
     return databaseChecksum(id, format, null);
   }
 
@@ -184,11 +184,11 @@ public class DatabaseApi {
    * @param id  (required)
    * @param format  (required)
    * @param headers Optional headers to include in the request
-   * @return DatabaseChecksum200Response
+   * @return DatasetChecksumsResponse
    * @throws ApiException if fails to make API call
    */
-  public DatabaseChecksum200Response databaseChecksum(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format, Map<String, String> headers) throws ApiException {
-    ApiResponse<DatabaseChecksum200Response> localVarResponse = databaseChecksumWithHttpInfo(id, format, headers);
+  public DatasetChecksumsResponse databaseChecksum(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format, Map<String, String> headers) throws ApiException {
+    ApiResponse<DatasetChecksumsResponse> localVarResponse = databaseChecksumWithHttpInfo(id, format, headers);
     return localVarResponse.getData();
   }
 
@@ -197,10 +197,10 @@ public class DatabaseApi {
    * 
    * @param id  (required)
    * @param format  (required)
-   * @return ApiResponse&lt;DatabaseChecksum200Response&gt;
+   * @return ApiResponse&lt;DatasetChecksumsResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<DatabaseChecksum200Response> databaseChecksumWithHttpInfo(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format) throws ApiException {
+  public ApiResponse<DatasetChecksumsResponse> databaseChecksumWithHttpInfo(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format) throws ApiException {
     return databaseChecksumWithHttpInfo(id, format, null);
   }
 
@@ -210,10 +210,10 @@ public class DatabaseApi {
    * @param id  (required)
    * @param format  (required)
    * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;DatabaseChecksum200Response&gt;
+   * @return ApiResponse&lt;DatasetChecksumsResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<DatabaseChecksum200Response> databaseChecksumWithHttpInfo(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format, Map<String, String> headers) throws ApiException {
+  public ApiResponse<DatasetChecksumsResponse> databaseChecksumWithHttpInfo(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format, Map<String, String> headers) throws ApiException {
     HttpRequest.Builder localVarRequestBuilder = databaseChecksumRequestBuilder(id, format, headers);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
@@ -229,7 +229,7 @@ public class DatabaseApi {
         }
         localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
         if (localVarResponseBody == null) {
-          return new ApiResponse<DatabaseChecksum200Response>(
+          return new ApiResponse<DatasetChecksumsResponse>(
               localVarResponse.statusCode(),
               localVarResponse.headers().map(),
               null
@@ -239,10 +239,10 @@ public class DatabaseApi {
         
         
         String responseBody = new String(localVarResponseBody.readAllBytes());
-        DatabaseChecksum200Response responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<DatabaseChecksum200Response>() {});
+        DatasetChecksumsResponse responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<DatasetChecksumsResponse>() {});
         
 
-        return new ApiResponse<DatabaseChecksum200Response>(
+        return new ApiResponse<DatasetChecksumsResponse>(
             localVarResponse.statusCode(),
             localVarResponse.headers().map(),
             responseValue
@@ -571,10 +571,10 @@ public class DatabaseApi {
   /**
    * The datasets your organization is licensed to download
    * 
-   * @return ListDatabases200Response
+   * @return DatasetList
    * @throws ApiException if fails to make API call
    */
-  public ListDatabases200Response listDatabases() throws ApiException {
+  public DatasetList listDatabases() throws ApiException {
     return listDatabases(null);
   }
 
@@ -582,21 +582,21 @@ public class DatabaseApi {
    * The datasets your organization is licensed to download
    * 
    * @param headers Optional headers to include in the request
-   * @return ListDatabases200Response
+   * @return DatasetList
    * @throws ApiException if fails to make API call
    */
-  public ListDatabases200Response listDatabases(Map<String, String> headers) throws ApiException {
-    ApiResponse<ListDatabases200Response> localVarResponse = listDatabasesWithHttpInfo(headers);
+  public DatasetList listDatabases(Map<String, String> headers) throws ApiException {
+    ApiResponse<DatasetList> localVarResponse = listDatabasesWithHttpInfo(headers);
     return localVarResponse.getData();
   }
 
   /**
    * The datasets your organization is licensed to download
    * 
-   * @return ApiResponse&lt;ListDatabases200Response&gt;
+   * @return ApiResponse&lt;DatasetList&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<ListDatabases200Response> listDatabasesWithHttpInfo() throws ApiException {
+  public ApiResponse<DatasetList> listDatabasesWithHttpInfo() throws ApiException {
     return listDatabasesWithHttpInfo(null);
   }
 
@@ -604,10 +604,10 @@ public class DatabaseApi {
    * The datasets your organization is licensed to download
    * 
    * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;ListDatabases200Response&gt;
+   * @return ApiResponse&lt;DatasetList&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<ListDatabases200Response> listDatabasesWithHttpInfo(Map<String, String> headers) throws ApiException {
+  public ApiResponse<DatasetList> listDatabasesWithHttpInfo(Map<String, String> headers) throws ApiException {
     HttpRequest.Builder localVarRequestBuilder = listDatabasesRequestBuilder(headers);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
@@ -623,7 +623,7 @@ public class DatabaseApi {
         }
         localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
         if (localVarResponseBody == null) {
-          return new ApiResponse<ListDatabases200Response>(
+          return new ApiResponse<DatasetList>(
               localVarResponse.statusCode(),
               localVarResponse.headers().map(),
               null
@@ -633,10 +633,10 @@ public class DatabaseApi {
         
         
         String responseBody = new String(localVarResponseBody.readAllBytes());
-        ListDatabases200Response responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<ListDatabases200Response>() {});
+        DatasetList responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<DatasetList>() {});
         
 
-        return new ApiResponse<ListDatabases200Response>(
+        return new ApiResponse<DatasetList>(
             localVarResponse.statusCode(),
             localVarResponse.headers().map(),
             responseValue
@@ -681,10 +681,10 @@ public class DatabaseApi {
    * Your organization&#39;s recent download attempts, newest first
    * 
    * @param limit  (optional, default to 50)
-   * @return ListDownloads200Response
+   * @return DownloadList
    * @throws ApiException if fails to make API call
    */
-  public ListDownloads200Response listDownloads(@javax.annotation.Nullable Integer limit) throws ApiException {
+  public DownloadList listDownloads(@javax.annotation.Nullable Integer limit) throws ApiException {
     return listDownloads(limit, null);
   }
 
@@ -693,11 +693,11 @@ public class DatabaseApi {
    * 
    * @param limit  (optional, default to 50)
    * @param headers Optional headers to include in the request
-   * @return ListDownloads200Response
+   * @return DownloadList
    * @throws ApiException if fails to make API call
    */
-  public ListDownloads200Response listDownloads(@javax.annotation.Nullable Integer limit, Map<String, String> headers) throws ApiException {
-    ApiResponse<ListDownloads200Response> localVarResponse = listDownloadsWithHttpInfo(limit, headers);
+  public DownloadList listDownloads(@javax.annotation.Nullable Integer limit, Map<String, String> headers) throws ApiException {
+    ApiResponse<DownloadList> localVarResponse = listDownloadsWithHttpInfo(limit, headers);
     return localVarResponse.getData();
   }
 
@@ -705,10 +705,10 @@ public class DatabaseApi {
    * Your organization&#39;s recent download attempts, newest first
    * 
    * @param limit  (optional, default to 50)
-   * @return ApiResponse&lt;ListDownloads200Response&gt;
+   * @return ApiResponse&lt;DownloadList&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<ListDownloads200Response> listDownloadsWithHttpInfo(@javax.annotation.Nullable Integer limit) throws ApiException {
+  public ApiResponse<DownloadList> listDownloadsWithHttpInfo(@javax.annotation.Nullable Integer limit) throws ApiException {
     return listDownloadsWithHttpInfo(limit, null);
   }
 
@@ -717,10 +717,10 @@ public class DatabaseApi {
    * 
    * @param limit  (optional, default to 50)
    * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;ListDownloads200Response&gt;
+   * @return ApiResponse&lt;DownloadList&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<ListDownloads200Response> listDownloadsWithHttpInfo(@javax.annotation.Nullable Integer limit, Map<String, String> headers) throws ApiException {
+  public ApiResponse<DownloadList> listDownloadsWithHttpInfo(@javax.annotation.Nullable Integer limit, Map<String, String> headers) throws ApiException {
     HttpRequest.Builder localVarRequestBuilder = listDownloadsRequestBuilder(limit, headers);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
@@ -736,7 +736,7 @@ public class DatabaseApi {
         }
         localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
         if (localVarResponseBody == null) {
-          return new ApiResponse<ListDownloads200Response>(
+          return new ApiResponse<DownloadList>(
               localVarResponse.statusCode(),
               localVarResponse.headers().map(),
               null
@@ -746,10 +746,10 @@ public class DatabaseApi {
         
         
         String responseBody = new String(localVarResponseBody.readAllBytes());
-        ListDownloads200Response responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<ListDownloads200Response>() {});
+        DownloadList responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<DownloadList>() {});
         
 
-        return new ApiResponse<ListDownloads200Response>(
+        return new ApiResponse<DownloadList>(
             localVarResponse.statusCode(),
             localVarResponse.headers().map(),
             responseValue

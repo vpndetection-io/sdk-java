@@ -30,16 +30,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import io.vpndetection.internal.ApiClient;
 /**
- * DatabaseChecksum200ResponseChecksums
+ * DatasetChecksums
  */
 @JsonPropertyOrder({
-  DatabaseChecksum200ResponseChecksums.JSON_PROPERTY_MD5,
-  DatabaseChecksum200ResponseChecksums.JSON_PROPERTY_SHA1,
-  DatabaseChecksum200ResponseChecksums.JSON_PROPERTY_SHA256,
-  DatabaseChecksum200ResponseChecksums.JSON_PROPERTY_SHA512
+  DatasetChecksums.JSON_PROPERTY_MD5,
+  DatasetChecksums.JSON_PROPERTY_SHA1,
+  DatasetChecksums.JSON_PROPERTY_SHA256,
+  DatasetChecksums.JSON_PROPERTY_SHA512
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
-public class DatabaseChecksum200ResponseChecksums {
+public class DatasetChecksums {
   public static final String JSON_PROPERTY_MD5 = "md5";
   @javax.annotation.Nullable
   private String md5;
@@ -56,10 +56,10 @@ public class DatabaseChecksum200ResponseChecksums {
   @javax.annotation.Nullable
   private String sha512;
 
-  public DatabaseChecksum200ResponseChecksums() { 
+  public DatasetChecksums() { 
   }
 
-  public DatabaseChecksum200ResponseChecksums md5(@javax.annotation.Nullable String md5) {
+  public DatasetChecksums md5(@javax.annotation.Nullable String md5) {
     this.md5 = md5;
     return this;
   }
@@ -83,7 +83,7 @@ public class DatabaseChecksum200ResponseChecksums {
   }
 
 
-  public DatabaseChecksum200ResponseChecksums sha1(@javax.annotation.Nullable String sha1) {
+  public DatasetChecksums sha1(@javax.annotation.Nullable String sha1) {
     this.sha1 = sha1;
     return this;
   }
@@ -107,7 +107,7 @@ public class DatabaseChecksum200ResponseChecksums {
   }
 
 
-  public DatabaseChecksum200ResponseChecksums sha256(@javax.annotation.Nullable String sha256) {
+  public DatasetChecksums sha256(@javax.annotation.Nullable String sha256) {
     this.sha256 = sha256;
     return this;
   }
@@ -131,7 +131,7 @@ public class DatabaseChecksum200ResponseChecksums {
   }
 
 
-  public DatabaseChecksum200ResponseChecksums sha512(@javax.annotation.Nullable String sha512) {
+  public DatasetChecksums sha512(@javax.annotation.Nullable String sha512) {
     this.sha512 = sha512;
     return this;
   }
@@ -156,7 +156,7 @@ public class DatabaseChecksum200ResponseChecksums {
 
 
   /**
-   * Return true if this databaseChecksum_200_response_checksums object is equal to o.
+   * Return true if this DatasetChecksums object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -166,11 +166,11 @@ public class DatabaseChecksum200ResponseChecksums {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    DatabaseChecksum200ResponseChecksums databaseChecksum200ResponseChecksums = (DatabaseChecksum200ResponseChecksums) o;
-    return Objects.equals(this.md5, databaseChecksum200ResponseChecksums.md5) &&
-        Objects.equals(this.sha1, databaseChecksum200ResponseChecksums.sha1) &&
-        Objects.equals(this.sha256, databaseChecksum200ResponseChecksums.sha256) &&
-        Objects.equals(this.sha512, databaseChecksum200ResponseChecksums.sha512);
+    DatasetChecksums datasetChecksums = (DatasetChecksums) o;
+    return Objects.equals(this.md5, datasetChecksums.md5) &&
+        Objects.equals(this.sha1, datasetChecksums.sha1) &&
+        Objects.equals(this.sha256, datasetChecksums.sha256) &&
+        Objects.equals(this.sha512, datasetChecksums.sha512);
   }
 
   @Override
@@ -181,7 +181,7 @@ public class DatabaseChecksum200ResponseChecksums {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class DatabaseChecksum200ResponseChecksums {\n");
+    sb.append("class DatasetChecksums {\n");
     sb.append("    md5: ").append(toIndentedString(md5)).append("\n");
     sb.append("    sha1: ").append(toIndentedString(sha1)).append("\n");
     sb.append("    sha256: ").append(toIndentedString(sha256)).append("\n");

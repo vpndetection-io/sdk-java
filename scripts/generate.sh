@@ -28,6 +28,15 @@ PROPS="${PROPS},apiPackage=io.vpndetection.api"
 PROPS="${PROPS},modelPackage=io.vpndetection.model"
 PROPS="${PROPS},hideGenerationTimestamp=true,openApiNullable=false"
 
+# The four wrapper schemas are inline in the spec, so the generator names them after
+# the operation and status code (DatabaseChecksum200ResponseChecksums). One of them is
+# public API here. --model-name-mappings does NOT reach an inline schema; only
+# --inline-schema-name-mappings does, keyed by the generator's own placeholder name.
+NAMES="listDatabases_200_response=DatasetList"
+NAMES="${NAMES},listDownloads_200_response=DownloadList"
+NAMES="${NAMES},databaseChecksum_200_response=DatasetChecksumsResponse"
+NAMES="${NAMES},databaseChecksum_200_response_checksums=DatasetChecksums"
+
 rm -rf .gen
 mkdir -p .gen
 
@@ -38,6 +47,7 @@ docker run --rm \
     -i /spec/openapi.yaml \
     -g java --library native \
     -o /out \
+    --inline-schema-name-mappings "$NAMES" \
     --additional-properties="$PROPS" \
     >/dev/null
 
