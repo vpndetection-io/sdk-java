@@ -1,0 +1,10 @@
+target/
+
+# Scratch directory scripts/generate.sh unpacks the generator's output into.
+.gen/
+
+# IDE and OS noise.
+.idea/
+*.iml
+.vscode/
+.DS_Store

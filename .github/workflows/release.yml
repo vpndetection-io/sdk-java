@@ -1,0 +1,45 @@
+name: Release
+
+# Publishing to the io.vpndetection groupId requires that namespace to be VERIFIED on
+# the Central Portal first, which is a one-off DNS TXT record on vpndetection.io. Until
+# that lands, this workflow will fail at the deploy step with a 403.
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          # Writes the ~/.m2/settings.xml server entry the Central Portal plugin reads,
+          # and imports the signing key.
+          server-id: central
+          server-username: CENTRAL_TOKEN_USERNAME
+          server-password: CENTRAL_TOKEN_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      # The tag only TRIGGERS this; Maven Central publishes whatever pom.xml says.
+      # Without this check, tagging v1.0.1 against a 1.0.0 pom silently republishes
+      # 1.0.0, or fails as "already published" with a confusing message.
+      - name: Tag must match pom.xml version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pom="$(mvn -B -q help:evaluate -Dexpression=project.version -DforceStdout)"
+          if [ "$tag" != "$pom" ] ; then
+            echo "tag $tag does not match pom.xml version $pom" >&2
+            exit 1
+          fi
+      - run: mvn -B verify
+      - run: mvn -B -Prelease deploy
+        env:
+          CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+          CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
