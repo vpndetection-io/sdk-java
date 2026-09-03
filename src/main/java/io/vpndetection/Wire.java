@@ -71,7 +71,10 @@ final class Wire {
                 kind = retryAfter == null ? ErrorKind.QUOTA_EXCEEDED : ErrorKind.RATE_LIMITED;
                 break;
             default:
-                kind = ErrorKind.SERVER_ERROR;
+                // Any other 4xx is a CLIENT error. Falling through to SERVER_ERROR would make it
+                // retryable, so a bad dataset id would be retried twice before failing. Only 5xx
+                // and transport failures are worth a retry.
+                kind = status < 500 ? ErrorKind.BAD_REQUEST : ErrorKind.SERVER_ERROR;
                 break;
         }
         return new VPNDetectionException(kind, messageOf(e), status, retryAfter, null);
