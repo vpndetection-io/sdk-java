@@ -55,13 +55,6 @@ System.out.println(result.isHosting());                      // Optional[true]
 System.out.println(result.hosting().get().getProvider());
 ```
 
-Every member your plan does not include comes back as an empty `Optional`, which is not the same answer as `false`. Empty is "not in your plan"; `false` is "checked, and no". When you only care whether an address is flagged, each one has a companion that coalesces:
-
-```java
-result.isHosting();          // Optional<Boolean>, empty on a plan without it
-result.isHosting().orElse(false);   // boolean, false on a plan without it
-```
-
 ### Batch lookup
 
 You can do batch lookups with a list, which parallelizes requests for you efficiently:
@@ -176,6 +169,15 @@ byte[] raw = client.database().downloadBytes("cdn_ip_v1", DatasetFormat.CSVGZ);
 ```
 
 `downloadBytes` holds the whole file in memory, and the catalog runs from `cdn_ip_v1` at 10 KB to `resproxy_ip_90d_v1` at 1.79 GB, so use `download` for anything you have not measured.
+
+### Absent is not false
+
+Only `ip` and `isVpn` come back on every plan. The rest are `Optional`, where empty means "not in your plan" rather than "checked, and no".
+
+```java
+result.isHosting().orElse(false);   // when you only want the flag
+result.isHosting().isEmpty();       // not in your plan
+```
 
 ## Other Libraries
 
