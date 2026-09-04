@@ -31,13 +31,18 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import io.vpndetection.internal.ApiClient;
 /**
- * Download
+ * One download ATTEMPT, refusals included - a denial is what answers \&quot;it stopped working\&quot;, so they are listed rather than dropped. 
  */
 @JsonPropertyOrder({
   Download.JSON_PROPERTY_DATASET_ID,
   Download.JSON_PROPERTY_FORMAT,
   Download.JSON_PROPERTY_OUTCOME,
+  Download.JSON_PROPERTY_SAMPLE,
   Download.JSON_PROPERTY_BYTES,
+  Download.JSON_PROPERTY_HTTP_STATUS,
+  Download.JSON_PROPERTY_APIKEY_ID,
+  Download.JSON_PROPERTY_CLIENT_IP,
+  Download.JSON_PROPERTY_USER_AGENT,
   Download.JSON_PROPERTY_CREATED
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
@@ -97,9 +102,29 @@ public class Download {
   @javax.annotation.Nonnull
   private OutcomeEnum outcome;
 
+  public static final String JSON_PROPERTY_SAMPLE = "sample";
+  @javax.annotation.Nonnull
+  private Boolean sample;
+
   public static final String JSON_PROPERTY_BYTES = "bytes";
   @javax.annotation.Nullable
   private Integer bytes;
+
+  public static final String JSON_PROPERTY_HTTP_STATUS = "http_status";
+  @javax.annotation.Nullable
+  private Integer httpStatus;
+
+  public static final String JSON_PROPERTY_APIKEY_ID = "apikey_id";
+  @javax.annotation.Nullable
+  private String apikeyId;
+
+  public static final String JSON_PROPERTY_CLIENT_IP = "client_ip";
+  @javax.annotation.Nullable
+  private String clientIp;
+
+  public static final String JSON_PROPERTY_USER_AGENT = "user_agent";
+  @javax.annotation.Nullable
+  private String userAgent;
 
   public static final String JSON_PROPERTY_CREATED = "created";
   @javax.annotation.Nonnull
@@ -180,27 +205,147 @@ public class Download {
   }
 
 
+  public Download sample(@javax.annotation.Nonnull Boolean sample) {
+    this.sample = sample;
+    return this;
+  }
+
+  /**
+   * The evaluation sample rather than the database itself.
+   * @return sample
+   */
+  @javax.annotation.Nonnull
+  @JsonProperty(value = JSON_PROPERTY_SAMPLE, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public Boolean getSample() {
+    return sample;
+  }
+
+
+  @JsonProperty(value = JSON_PROPERTY_SAMPLE, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSample(@javax.annotation.Nonnull Boolean sample) {
+    this.sample = sample;
+  }
+
+
   public Download bytes(@javax.annotation.Nullable Integer bytes) {
     this.bytes = bytes;
     return this;
   }
 
   /**
-   * Get bytes
+   * Object size at redirect time, NOT bytes delivered: the transfer is a presigned redirect straight to object storage, so we never observe it. 
    * @return bytes
    */
   @javax.annotation.Nullable
   @JsonProperty(value = JSON_PROPERTY_BYTES, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getBytes() {
     return bytes;
   }
 
 
   @JsonProperty(value = JSON_PROPERTY_BYTES, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setBytes(@javax.annotation.Nullable Integer bytes) {
     this.bytes = bytes;
+  }
+
+
+  public Download httpStatus(@javax.annotation.Nullable Integer httpStatus) {
+    this.httpStatus = httpStatus;
+    return this;
+  }
+
+  /**
+   * Get httpStatus
+   * @return httpStatus
+   */
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_HTTP_STATUS, required = false)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public Integer getHttpStatus() {
+    return httpStatus;
+  }
+
+
+  @JsonProperty(value = JSON_PROPERTY_HTTP_STATUS, required = false)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setHttpStatus(@javax.annotation.Nullable Integer httpStatus) {
+    this.httpStatus = httpStatus;
+  }
+
+
+  public Download apikeyId(@javax.annotation.Nullable String apikeyId) {
+    this.apikeyId = apikeyId;
+    return this;
+  }
+
+  /**
+   * The key that made the request. Null when the org acted through the console rather than through a key. 
+   * @return apikeyId
+   */
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_APIKEY_ID, required = false)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public String getApikeyId() {
+    return apikeyId;
+  }
+
+
+  @JsonProperty(value = JSON_PROPERTY_APIKEY_ID, required = false)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setApikeyId(@javax.annotation.Nullable String apikeyId) {
+    this.apikeyId = apikeyId;
+  }
+
+
+  public Download clientIp(@javax.annotation.Nullable String clientIp) {
+    this.clientIp = clientIp;
+    return this;
+  }
+
+  /**
+   * Get clientIp
+   * @return clientIp
+   */
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_CLIENT_IP, required = false)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public String getClientIp() {
+    return clientIp;
+  }
+
+
+  @JsonProperty(value = JSON_PROPERTY_CLIENT_IP, required = false)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setClientIp(@javax.annotation.Nullable String clientIp) {
+    this.clientIp = clientIp;
+  }
+
+
+  public Download userAgent(@javax.annotation.Nullable String userAgent) {
+    this.userAgent = userAgent;
+    return this;
+  }
+
+  /**
+   * Get userAgent
+   * @return userAgent
+   */
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_USER_AGENT, required = false)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public String getUserAgent() {
+    return userAgent;
+  }
+
+
+  @JsonProperty(value = JSON_PROPERTY_USER_AGENT, required = false)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setUserAgent(@javax.annotation.Nullable String userAgent) {
+    this.userAgent = userAgent;
   }
 
 
@@ -243,13 +388,18 @@ public class Download {
     return Objects.equals(this.datasetId, download.datasetId) &&
         Objects.equals(this.format, download.format) &&
         Objects.equals(this.outcome, download.outcome) &&
+        Objects.equals(this.sample, download.sample) &&
         Objects.equals(this.bytes, download.bytes) &&
+        Objects.equals(this.httpStatus, download.httpStatus) &&
+        Objects.equals(this.apikeyId, download.apikeyId) &&
+        Objects.equals(this.clientIp, download.clientIp) &&
+        Objects.equals(this.userAgent, download.userAgent) &&
         Objects.equals(this.created, download.created);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(datasetId, format, outcome, bytes, created);
+    return Objects.hash(datasetId, format, outcome, sample, bytes, httpStatus, apikeyId, clientIp, userAgent, created);
   }
 
   @Override
@@ -259,7 +409,12 @@ public class Download {
     sb.append("    datasetId: ").append(toIndentedString(datasetId)).append("\n");
     sb.append("    format: ").append(toIndentedString(format)).append("\n");
     sb.append("    outcome: ").append(toIndentedString(outcome)).append("\n");
+    sb.append("    sample: ").append(toIndentedString(sample)).append("\n");
     sb.append("    bytes: ").append(toIndentedString(bytes)).append("\n");
+    sb.append("    httpStatus: ").append(toIndentedString(httpStatus)).append("\n");
+    sb.append("    apikeyId: ").append(toIndentedString(apikeyId)).append("\n");
+    sb.append("    clientIp: ").append(toIndentedString(clientIp)).append("\n");
+    sb.append("    userAgent: ").append(toIndentedString(userAgent)).append("\n");
     sb.append("    created: ").append(toIndentedString(created)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -320,9 +475,34 @@ public class Download {
       joiner.add(String.format(java.util.Locale.ROOT, "%soutcome%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getOutcome()))));
     }
 
+    // add `sample` to the URL query string
+    if (getSample() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%ssample%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getSample()))));
+    }
+
     // add `bytes` to the URL query string
     if (getBytes() != null) {
       joiner.add(String.format(java.util.Locale.ROOT, "%sbytes%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getBytes()))));
+    }
+
+    // add `http_status` to the URL query string
+    if (getHttpStatus() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%shttp_status%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getHttpStatus()))));
+    }
+
+    // add `apikey_id` to the URL query string
+    if (getApikeyId() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%sapikey_id%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getApikeyId()))));
+    }
+
+    // add `client_ip` to the URL query string
+    if (getClientIp() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%sclient_ip%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getClientIp()))));
+    }
+
+    // add `user_agent` to the URL query string
+    if (getUserAgent() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%suser_agent%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getUserAgent()))));
     }
 
     // add `created` to the URL query string

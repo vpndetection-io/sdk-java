@@ -44,7 +44,9 @@ import io.vpndetection.internal.ApiClient;
   DatasetMetadata.JSON_PROPERTY_ENTRIES,
   DatasetMetadata.JSON_PROPERTY_SCHEMA,
   DatasetMetadata.JSON_PROPERTY_SAMPLE,
-  DatasetMetadata.JSON_PROPERTY_SIZE
+  DatasetMetadata.JSON_PROPERTY_SIZE,
+  DatasetMetadata.JSON_PROPERTY_SAMPLE_SIZE,
+  DatasetMetadata.JSON_PROPERTY_SAMPLE_ENTRIES
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
 public class DatasetMetadata {
@@ -75,6 +77,14 @@ public class DatasetMetadata {
   public static final String JSON_PROPERTY_SIZE = "size";
   @javax.annotation.Nullable
   private Map<String, Integer> size = new HashMap<>();
+
+  public static final String JSON_PROPERTY_SAMPLE_SIZE = "sample_size";
+  @javax.annotation.Nullable
+  private Map<String, Integer> sampleSize = new HashMap<>();
+
+  public static final String JSON_PROPERTY_SAMPLE_ENTRIES = "sample_entries";
+  @javax.annotation.Nullable
+  private Integer sampleEntries;
 
   public DatasetMetadata() { 
   }
@@ -271,6 +281,62 @@ public class DatasetMetadata {
   }
 
 
+  public DatasetMetadata sampleSize(@javax.annotation.Nullable Map<String, Integer> sampleSize) {
+    this.sampleSize = sampleSize;
+    return this;
+  }
+
+  public DatasetMetadata putSampleSizeItem(String key, Integer sampleSizeItem) {
+    if (this.sampleSize == null) {
+      this.sampleSize = new HashMap<>();
+    }
+    this.sampleSize.put(key, sampleSizeItem);
+    return this;
+  }
+
+  /**
+   * Bytes per format of the evaluation sample, where one is published
+   * @return sampleSize
+   */
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_SAMPLE_SIZE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public Map<String, Integer> getSampleSize() {
+    return sampleSize;
+  }
+
+
+  @JsonProperty(value = JSON_PROPERTY_SAMPLE_SIZE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSampleSize(@javax.annotation.Nullable Map<String, Integer> sampleSize) {
+    this.sampleSize = sampleSize;
+  }
+
+
+  public DatasetMetadata sampleEntries(@javax.annotation.Nullable Integer sampleEntries) {
+    this.sampleEntries = sampleEntries;
+    return this;
+  }
+
+  /**
+   * Row count in the evaluation sample
+   * @return sampleEntries
+   */
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_SAMPLE_ENTRIES, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public Integer getSampleEntries() {
+    return sampleEntries;
+  }
+
+
+  @JsonProperty(value = JSON_PROPERTY_SAMPLE_ENTRIES, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSampleEntries(@javax.annotation.Nullable Integer sampleEntries) {
+    this.sampleEntries = sampleEntries;
+  }
+
+
   /**
    * Return true if this DatasetMetadata object is equal to o.
    */
@@ -289,12 +355,14 @@ public class DatasetMetadata {
         Objects.equals(this.entries, datasetMetadata.entries) &&
         Objects.equals(this.schema, datasetMetadata.schema) &&
         Objects.equals(this.sample, datasetMetadata.sample) &&
-        Objects.equals(this.size, datasetMetadata.size);
+        Objects.equals(this.size, datasetMetadata.size) &&
+        Objects.equals(this.sampleSize, datasetMetadata.sampleSize) &&
+        Objects.equals(this.sampleEntries, datasetMetadata.sampleEntries);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, updateFreq, updated, entries, schema, sample, size);
+    return Objects.hash(id, updateFreq, updated, entries, schema, sample, size, sampleSize, sampleEntries);
   }
 
   @Override
@@ -308,6 +376,8 @@ public class DatasetMetadata {
     sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
     sb.append("    sample: ").append(toIndentedString(sample)).append("\n");
     sb.append("    size: ").append(toIndentedString(size)).append("\n");
+    sb.append("    sampleSize: ").append(toIndentedString(sampleSize)).append("\n");
+    sb.append("    sampleEntries: ").append(toIndentedString(sampleEntries)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -397,6 +467,20 @@ public class DatasetMetadata {
             "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, _key, containerSuffix),
             getSize().get(_key), ApiClient.urlEncode(ApiClient.valueToString(getSize().get(_key)))));
       }
+    }
+
+    // add `sample_size` to the URL query string
+    if (getSampleSize() != null) {
+      for (String _key : getSampleSize().keySet()) {
+        joiner.add(String.format(java.util.Locale.ROOT, "%ssample_size%s%s=%s", prefix, suffix,
+            "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, _key, containerSuffix),
+            getSampleSize().get(_key), ApiClient.urlEncode(ApiClient.valueToString(getSampleSize().get(_key)))));
+      }
+    }
+
+    // add `sample_entries` to the URL query string
+    if (getSampleEntries() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%ssample_entries%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getSampleEntries()))));
     }
 
     return joiner.toString();
