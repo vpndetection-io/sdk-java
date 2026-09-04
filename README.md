@@ -163,14 +163,19 @@ Note that `RATE_LIMITED` and `QUOTA_EXCEEDED` both arrive as HTTP 429 and are no
 
 ### Database downloads
 
-If your key carries the `db.download` scope, the licensed datasets are available through `client.database()`:
+If your key carries the `db.download` scope, the licensed datasets are available through `client.database()`. A license covers a dataset family, and the ids the transfers take come from its `getVersions()`. There are three ways to take one: to a file, as a time-limited link you transfer yourself, or as bytes.
 
 ```java
 var datasets = client.database().list();
+
+// Streamed straight to disk, so nothing bigger than a chunk is ever held in memory.
+long written = client.database().download(
+        "vpn_ip_extended_v1", DatasetFormat.MMDB, Path.of("vpn_ip_extended_v1.mmdb"));
 String url = client.database().downloadUrl("vpn_ip_extended_v1", DatasetFormat.MMDB);
+byte[] raw = client.database().downloadBytes("cdn_ip_v1", DatasetFormat.CSVGZ);
 ```
 
-`downloadUrl` returns a time-limited link rather than the bytes, so you choose how to transfer a file that can run to gigabytes.
+`downloadBytes` holds the whole file in memory, and the catalog runs from `cdn_ip_v1` at 10 KB to `resproxy_ip_90d_v1` at 1.79 GB, so use `download` for anything you have not measured.
 
 ## Other Libraries
 

@@ -26,25 +26,41 @@ final class Wire {
         T invoke() throws ApiException;
     }
 
+    /** One attempt that reports its own failure, for a request the generated layer does not make. */
+    interface Attempt<T> {
+        T invoke();
+    }
+
+    /** Runs a generated call, retrying a transient failure up to {@code retries} times. */
+    static <T> T execute(int retries, Call<T> call) {
+        return retrying(retries, () -> {
+            try {
+                return call.invoke();
+            } catch (ApiException e) {
+                throw translate(e);
+            }
+        });
+    }
+
     /**
-     * Runs a generated call, retrying a transient failure up to {@code retries} times.
+     * Retries a transient failure up to {@code retries} times.
      *
      * <p>A server-supplied {@code Retry-After} wins over the backoff schedule, and is also the only
      * thing that makes a 429 retryable at all.
      */
-    static <T> T execute(int retries, Call<T> call) {
-        for (int attempt = 0; ; attempt++) {
+    static <T> T retrying(int retries, Attempt<T> attempt) {
+        for (int i = 0; ; i++) {
             VPNDetectionException failure;
             try {
-                return call.invoke();
-            } catch (ApiException e) {
-                failure = translate(e);
+                return attempt.invoke();
+            } catch (VPNDetectionException e) {
+                failure = e;
             }
-            if (attempt >= retries || !failure.retryable()) {
+            if (i >= retries || !failure.retryable()) {
                 throw failure;
             }
             Duration asked = failure.retryAfter().orElse(null);
-            sleep(asked != null ? asked : backoff(attempt));
+            sleep(asked != null ? asked : backoff(i));
         }
     }
 
@@ -54,30 +70,31 @@ final class Wire {
             return new VPNDetectionException(ErrorKind.NETWORK, messageOf(e), null, null, e.getCause());
         }
         Duration retryAfter = retryAfterOf(e);
-        ErrorKind kind;
+        return new VPNDetectionException(kindOf(status, retryAfter), messageOf(e), status, retryAfter, null);
+    }
+
+    /**
+     * What an HTTP status means, for the generated calls and for the raw dataset transfer alike.
+     *
+     * @param retryAfter the response's {@code Retry-After}, which is the only thing separating a
+     *     rate limit from a spent allowance.
+     */
+    static ErrorKind kindOf(int status, Duration retryAfter) {
         switch (status) {
             case 400:
-                kind = ErrorKind.BAD_REQUEST;
-                break;
+                return ErrorKind.BAD_REQUEST;
             case 401:
-                kind = ErrorKind.UNAUTHORIZED;
-                break;
+                return ErrorKind.UNAUTHORIZED;
             case 403:
-                kind = ErrorKind.FORBIDDEN;
-                break;
+                return ErrorKind.FORBIDDEN;
             case 429:
-                // Present means transient, absent means an allowance is spent. Nothing else in the
-                // response separates the two.
-                kind = retryAfter == null ? ErrorKind.QUOTA_EXCEEDED : ErrorKind.RATE_LIMITED;
-                break;
+                return retryAfter == null ? ErrorKind.QUOTA_EXCEEDED : ErrorKind.RATE_LIMITED;
             default:
                 // Any other 4xx is a CLIENT error. Falling through to SERVER_ERROR would make it
                 // retryable, so a bad dataset id would be retried twice before failing. Only 5xx
                 // and transport failures are worth a retry.
-                kind = status < 500 ? ErrorKind.BAD_REQUEST : ErrorKind.SERVER_ERROR;
-                break;
+                return status < 500 ? ErrorKind.BAD_REQUEST : ErrorKind.SERVER_ERROR;
         }
-        return new VPNDetectionException(kind, messageOf(e), status, retryAfter, null);
     }
 
     // The two APIs behind this host answer with different envelopes: the lookup endpoint uses

@@ -38,10 +38,15 @@ import javax.net.ssl.SSLSession;
 final class StubHttpClient extends HttpClient {
     static final class Route {
         final int status;
-        final String body;
+        final byte[] body;
         final Map<String, String> headers;
 
         Route(int status, String body, Map<String, String> headers) {
+            this(status, body.getBytes(StandardCharsets.UTF_8), headers);
+        }
+
+        /** A binary answer, for the dataset transfers, whose bytes are not text at all. */
+        Route(int status, byte[] body, Map<String, String> headers) {
             this.status = status;
             this.body = body;
             this.headers = headers;
@@ -53,6 +58,8 @@ final class StubHttpClient extends HttpClient {
     }
 
     final List<String> calls = Collections.synchronizedList(new ArrayList<>());
+    /** The {@code Authorization} header of each call, or null, positionally matching {@link #calls}. */
+    final List<String> authorizations = Collections.synchronizedList(new ArrayList<>());
     final AtomicInteger inFlight = new AtomicInteger();
     final AtomicInteger peak = new AtomicInteger();
 
@@ -84,6 +91,7 @@ final class StubHttpClient extends HttpClient {
     public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> handler) {
         URI uri = request.uri();
         calls.add(uri.toString());
+        authorizations.add(request.headers().firstValue("Authorization").orElse(null));
         peak.accumulateAndGet(inFlight.incrementAndGet(), Math::max);
         try {
             if (!delay.isZero()) {
@@ -102,8 +110,7 @@ final class StubHttpClient extends HttpClient {
         headers.put("content-type", List.of("application/json"));
         route.headers.forEach((k, v) -> headers.put(k.toLowerCase(Locale.ROOT), List.of(v)));
         return (HttpResponse<T>) new StubResponse(request, route.status,
-                HttpHeaders.of(headers, (a, b) -> true),
-                new ByteArrayInputStream(route.body.getBytes(StandardCharsets.UTF_8)));
+                HttpHeaders.of(headers, (a, b) -> true), new ByteArrayInputStream(route.body));
     }
 
     @Override
