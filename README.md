@@ -59,7 +59,7 @@ Every member your plan does not include comes back as an empty `Optional`, which
 
 ```java
 result.isHosting();          // Optional<Boolean>, empty on a plan without it
-result.isHostingOrFalse();   // boolean, false on a plan without it
+result.isHosting().orElse(false);   // boolean, false on a plan without it
 ```
 
 ### Batch lookup

@@ -112,7 +112,7 @@ class ClientTest {
         try (VPNDetection client = VPNDetection.builder().httpClient(http).build()) {
             Result free = client.lookup("1.1.1.1");
             assertTrue(free.isHosting().isEmpty(), "a plan that omits the field answers nothing");
-            assertFalse(free.isHostingOrFalse(), "the coalescing accessor still reads false");
+            assertFalse(free.isHosting().orElse(false), "orElse(false) still reads false");
 
             Result paid = client.lookup("8.8.8.8");
             assertEquals(Optional.of(false), paid.isHosting(),

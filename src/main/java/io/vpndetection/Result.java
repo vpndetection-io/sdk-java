@@ -13,7 +13,7 @@ import java.util.Optional;
  *
  * <p>An <b>empty</b> {@code Optional} is a member your plan does not include. It never means "we
  * could not check", so empty and {@code false} are genuinely different answers: empty is "not in
- * your plan", {@code false} is "checked, and no". Every flag has an {@code ...OrFalse()} companion
+ * your plan", {@code false} is "checked, and no". Call {@code orElse(false)} on the Optional
  * for the common case where you only care whether the address is flagged.
  *
  * <p>A detail object that is present but empty means the flag above it is false. A populated one
@@ -103,34 +103,6 @@ public final class Result {
 
     public Optional<Boolean> isMobproxy() {
         return Optional.ofNullable(raw.getIsMobproxy());
-    }
-
-    public boolean isHostingOrFalse() {
-        return isHosting().orElse(false);
-    }
-
-    public boolean isRelayOrFalse() {
-        return isRelay().orElse(false);
-    }
-
-    public boolean isTorOrFalse() {
-        return isTor().orElse(false);
-    }
-
-    public boolean isCdnOrFalse() {
-        return isCdn().orElse(false);
-    }
-
-    public boolean isResproxyOrFalse() {
-        return isResproxy().orElse(false);
-    }
-
-    public boolean isDcproxyOrFalse() {
-        return isDcproxy().orElse(false);
-    }
-
-    public boolean isMobproxyOrFalse() {
-        return isMobproxy().orElse(false);
     }
 
     public Optional<VpnDetail> vpn() {

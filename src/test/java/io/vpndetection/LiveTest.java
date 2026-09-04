@@ -27,14 +27,14 @@ class LiveTest {
                     + " raw=" + vpn.raw());
             System.out.println("1.1.1.1    -> isVpn=" + notVpn.isVpn()
                     + " isHosting=" + notVpn.isHosting()
-                    + " isHostingOrFalse=" + notVpn.isHostingOrFalse()
+                    + " isHosting.orElse(false)=" + notVpn.isHosting().orElse(false)
                     + " raw=" + notVpn.raw());
 
             assertTrue(vpn.isVpn(), "45.83.91.1 is VPN infrastructure");
             assertFalse(notVpn.isVpn(), "1.1.1.1 is not");
             // Absent, not false: the hosting flag is a paid member and this call carries no key.
             assertTrue(notVpn.isHosting().isEmpty(), "the free tier must withhold is_hosting");
-            assertFalse(notVpn.isHostingOrFalse());
+            assertFalse(notVpn.isHosting().orElse(false));
 
             Result bogon = client.lookup("192.168.1.1");
             assertTrue(bogon.isBogon());
