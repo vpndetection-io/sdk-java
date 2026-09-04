@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Exercises the PUBLISHED io.vpndetection:vpndetection against staging. Never
+         published itself, and deliberately NOT a module of the library's build: it must
+         resolve the artifact a stranger would get, not the classes next door. -->
+    <groupId>io.vpndetection.integration</groupId>
+    <artifactId>integration</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>integration</name>
+    <description>Integration tests for the published VPNDetection Java client library.</description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.release>17</maven.compiler.release>
+        <maven.install.skip>true</maven.install.skip>
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <!-- The constraint, as a Maven range. scripts/run.sh resolves it against the
+             registry and passes the newest published release as an exact version, so a
+             daily run keeps testing whatever is newest rather than whichever version
+             somebody happened to commit. -->
+        <vpndetection.version>[1.0,2.0)</vpndetection.version>
+        <junit.version>5.14.4</junit.version>
+        <centralBaseUrl>https://repo1.maven.org/maven2</centralBaseUrl>
+    </properties>
+
+    <repositories>
+        <!-- Central, named explicitly so ONE setting decides both where the runner asks what
+             is published and where Maven resolves it from. Two names for the registry could
+             disagree, and then the suite would check one repository and test whatever came
+             out of another. -->
+        <repository>
+            <id>central</id>
+            <url>${centralBaseUrl}</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.vpndetection</groupId>
+            <artifactId>vpndetection</artifactId>
+            <version>${vpndetection.version}</version>
+        </dependency>
+
+        <!-- Jackson arrives with the library, and reading a captured answer as a map is
+             what makes "this field is absent" a statement about the wire rather than
+             about the binding. -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.16.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.6</version>
+                <configuration>
+                    <!-- A skip carries a reason, and the reason is the whole point of one. -->
+                    <trimStackTrace>false</trimStackTrace>
+                    <useFile>false</useFile>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

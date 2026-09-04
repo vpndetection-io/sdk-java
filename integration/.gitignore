@@ -1,0 +1,5 @@
+target/
+
+# Only here if someone points M2_INTEGRATION_DIR at the working tree; the local
+# repository the suite resolves into lives under $HOME by default.
+.m2/
