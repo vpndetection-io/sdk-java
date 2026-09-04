@@ -26,7 +26,13 @@ public final class Database {
         this.retries = retries;
     }
 
-    /** The datasets your organization is licensed to download. */
+    /**
+     * The dataset families your organization is licensed to download.
+     *
+     * <p>A license covers a family, while a download names one of its versions, so the ids the
+     * other methods here take come from {@link LicensedDataset#getVersions()} rather than from the
+     * family itself.
+     */
     public List<LicensedDataset> list() {
         return Wire.execute(retries, () -> api.listDatabases().getDatasets());
     }
