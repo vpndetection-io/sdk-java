@@ -38,7 +38,7 @@ import java.util.List;
  * pull one of the gigabyte datasets through CI.
  */
 class DatabaseTest {
-    // The max organization licenses `cdn_ip` for redistribution, and at ~10 KB it is the only
+    // The max organization licenses `cdn_ip` for license_type, and at ~10 KB it is the only
     // dataset small enough to move in CI.
     private static final String DATASET_ID = "cdn_ip_v1";
     private static final DatasetFormat FORMAT = DatasetFormat.CSVGZ;
@@ -76,7 +76,7 @@ class DatabaseTest {
             assertNotNull(dataset.getBase(), "a family arrived with no base");
             assertNotNull(dataset.getName(), dataset.getBase() + " carries no name");
             assertNotNull(dataset.getStanding(), dataset.getBase() + " carries no standing");
-            assertNotNull(dataset.getRedistribution(), dataset.getBase() + " carries no right");
+            assertNotNull(dataset.getLicenseType(), dataset.getBase() + " carries no right");
             assertFalse(dataset.getVersions().isEmpty(), dataset.getBase() + " carries no versions");
             dataset.getVersions().forEach(version -> {
                 assertNotNull(version.getId(), dataset.getBase() + " has a version with no id");
