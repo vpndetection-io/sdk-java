@@ -34,7 +34,10 @@ class DatabaseTest {
                 // answer objects whose every field was empty.
                 "api/v1/database/list", StubHttpClient.Route.ok(
                         "{\"datasets\": [{\"base\": \"vpn_ip\", \"name\": \"VPN IP\","
+                                + " \"summary\": \"vpn_ip rows\","
                                 + " \"license_type\": \"standard\", \"in_term\": true,"
+                                + " \"starts\": \"2026-01-01T00:00:00.000Z\", \"expires\": null,"
+                                + " \"renews_at\": null, \"notice_due_at\": null,"
                                 + " \"standing\": \"licensed\", \"versions\": [{\"id\":"
                                 + " \"vpn_ip_extended_v1\", \"version\": 1, \"formats\":"
                                 + " [{\"format\": \"mmdb\", \"bytes\": 1234}]}]}]}"),
