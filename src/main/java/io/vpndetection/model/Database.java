@@ -25,7 +25,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.vpndetection.model.DatabaseVersion;
-import io.vpndetection.model.LicenseType;
 import io.vpndetection.model.Standing;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -65,9 +64,46 @@ public class Database {
   @javax.annotation.Nonnull
   private String summary;
 
+  /**
+   * What a license permits you to do with the data. Null for a family you hold no license for, which is every one with standing &#x60;unlicensed&#x60;. 
+   */
+  public enum LicenseTypeEnum {
+    EVALUATION(String.valueOf("evaluation")),
+    
+    STANDARD(String.valueOf("standard")),
+    
+    REDISTRIBUTE(String.valueOf("redistribute"));
+
+    private String value;
+
+    LicenseTypeEnum(String value) {
+      this.value = value;
+    }
+
+    @JsonValue
+    public String getValue() {
+      return value;
+    }
+
+    @Override
+    public String toString() {
+      return String.valueOf(value);
+    }
+
+    @JsonCreator
+    public static LicenseTypeEnum fromValue(String value) {
+      for (LicenseTypeEnum b : LicenseTypeEnum.values()) {
+        if (b.value.equals(value)) {
+          return b;
+        }
+      }
+      return null;
+    }
+  }
+
   public static final String JSON_PROPERTY_LICENSE_TYPE = "license_type";
-  @javax.annotation.Nonnull
-  private LicenseType licenseType;
+  @javax.annotation.Nullable
+  private LicenseTypeEnum licenseType;
 
   public static final String JSON_PROPERTY_STARTS = "starts";
   @javax.annotation.Nullable
@@ -172,26 +208,26 @@ public class Database {
   }
 
 
-  public Database licenseType(@javax.annotation.Nonnull LicenseType licenseType) {
+  public Database licenseType(@javax.annotation.Nullable LicenseTypeEnum licenseType) {
     this.licenseType = licenseType;
     return this;
   }
 
   /**
-   * Get licenseType
+   * What a license permits you to do with the data. Null for a family you hold no license for, which is every one with standing &#x60;unlicensed&#x60;. 
    * @return licenseType
    */
-  @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_LICENSE_TYPE, required = true)
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_LICENSE_TYPE, required = false)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public LicenseType getLicenseType() {
+  public LicenseTypeEnum getLicenseType() {
     return licenseType;
   }
 
 
-  @JsonProperty(value = JSON_PROPERTY_LICENSE_TYPE, required = true)
+  @JsonProperty(value = JSON_PROPERTY_LICENSE_TYPE, required = false)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLicenseType(@javax.annotation.Nonnull LicenseType licenseType) {
+  public void setLicenseType(@javax.annotation.Nullable LicenseTypeEnum licenseType) {
     this.licenseType = licenseType;
   }
 

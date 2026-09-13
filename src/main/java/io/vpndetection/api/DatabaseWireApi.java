@@ -571,7 +571,7 @@ public class DatabaseWireApi {
 
   /**
    * List
-   * Every database this organization holds a licence for, with the term and the license_type right beside each one. 
+   * Every database this organization may SEE, with where its licence stands. Not just the ones you hold: a customer with one grant should be able to tell what else is published without asking. &#x60;standing&#x60; is the difference - &#x60;licensed&#x60;, &#x60;expired&#x60;, or &#x60;unlicensed&#x60; for one never bought. 
    * @return DatabaseList
    * @throws ApiException if fails to make API call
    */
@@ -581,7 +581,7 @@ public class DatabaseWireApi {
 
   /**
    * List
-   * Every database this organization holds a licence for, with the term and the license_type right beside each one. 
+   * Every database this organization may SEE, with where its licence stands. Not just the ones you hold: a customer with one grant should be able to tell what else is published without asking. &#x60;standing&#x60; is the difference - &#x60;licensed&#x60;, &#x60;expired&#x60;, or &#x60;unlicensed&#x60; for one never bought. 
    * @param headers Optional headers to include in the request
    * @return DatabaseList
    * @throws ApiException if fails to make API call
@@ -593,7 +593,7 @@ public class DatabaseWireApi {
 
   /**
    * List
-   * Every database this organization holds a licence for, with the term and the license_type right beside each one. 
+   * Every database this organization may SEE, with where its licence stands. Not just the ones you hold: a customer with one grant should be able to tell what else is published without asking. &#x60;standing&#x60; is the difference - &#x60;licensed&#x60;, &#x60;expired&#x60;, or &#x60;unlicensed&#x60; for one never bought. 
    * @return ApiResponse&lt;DatabaseList&gt;
    * @throws ApiException if fails to make API call
    */
@@ -603,7 +603,7 @@ public class DatabaseWireApi {
 
   /**
    * List
-   * Every database this organization holds a licence for, with the term and the license_type right beside each one. 
+   * Every database this organization may SEE, with where its licence stands. Not just the ones you hold: a customer with one grant should be able to tell what else is published without asking. &#x60;standing&#x60; is the difference - &#x60;licensed&#x60;, &#x60;expired&#x60;, or &#x60;unlicensed&#x60; for one never bought. 
    * @param headers Optional headers to include in the request
    * @return ApiResponse&lt;DatabaseList&gt;
    * @throws ApiException if fails to make API call
