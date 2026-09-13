@@ -13,12 +13,12 @@ The library helps you query VPNDetection's APIs for anonymity detection includin
 <dependency>
     <groupId>io.vpndetection</groupId>
     <artifactId>vpndetection</artifactId>
-    <version>4.1.0</version>
+    <version>4.2.0</version>
 </dependency>
 ```
 
 ```groovy
-implementation 'io.vpndetection:vpndetection:4.1.0'
+implementation 'io.vpndetection:vpndetection:4.2.0'
 ```
 
 Requires Java 17 or newer. HTTP is the JDK's own `java.net.http.HttpClient`, so there is no third-party HTTP stack to reconcile with yours.
@@ -54,6 +54,28 @@ System.out.println(result.vpn().get().getProvider());        // "mullvad"
 System.out.println(result.isHosting());                      // Optional[true]
 System.out.println(result.hosting().get().getProvider());
 ```
+
+### Your own address
+
+```java
+Result result = client.myIp();
+System.out.println(result.ip());   // the address we saw this call come from
+```
+
+Same answer `lookup` would give for that address, and the same cost against your allowance. It is deliberately not cached: which address you are is the whole question, and a machine that moves between networks would otherwise be told where it used to be.
+
+### Your plan and usage
+
+```java
+AccountMe acct = client.myAccount();
+System.out.println(acct.getPlan().getKey());         // max
+System.out.println(acct.getUsage().getRequests());  // 580
+System.out.println(acct.getUsage().getWindowEnd()); // when the allowance resets
+```
+
+Usage counts against the anniversary of your subscription, not the calendar month and not the billing period, and it is the same number a lookup is gated on. `getHardLimit()` is `null` on an uncapped plan, which is not the same as zero.
+
+`myIpAsync()` and `myAccountAsync()` return a `CompletableFuture` of the same thing.
 
 ### Batch lookup
 
