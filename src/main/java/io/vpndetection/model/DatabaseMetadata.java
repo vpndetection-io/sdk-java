@@ -76,11 +76,11 @@ public class DatabaseMetadata {
 
   public static final String JSON_PROPERTY_SIZE = "size";
   @javax.annotation.Nullable
-  private Map<String, Integer> size = new HashMap<>();
+  private Map<String, Long> size = new HashMap<>();
 
   public static final String JSON_PROPERTY_SAMPLE_SIZE = "sample_size";
   @javax.annotation.Nullable
-  private Map<String, Integer> sampleSize = new HashMap<>();
+  private Map<String, Long> sampleSize = new HashMap<>();
 
   public static final String JSON_PROPERTY_SAMPLE_ENTRIES = "sample_entries";
   @javax.annotation.Nullable
@@ -249,12 +249,12 @@ public class DatabaseMetadata {
   }
 
 
-  public DatabaseMetadata size(@javax.annotation.Nullable Map<String, Integer> size) {
+  public DatabaseMetadata size(@javax.annotation.Nullable Map<String, Long> size) {
     this.size = size;
     return this;
   }
 
-  public DatabaseMetadata putSizeItem(String key, Integer sizeItem) {
+  public DatabaseMetadata putSizeItem(String key, Long sizeItem) {
     if (this.size == null) {
       this.size = new HashMap<>();
     }
@@ -269,24 +269,24 @@ public class DatabaseMetadata {
   @javax.annotation.Nullable
   @JsonProperty(value = JSON_PROPERTY_SIZE, required = false)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public Map<String, Integer> getSize() {
+  public Map<String, Long> getSize() {
     return size;
   }
 
 
   @JsonProperty(value = JSON_PROPERTY_SIZE, required = false)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setSize(@javax.annotation.Nullable Map<String, Integer> size) {
+  public void setSize(@javax.annotation.Nullable Map<String, Long> size) {
     this.size = size;
   }
 
 
-  public DatabaseMetadata sampleSize(@javax.annotation.Nullable Map<String, Integer> sampleSize) {
+  public DatabaseMetadata sampleSize(@javax.annotation.Nullable Map<String, Long> sampleSize) {
     this.sampleSize = sampleSize;
     return this;
   }
 
-  public DatabaseMetadata putSampleSizeItem(String key, Integer sampleSizeItem) {
+  public DatabaseMetadata putSampleSizeItem(String key, Long sampleSizeItem) {
     if (this.sampleSize == null) {
       this.sampleSize = new HashMap<>();
     }
@@ -301,14 +301,14 @@ public class DatabaseMetadata {
   @javax.annotation.Nullable
   @JsonProperty(value = JSON_PROPERTY_SAMPLE_SIZE, required = false)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public Map<String, Integer> getSampleSize() {
+  public Map<String, Long> getSampleSize() {
     return sampleSize;
   }
 
 
   @JsonProperty(value = JSON_PROPERTY_SAMPLE_SIZE, required = false)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setSampleSize(@javax.annotation.Nullable Map<String, Integer> sampleSize) {
+  public void setSampleSize(@javax.annotation.Nullable Map<String, Long> sampleSize) {
     this.sampleSize = sampleSize;
   }
 

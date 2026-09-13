@@ -13,12 +13,12 @@ The library helps you query VPNDetection's APIs for anonymity detection includin
 <dependency>
     <groupId>io.vpndetection</groupId>
     <artifactId>vpndetection</artifactId>
-    <version>4.2.0</version>
+    <version>5.0.0</version>
 </dependency>
 ```
 
 ```groovy
-implementation 'io.vpndetection:vpndetection:4.2.0'
+implementation 'io.vpndetection:vpndetection:5.0.0'
 ```
 
 Requires Java 17 or newer. HTTP is the JDK's own `java.net.http.HttpClient`, so there is no third-party HTTP stack to reconcile with yours.

@@ -108,7 +108,7 @@ public class Download {
 
   public static final String JSON_PROPERTY_BYTES = "bytes";
   @javax.annotation.Nullable
-  private Integer bytes;
+  private Long bytes;
 
   public static final String JSON_PROPERTY_HTTP_STATUS = "http_status";
   @javax.annotation.Nullable
@@ -229,26 +229,26 @@ public class Download {
   }
 
 
-  public Download bytes(@javax.annotation.Nullable Integer bytes) {
+  public Download bytes(@javax.annotation.Nullable Long bytes) {
     this.bytes = bytes;
     return this;
   }
 
   /**
-   * Object size at redirect time, NOT bytes delivered: the transfer is a presigned redirect straight to object storage, so we never observe it. 
+   * Object size at redirect time, NOT bytes delivered: the transfer is a presigned redirect straight to object storage, so we never observe it. int64 for the same reason as DatabaseFormatSize.bytes - it is the size of the same object. 
    * @return bytes
    */
   @javax.annotation.Nullable
   @JsonProperty(value = JSON_PROPERTY_BYTES, required = false)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public Integer getBytes() {
+  public Long getBytes() {
     return bytes;
   }
 
 
   @JsonProperty(value = JSON_PROPERTY_BYTES, required = false)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBytes(@javax.annotation.Nullable Integer bytes) {
+  public void setBytes(@javax.annotation.Nullable Long bytes) {
     this.bytes = bytes;
   }
 

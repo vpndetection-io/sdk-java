@@ -4,16 +4,18 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.vpndetection.DatasetFormat;
+import io.vpndetection.DatabaseFormat;
 import io.vpndetection.ErrorKind;
 import io.vpndetection.VPNDetectionException;
 import io.vpndetection.integration.Staging.Probe;
-import io.vpndetection.model.DatasetChecksums;
-import io.vpndetection.model.DatasetMetadata;
-import io.vpndetection.model.LicensedDataset;
+import io.vpndetection.model.DbChecksums;
+import io.vpndetection.model.DatabaseMetadata;
+import io.vpndetection.model.Database;
+import io.vpndetection.model.Standing;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +43,7 @@ class DatabaseTest {
     // The max organization licenses `cdn_ip` for license_type, and at ~10 KB it is the only
     // dataset small enough to move in CI.
     private static final String DATASET_ID = "cdn_ip_v1";
-    private static final DatasetFormat FORMAT = DatasetFormat.CSVGZ;
+    private static final DatabaseFormat FORMAT = DatabaseFormat.CSVGZ;
     // 8 MiB against a ~10 KB dataset. Three orders of magnitude of headroom, so tripping it means
     // the suite is pointed somewhere unintended, which is exactly when a transfer must not start.
     private static final long CEILING = 8L * 1024 * 1024;
@@ -55,7 +57,7 @@ class DatabaseTest {
     private static Transfer transfer;
 
     /** One download, shared by the tests that read it, rather than one transfer each. */
-    private record Transfer(long bytes, Path path, DatasetChecksums checksums) {}
+    private record Transfer(long bytes, Path path, DbChecksums checksums) {}
 
     @BeforeEach
     void requireTheMaxKey() {
@@ -68,24 +70,34 @@ class DatabaseTest {
      */
     @Test
     void theLicensedCatalogAnswersTheFamilyShape() {
-        List<LicensedDataset> datasets = client().database().list();
+        List<Database> datasets = client().database().list();
 
-        assertFalse(datasets.isEmpty(), "the max organization licenses nothing");
-        List<String> ids = new ArrayList<>();
-        for (LicensedDataset dataset : datasets) {
+        assertFalse(datasets.isEmpty(), "the catalogue arrived empty");
+        List<String> licensed = new ArrayList<>();
+        for (Database dataset : datasets) {
             assertNotNull(dataset.getBase(), "a family arrived with no base");
             assertNotNull(dataset.getName(), dataset.getBase() + " carries no name");
             assertNotNull(dataset.getStanding(), dataset.getBase() + " carries no standing");
-            assertNotNull(dataset.getLicenseType(), dataset.getBase() + " carries no right");
+            // `list` answers the WHOLE catalogue, so an unlicensed family is a normal row
+            // with no licence type at all. Asserting one either way is what tells a null
+            // apart from a value this client cannot read.
+            if (dataset.getStanding() == Standing.UNLICENSED) {
+                assertNull(dataset.getLicenseType(), dataset.getBase() + " is unlicensed and carries a right");
+            } else {
+                assertNotNull(dataset.getLicenseType(), dataset.getBase() + " carries no right");
+                licensed.add(dataset.getBase());
+            }
             assertFalse(dataset.getVersions().isEmpty(), dataset.getBase() + " carries no versions");
             dataset.getVersions().forEach(version -> {
                 assertNotNull(version.getId(), dataset.getBase() + " has a version with no id");
                 assertTrue(version.getVersion() > 0, version.getId() + " has no version number");
                 assertFalse(version.getFormats().isEmpty(), version.getId() + " carries no formats");
-                ids.add(version.getId());
             });
         }
-        System.out.println("licensed: " + String.join(", ", ids));
+        // The max org holds grants in staging, so an empty list here is the catalogue
+        // arriving without any of them rather than a plan that buys nothing.
+        assertFalse(licensed.isEmpty(), "the max organization licenses nothing");
+        System.out.println("catalogue: " + datasets.size() + ", licensed: " + String.join(", ", licensed));
     }
 
     @Test
@@ -158,7 +170,7 @@ class DatabaseTest {
         if (transfer != null) {
             return transfer;
         }
-        DatasetMetadata meta = client().database().metadata(DATASET_ID);
+        DatabaseMetadata meta = client().database().metadata(DATASET_ID);
         assertEquals(DATASET_ID, meta.getId());
         Integer size = meta.getSize() == null ? null : meta.getSize().get(FORMAT.wireValue());
         assertNotNull(size, DATASET_ID + " publishes no size to check a transfer against");
@@ -169,7 +181,7 @@ class DatabaseTest {
         long bytes = client().database().download(DATASET_ID, FORMAT, path);
         // Read after the transfer, so a rebuild between the two calls shows up as a digest mismatch
         // rather than passing against a digest of nothing.
-        DatasetChecksums checksums = client().database().checksums(DATASET_ID, FORMAT);
+        DbChecksums checksums = client().database().checksums(DATASET_ID, FORMAT);
         System.out.println(DATASET_ID + "." + FORMAT.wireValue() + ": " + bytes
                 + " bytes, metadata says " + size);
         transfer = new Transfer(bytes, path, checksums);

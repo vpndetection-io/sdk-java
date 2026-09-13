@@ -45,7 +45,7 @@ public class DatabaseFormatSize {
 
   public static final String JSON_PROPERTY_BYTES = "bytes";
   @javax.annotation.Nullable
-  private Integer bytes;
+  private Long bytes;
 
   public DatabaseFormatSize() { 
   }
@@ -74,26 +74,26 @@ public class DatabaseFormatSize {
   }
 
 
-  public DatabaseFormatSize bytes(@javax.annotation.Nullable Integer bytes) {
+  public DatabaseFormatSize bytes(@javax.annotation.Nullable Long bytes) {
     this.bytes = bytes;
     return this;
   }
 
   /**
-   * Size of the published file, or null when it has not been published yet
+   * Size of the published file, or null when it has not been published yet. int64 because it is not hypothetical: resproxy_ip_14d&#39;s MMDB is 4.58 GB, so a 32-bit field cannot carry the catalogue and &#x60;list&#x60; throws for every caller rather than for that one entry. 
    * @return bytes
    */
   @javax.annotation.Nullable
   @JsonProperty(value = JSON_PROPERTY_BYTES, required = false)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public Integer getBytes() {
+  public Long getBytes() {
     return bytes;
   }
 
 
   @JsonProperty(value = JSON_PROPERTY_BYTES, required = false)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBytes(@javax.annotation.Nullable Integer bytes) {
+  public void setBytes(@javax.annotation.Nullable Long bytes) {
     this.bytes = bytes;
   }
 
