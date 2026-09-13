@@ -3,8 +3,10 @@ package io.vpndetection;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import io.vpndetection.api.AccountWireApi;
 import io.vpndetection.api.LookupWireApi;
 import io.vpndetection.internal.ApiClient;
+import io.vpndetection.model.AccountMe;
 
 import java.net.Authenticator;
 import java.net.CookieHandler;
@@ -38,6 +40,7 @@ public final class VPNDetection implements AutoCloseable {
     public static final String DEFAULT_BASE_URL = "https://api.vpndetection.io";
 
     private final LookupWireApi lookupApi;
+    private final AccountWireApi accountApi;
     private final DatabaseApi database;
     private final Cache<String, Result> cache;
     private final Semaphore gate;
@@ -56,6 +59,7 @@ public final class VPNDetection implements AutoCloseable {
         }
 
         this.lookupApi = new LookupWireApi(api);
+        this.accountApi = new AccountWireApi(api);
         this.retries = b.retries;
         this.database = new DatabaseApi(api, b.retries);
         this.cache = b.cacheEnabled
@@ -115,6 +119,72 @@ public final class VPNDetection implements AutoCloseable {
             cache.put(ip, result);
         }
         return result;
+    }
+
+    /** Classify the address this client is calling from, with the client's defaults. */
+    public Result myIp() {
+        return myIp(new LookupOptions());
+    }
+
+    /**
+     * Classify the address this client is calling from.
+     *
+     * <p>The same answer {@code lookup} would give for that address, at the same cost against your
+     * allowance. The address is the one our edge observed, so a call made through a proxy or a VPN
+     * reports the exit it left through - usually the point of asking.
+     *
+     * <p>Deliberately NOT cached. The cache is keyed by address, and which address this is IS the
+     * question: a machine that moves between networks would otherwise be told where it used to be.
+     */
+    public Result myIp(LookupOptions options) {
+        Objects.requireNonNull(options, "options");
+        Integer perCall = options.retriesOrNull();
+        return Wire.execute(perCall != null ? perCall : retries,
+                () -> Result.of(lookupApi.lookupMyIp()));
+    }
+
+    public CompletableFuture<Result> myIpAsync() {
+        return myIpAsync(new LookupOptions());
+    }
+
+    public CompletableFuture<Result> myIpAsync(LookupOptions options) {
+        return CompletableFuture.supplyAsync(() -> myIp(options), executor);
+    }
+
+    /** What this client's key is entitled to, with the client's defaults. */
+    public AccountMe myAccount() {
+        return myAccount(new LookupOptions());
+    }
+
+    /**
+     * What this client's key is entitled to, and how much of it has been used.
+     *
+     * <p>Named for what it answers rather than {@code me}, which sits one letter from {@code myIp}
+     * and means something quite different: one is which address you are calling FROM, the other is
+     * which account you are calling AS.
+     *
+     * <p>Unlike a lookup there is no useful unauthenticated answer, so a client built without an API
+     * key gets an unauthorized error rather than a partial one.
+     *
+     * <p>Usage counts against the ALLOWANCE WINDOW - the anniversary of the subscription, not the
+     * calendar month and not the billing period - and it is the same number a lookup is gated on. It
+     * can lag by a few seconds, because requests are counted in memory and flushed in aggregate.
+     *
+     * <p>Deliberately NOT cached: the whole point is what has been spent, and a cached answer is a
+     * wrong one within seconds of the next request.
+     */
+    public AccountMe myAccount(LookupOptions options) {
+        Objects.requireNonNull(options, "options");
+        Integer perCall = options.retriesOrNull();
+        return Wire.execute(perCall != null ? perCall : retries, () -> accountApi.accountMe());
+    }
+
+    public CompletableFuture<AccountMe> myAccountAsync() {
+        return myAccountAsync(new LookupOptions());
+    }
+
+    public CompletableFuture<AccountMe> myAccountAsync(LookupOptions options) {
+        return CompletableFuture.supplyAsync(() -> myAccount(options), executor);
     }
 
     public CompletableFuture<Result> lookupAsync(String ip) {

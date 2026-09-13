@@ -2,11 +2,15 @@ package io.vpndetection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.vpndetection.model.AccountMe;
+import io.vpndetection.model.AccountPlan;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -150,4 +154,89 @@ class ClientTest {
         }
         return List.copyOf(out);
     }
+    private static final String ACCOUNT_BODY = """
+            {
+              "org_id": "85bb51e4-2eb6-4a31-8e4d-02ba8b98fe61",
+              "apikey": {
+                "id": "0ab424cc-7619-4dad-b027-afacdc2cedb0",
+                "expires": null,
+                "allowed_cidrs": []
+              },
+              "plan": {"key": "max", "tier": "max"},
+              "usage": {
+                "requests": 580,
+                "quota": 5000000,
+                "hard_limit": null,
+                "window_start": "2026-09-04T07:00:00Z",
+                "window_end": "2026-10-04T07:00:00Z"
+              }
+            }
+            """;
+
+    @Test
+    void myIpClassifiesTheCallingAddress() {
+        StubHttpClient http = StubHttpClient.of(Map.of(
+                "myip", StubHttpClient.Route.ok("{\"ip\": \"45.83.91.1\", \"is_vpn\": true}")));
+
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).build()) {
+            Result result = client.myIp();
+            assertEquals("45.83.91.1", result.ip());
+            assertTrue(result.isVpn());
+        }
+    }
+
+    @Test
+    void myIpIsNotCached() {
+        // The cache is keyed by address, and which address this is IS the question.
+        StubHttpClient http = StubHttpClient.of(Map.of(
+                "myip", StubHttpClient.Route.ok("{\"ip\": \"45.83.91.1\", \"is_vpn\": true}")));
+
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).build()) {
+            client.myIp();
+            client.myIp();
+            assertEquals(2, http.calls.size());
+        }
+    }
+
+    @Test
+    void myAccountReportsThePlanAndTheUsage() {
+        StubHttpClient http = StubHttpClient.of(Map.of(
+                "api/v1/account/me", StubHttpClient.Route.ok(ACCOUNT_BODY)));
+
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).build()) {
+            AccountMe account = client.myAccount();
+            assertEquals("max", account.getPlan().getKey());
+            assertEquals(AccountPlan.TierEnum.MAX, account.getPlan().getTier());
+            assertEquals(580L, account.getUsage().getRequests());
+            assertEquals(5000000L, account.getUsage().getQuota());
+            // Null means NEVER stop, which is not the same as a limit of zero.
+            assertNull(account.getUsage().getHardLimit());
+            assertTrue(account.getApikey().getAllowedCidrs().isEmpty());
+        }
+    }
+
+    @Test
+    void myAccountIsNotCached() {
+        // The whole point is what has been spent.
+        StubHttpClient http = StubHttpClient.of(Map.of(
+                "api/v1/account/me", StubHttpClient.Route.ok(ACCOUNT_BODY)));
+
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).build()) {
+            client.myAccount();
+            client.myAccount();
+            assertEquals(2, http.calls.size());
+        }
+    }
+
+    @Test
+    void myAccountSurfacesAnUnauthorizedKey() {
+        StubHttpClient http = StubHttpClient.of(Map.of(
+                "api/v1/account/me",
+                new StubHttpClient.Route(401, "{\"error\": \"invalid API key\"}", Map.of())));
+
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).retries(0).build()) {
+            assertThrows(VPNDetectionException.class, client::myAccount);
+        }
+    }
+
 }
