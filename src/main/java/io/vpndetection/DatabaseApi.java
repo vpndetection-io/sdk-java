@@ -1,12 +1,12 @@
 package io.vpndetection;
 
-import io.vpndetection.api.DatabaseApi;
+import io.vpndetection.api.DatabaseWireApi;
 import io.vpndetection.internal.ApiClient;
 import io.vpndetection.internal.ApiException;
-import io.vpndetection.model.DatasetChecksums;
-import io.vpndetection.model.DatasetMetadata;
+import io.vpndetection.model.DbChecksums;
+import io.vpndetection.model.DatabaseMetadata;
 import io.vpndetection.model.Download;
-import io.vpndetection.model.LicensedDataset;
+import io.vpndetection.model.Database;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,17 +28,17 @@ import java.util.Objects;
  * <p>Access is granted by contract rather than self-serve, so every method here answers
  * {@link ErrorKind#UNAUTHORIZED} for a key without the {@code db.download} scope.
  */
-public final class Database {
+public final class DatabaseApi {
     // A byte[] cannot be longer than this, so a dataset past it is read in growing chunks and
     // fails on its own weight rather than on a bad allocation size.
     private static final long MAX_ARRAY_LENGTH = Integer.MAX_VALUE - 8L;
 
-    private final DatabaseApi api;
+    private final DatabaseWireApi api;
     private final HttpClient transfer;
     private final int retries;
 
-    Database(ApiClient client, int retries) {
-        this.api = new DatabaseApi(client);
+    DatabaseApi(ApiClient client, int retries) {
+        this.api = new DatabaseWireApi(client);
         // The same HTTP client, reached WITHOUT the generated request interceptor that carries the
         // API key. See fetchDatasetFile.
         this.transfer = client.getHttpClient();
@@ -49,11 +49,11 @@ public final class Database {
      * The dataset families your organization is licensed to download.
      *
      * <p>A license covers a family, while a download names one of its versions, so the ids the
-     * other methods here take come from {@link LicensedDataset#getVersions()} rather than from the
+     * other methods here take come from {@link Database#getVersions()} rather than from the
      * family itself.
      */
-    public List<LicensedDataset> list() {
-        return Wire.execute(retries, () -> api.listDatabases().getDatasets());
+    public List<Database> list() {
+        return Wire.execute(retries, () -> api.listDatabases().getDatabases());
     }
 
     /**
@@ -62,7 +62,7 @@ public final class Database {
      * <p>Carries {@code updated} and {@code entries}, so it answers whether today's build is worth
      * fetching without downloading anything.
      */
-    public DatasetMetadata metadata(String id) {
+    public DatabaseMetadata metadata(String id) {
         Objects.requireNonNull(id, "id");
         return Wire.execute(retries, () -> api.databaseMetadata(id));
     }
@@ -73,7 +73,7 @@ public final class Database {
      * <p>The whole set is returned rather than one digest: which ones a dataset publishes is the
      * API's choice, not this library's.
      */
-    public DatasetChecksums checksums(String id, DatasetFormat format) {
+    public DbChecksums checksums(String id, DatasetFormat format) {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(format, "format");
         return Wire.execute(retries,

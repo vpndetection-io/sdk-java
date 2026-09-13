@@ -3,7 +3,7 @@ package io.vpndetection;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
-import io.vpndetection.api.LookupApi;
+import io.vpndetection.api.LookupWireApi;
 import io.vpndetection.internal.ApiClient;
 
 import java.net.Authenticator;
@@ -37,8 +37,8 @@ import javax.net.ssl.SSLParameters;
 public final class VPNDetection implements AutoCloseable {
     public static final String DEFAULT_BASE_URL = "https://api.vpndetection.io";
 
-    private final LookupApi lookupApi;
-    private final Database database;
+    private final LookupWireApi lookupApi;
+    private final DatabaseApi database;
     private final Cache<String, Result> cache;
     private final Semaphore gate;
     private final ExecutorService ownedExecutor;
@@ -55,9 +55,9 @@ public final class VPNDetection implements AutoCloseable {
             api.setRequestInterceptor(rb -> rb.header("Authorization", "Bearer " + b.apiKey));
         }
 
-        this.lookupApi = new LookupApi(api);
+        this.lookupApi = new LookupWireApi(api);
         this.retries = b.retries;
-        this.database = new Database(api, b.retries);
+        this.database = new DatabaseApi(api, b.retries);
         this.cache = b.cacheEnabled
                 ? Caffeine.newBuilder().maximumSize(b.cacheSize).expireAfterWrite(b.cacheTtl).build()
                 : null;
@@ -172,7 +172,7 @@ public final class VPNDetection implements AutoCloseable {
     }
 
     /** The licensed dataset downloads, for keys that carry the {@code db.download} scope. */
-    public Database database() {
+    public DatabaseApi database() {
         return database;
     }
 

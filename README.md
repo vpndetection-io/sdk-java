@@ -156,10 +156,10 @@ Note that `RATE_LIMITED` and `QUOTA_EXCEEDED` both arrive as HTTP 429 and are no
 
 ### Database downloads
 
-If your key carries the `db.download` scope, the licensed datasets are available through `client.database()`. A license covers a dataset family, and the ids the transfers take come from its `getVersions()`. There are three ways to take one: to a file, as a time-limited link you transfer yourself, or as bytes.
+If your key carries the `db.download` scope, the licensed databases are available through `client.database()`. A license covers a database family, and the ids the transfers take come from its `getVersions()`. There are three ways to take one: to a file, as a time-limited link you transfer yourself, or as bytes.
 
 ```java
-var datasets = client.database().list();
+var databases = client.database().list();
 
 // Streamed straight to disk, so nothing bigger than a chunk is ever held in memory.
 long written = client.database().download(

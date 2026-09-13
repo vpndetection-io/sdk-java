@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.vpndetection.model.DatasetChecksums;
-import io.vpndetection.model.LicensedDataset;
+import io.vpndetection.model.DbChecksums;
+import io.vpndetection.model.Database;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -33,7 +33,7 @@ class DatabaseTest {
                 // `versions`. Reading an id from the top level is how this endpoint came to
                 // answer objects whose every field was empty.
                 "api/v1/database/list", StubHttpClient.Route.ok(
-                        "{\"datasets\": [{\"base\": \"vpn_ip\", \"name\": \"VPN IP\","
+                        "{\"databases\": [{\"base\": \"vpn_ip\", \"name\": \"VPN IP\","
                                 + " \"summary\": \"vpn_ip rows\","
                                 + " \"license_type\": \"standard\", \"in_term\": true,"
                                 + " \"starts\": \"2026-01-01T00:00:00.000Z\", \"expires\": null,"
@@ -47,14 +47,14 @@ class DatabaseTest {
                         "{\"id\": \"vpn_ip_extended_v1\", \"entries\": 42}")));
 
         try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey("k").build()) {
-            DatasetChecksums sums = client.database().checksums("vpn_ip_extended_v1", DatasetFormat.MMDB);
+            DbChecksums sums = client.database().checksums("vpn_ip_extended_v1", DatasetFormat.MMDB);
             assertEquals("s256", sums.getSha256(), "the digest a caller wants must not be null");
             assertEquals("m", sums.getMd5());
 
-            LicensedDataset family = client.database().list().get(0);
+            Database family = client.database().list().get(0);
             assertEquals(1, client.database().list().size());
             assertEquals("vpn_ip", family.getBase());
-            assertEquals(LicensedDataset.StandingEnum.LICENSED, family.getStanding());
+            assertEquals(Database.StandingEnum.LICENSED, family.getStanding());
             assertEquals("vpn_ip_extended_v1", family.getVersions().get(0).getId());
             assertEquals(1234, family.getVersions().get(0).getFormats().get(0).getBytes());
             assertEquals(1, client.database().downloads().size());
