@@ -281,4 +281,113 @@ public class LookupWireApi {
     return localVarRequestBuilder;
   }
 
+  /**
+   * Lookup your own address
+   * Answers what is known about the address this request came from, which is the same answer &#x60;GET /{ip}&#x60; gives for that address: the plan behind the presented key decides which fields come back, and the request counts against the same allowance.  The address is the one our edge observed, so a request through a proxy or a VPN reports the exit it left through rather than the machine that made it. That is usually the point of asking. 
+   * @return LookupResponse
+   * @throws ApiException if fails to make API call
+   */
+  public LookupResponse lookupMyIp() throws ApiException {
+    return lookupMyIp(null);
+  }
+
+  /**
+   * Lookup your own address
+   * Answers what is known about the address this request came from, which is the same answer &#x60;GET /{ip}&#x60; gives for that address: the plan behind the presented key decides which fields come back, and the request counts against the same allowance.  The address is the one our edge observed, so a request through a proxy or a VPN reports the exit it left through rather than the machine that made it. That is usually the point of asking. 
+   * @param headers Optional headers to include in the request
+   * @return LookupResponse
+   * @throws ApiException if fails to make API call
+   */
+  public LookupResponse lookupMyIp(Map<String, String> headers) throws ApiException {
+    ApiResponse<LookupResponse> localVarResponse = lookupMyIpWithHttpInfo(headers);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Lookup your own address
+   * Answers what is known about the address this request came from, which is the same answer &#x60;GET /{ip}&#x60; gives for that address: the plan behind the presented key decides which fields come back, and the request counts against the same allowance.  The address is the one our edge observed, so a request through a proxy or a VPN reports the exit it left through rather than the machine that made it. That is usually the point of asking. 
+   * @return ApiResponse&lt;LookupResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<LookupResponse> lookupMyIpWithHttpInfo() throws ApiException {
+    return lookupMyIpWithHttpInfo(null);
+  }
+
+  /**
+   * Lookup your own address
+   * Answers what is known about the address this request came from, which is the same answer &#x60;GET /{ip}&#x60; gives for that address: the plan behind the presented key decides which fields come back, and the request counts against the same allowance.  The address is the one our edge observed, so a request through a proxy or a VPN reports the exit it left through rather than the machine that made it. That is usually the point of asking. 
+   * @param headers Optional headers to include in the request
+   * @return ApiResponse&lt;LookupResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<LookupResponse> lookupMyIpWithHttpInfo(Map<String, String> headers) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = lookupMyIpRequestBuilder(headers);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      InputStream localVarResponseBody = null;
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("lookupMyIp", localVarResponse);
+        }
+        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
+        if (localVarResponseBody == null) {
+          return new ApiResponse<LookupResponse>(
+              localVarResponse.statusCode(),
+              localVarResponse.headers().map(),
+              null
+          );
+        }
+
+        
+        
+        String responseBody = new String(localVarResponseBody.readAllBytes());
+        LookupResponse responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<LookupResponse>() {});
+        
+
+        return new ApiResponse<LookupResponse>(
+            localVarResponse.statusCode(),
+            localVarResponse.headers().map(),
+            responseValue
+        );
+      } finally {
+        if (localVarResponseBody != null) {
+          localVarResponseBody.close();
+        }
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder lookupMyIpRequestBuilder(Map<String, String> headers) throws ApiException {
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/myip";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    // Add custom headers if provided
+    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+
 }

@@ -47,14 +47,14 @@ class DatabaseTest {
                         "{\"id\": \"vpn_ip_extended_v1\", \"entries\": 42}")));
 
         try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey("k").build()) {
-            DbChecksums sums = client.database().checksums("vpn_ip_extended_v1", DatasetFormat.MMDB);
+            DbChecksums sums = client.database().checksums("vpn_ip_extended_v1", DatabaseFormat.MMDB);
             assertEquals("s256", sums.getSha256(), "the digest a caller wants must not be null");
             assertEquals("m", sums.getMd5());
 
             Database family = client.database().list().get(0);
             assertEquals(1, client.database().list().size());
             assertEquals("vpn_ip", family.getBase());
-            assertEquals(Database.StandingEnum.LICENSED, family.getStanding());
+            assertEquals(io.vpndetection.model.Standing.LICENSED, family.getStanding());
             assertEquals("vpn_ip_extended_v1", family.getVersions().get(0).getId());
             assertEquals(1234, family.getVersions().get(0).getFormats().get(0).getBytes());
             assertEquals(1, client.database().downloads().size());
@@ -73,7 +73,7 @@ class DatabaseTest {
 
         try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey("k").build()) {
             assertEquals("https://s3.vpndetection.io/signed/vpn_ip_extended_v1.mmdb",
-                    client.database().downloadUrl("vpn_ip_extended_v1", DatasetFormat.MMDB));
+                    client.database().downloadUrl("vpn_ip_extended_v1", DatabaseFormat.MMDB));
             assertEquals(1, http.calls.size());
         }
     }
@@ -86,7 +86,7 @@ class DatabaseTest {
 
         try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey("k").build()) {
             VPNDetectionException err = assertThrows(VPNDetectionException.class,
-                    () -> client.database().downloadUrl("vpn_ip_extended_v1", DatasetFormat.MMDB));
+                    () -> client.database().downloadUrl("vpn_ip_extended_v1", DatabaseFormat.MMDB));
 
             assertEquals(ErrorKind.FORBIDDEN, err.kind());
             // The database endpoints answer `rc` where the lookup endpoint answers `error`.
@@ -106,13 +106,13 @@ class DatabaseTest {
         Path destination = dir.resolve("cdn_ip_v1.csv.gz");
 
         try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey("k").build()) {
-            long written = client.database().download("cdn_ip_v1", DatasetFormat.CSVGZ, destination);
+            long written = client.database().download("cdn_ip_v1", DatabaseFormat.CSVGZ, destination);
 
             assertEquals(PAYLOAD.length, written);
             assertArrayEquals(PAYLOAD, Files.readAllBytes(destination));
             assertFalse(Files.exists(dir.resolve("cdn_ip_v1.csv.gz.part")),
                     "the .part file outlived a successful transfer");
-            assertArrayEquals(PAYLOAD, client.database().downloadBytes("cdn_ip_v1", DatasetFormat.CSVGZ),
+            assertArrayEquals(PAYLOAD, client.database().downloadBytes("cdn_ip_v1", DatabaseFormat.CSVGZ),
                     "the in-memory copy is not the file");
         }
     }
@@ -125,7 +125,7 @@ class DatabaseTest {
         StubHttpClient http = transferring(PAYLOAD.length);
 
         try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey("k").build()) {
-            client.database().download("cdn_ip_v1", DatasetFormat.CSVGZ, dir.resolve("out.gz"));
+            client.database().download("cdn_ip_v1", DatabaseFormat.CSVGZ, dir.resolve("out.gz"));
         }
 
         assertEquals(2, http.calls.size(), "the 302 was not followed as a second request");
@@ -144,7 +144,7 @@ class DatabaseTest {
 
         try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey("k").build()) {
             VPNDetectionException err = assertThrows(VPNDetectionException.class,
-                    () -> client.database().download("cdn_ip_v1", DatasetFormat.CSVGZ, destination));
+                    () -> client.database().download("cdn_ip_v1", DatabaseFormat.CSVGZ, destination));
 
             assertEquals(ErrorKind.NETWORK, err.kind());
             assertEquals("the transfer ended after 10 of 40 bytes", err.getMessage());
@@ -152,7 +152,7 @@ class DatabaseTest {
             assertFalse(Files.exists(dir.resolve("cdn_ip_v1.csv.gz.part")), "the .part file survived");
 
             assertThrows(VPNDetectionException.class,
-                    () -> client.database().downloadBytes("cdn_ip_v1", DatasetFormat.CSVGZ),
+                    () -> client.database().downloadBytes("cdn_ip_v1", DatabaseFormat.CSVGZ),
                     "the in-memory path accepted a short body");
         }
     }
@@ -167,7 +167,7 @@ class DatabaseTest {
 
         try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey("k").retries(3).build()) {
             VPNDetectionException err = assertThrows(VPNDetectionException.class,
-                    () -> client.database().download("hosting_ip_v1", DatasetFormat.CSVGZ,
+                    () -> client.database().download("hosting_ip_v1", DatabaseFormat.CSVGZ,
                             dir.resolve("out.gz")));
 
             assertEquals(ErrorKind.FORBIDDEN, err.kind());

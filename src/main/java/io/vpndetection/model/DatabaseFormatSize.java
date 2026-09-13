@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import io.vpndetection.model.DatabaseFormat;
 import java.util.Arrays;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
@@ -38,44 +39,9 @@ import io.vpndetection.internal.ApiClient;
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
 public class DatabaseFormatSize {
-  /**
-   * Gets or Sets format
-   */
-  public enum FormatEnum {
-    CSVGZ(String.valueOf("csvgz")),
-    
-    MMDB(String.valueOf("mmdb"));
-
-    private String value;
-
-    FormatEnum(String value) {
-      this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static FormatEnum fromValue(String value) {
-      for (FormatEnum b : FormatEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-  }
-
   public static final String JSON_PROPERTY_FORMAT = "format";
   @javax.annotation.Nonnull
-  private FormatEnum format;
+  private DatabaseFormat format;
 
   public static final String JSON_PROPERTY_BYTES = "bytes";
   @javax.annotation.Nullable
@@ -84,7 +50,7 @@ public class DatabaseFormatSize {
   public DatabaseFormatSize() { 
   }
 
-  public DatabaseFormatSize format(@javax.annotation.Nonnull FormatEnum format) {
+  public DatabaseFormatSize format(@javax.annotation.Nonnull DatabaseFormat format) {
     this.format = format;
     return this;
   }
@@ -96,14 +62,14 @@ public class DatabaseFormatSize {
   @javax.annotation.Nonnull
   @JsonProperty(value = JSON_PROPERTY_FORMAT, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public FormatEnum getFormat() {
+  public DatabaseFormat getFormat() {
     return format;
   }
 
 
   @JsonProperty(value = JSON_PROPERTY_FORMAT, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFormat(@javax.annotation.Nonnull FormatEnum format) {
+  public void setFormat(@javax.annotation.Nonnull DatabaseFormat format) {
     this.format = format;
   }
 

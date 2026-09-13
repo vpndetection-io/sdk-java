@@ -73,11 +73,11 @@ public final class DatabaseApi {
      * <p>The whole set is returned rather than one digest: which ones a dataset publishes is the
      * API's choice, not this library's.
      */
-    public DbChecksums checksums(String id, DatasetFormat format) {
+    public DbChecksums checksums(String id, DatabaseFormat format) {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(format, "format");
         return Wire.execute(retries,
-                () -> api.databaseChecksum(id, format.wireValue()).getChecksums());
+                () -> api.databaseChecksum(id, io.vpndetection.model.DatabaseFormat.fromValue(format.wireValue())).getChecksums());
     }
 
     /** Your organization's recent download attempts, newest first. */
@@ -96,12 +96,12 @@ public final class DatabaseApi {
      * so the caller decides how to transfer a file that routinely runs to gigabytes; the link
      * authorizes the START of a transfer, so one already running is not interrupted when it lapses.
      */
-    public String downloadUrl(String id, DatasetFormat format) {
+    public String downloadUrl(String id, DatabaseFormat format) {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(format, "format");
         return Wire.execute(retries, () -> {
             try {
-                api.downloadDatabaseWithHttpInfo(id, format.wireValue());
+                api.downloadDatabaseWithHttpInfo(id, io.vpndetection.model.DatabaseFormat.fromValue(format.wireValue()));
             } catch (ApiException e) {
                 // The generated method treats any non-2xx as a failure, so the SUCCESS case for
                 // this endpoint arrives as an exception carrying the Location header.
@@ -126,7 +126,7 @@ public final class DatabaseApi {
      * renamed on completion, so a transfer that dies half way leaves no truncated file that reads
      * as a whole dataset, and no leftover either.
      */
-    public long download(String id, DatasetFormat format, Path destination) {
+    public long download(String id, DatabaseFormat format, Path destination) {
         Objects.requireNonNull(destination, "destination");
         HttpResponse<InputStream> response = fetchDatasetFile(id, format);
         Path partial = destination.resolveSibling(destination.getFileName() + ".part");
@@ -160,7 +160,7 @@ public final class DatabaseApi {
      * for it at the small end, where the bytes go straight into a parser, and use
      * {@link #download} for anything you have not measured.
      */
-    public byte[] downloadBytes(String id, DatasetFormat format) {
+    public byte[] downloadBytes(String id, DatabaseFormat format) {
         HttpResponse<InputStream> response = fetchDatasetFile(id, format);
         try (InputStream body = response.body()) {
             long declared = declaredLength(response);
@@ -188,7 +188,7 @@ public final class DatabaseApi {
      * redirect crosses origins but FORWARDS it when it does not, so "the JDK strips it" is not
      * something a library can lean on.
      */
-    private HttpResponse<InputStream> fetchDatasetFile(String id, DatasetFormat format) {
+    private HttpResponse<InputStream> fetchDatasetFile(String id, DatabaseFormat format) {
         URI url;
         String location = downloadUrl(id, format);
         try {

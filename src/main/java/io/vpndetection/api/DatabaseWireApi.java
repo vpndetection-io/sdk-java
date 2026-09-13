@@ -19,6 +19,7 @@ import io.vpndetection.internal.Configuration;
 import io.vpndetection.internal.Pair;
 
 import io.vpndetection.model.DatabaseChecksumsResponse;
+import io.vpndetection.model.DatabaseFormat;
 import io.vpndetection.model.DatabaseList;
 import io.vpndetection.model.DatabaseMetadata;
 import io.vpndetection.model.DownloadList;
@@ -174,7 +175,7 @@ public class DatabaseWireApi {
    * @return DatabaseChecksumsResponse
    * @throws ApiException if fails to make API call
    */
-  public DatabaseChecksumsResponse databaseChecksum(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format) throws ApiException {
+  public DatabaseChecksumsResponse databaseChecksum(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull DatabaseFormat format) throws ApiException {
     return databaseChecksum(id, format, null);
   }
 
@@ -187,7 +188,7 @@ public class DatabaseWireApi {
    * @return DatabaseChecksumsResponse
    * @throws ApiException if fails to make API call
    */
-  public DatabaseChecksumsResponse databaseChecksum(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format, Map<String, String> headers) throws ApiException {
+  public DatabaseChecksumsResponse databaseChecksum(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull DatabaseFormat format, Map<String, String> headers) throws ApiException {
     ApiResponse<DatabaseChecksumsResponse> localVarResponse = databaseChecksumWithHttpInfo(id, format, headers);
     return localVarResponse.getData();
   }
@@ -200,7 +201,7 @@ public class DatabaseWireApi {
    * @return ApiResponse&lt;DatabaseChecksumsResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<DatabaseChecksumsResponse> databaseChecksumWithHttpInfo(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format) throws ApiException {
+  public ApiResponse<DatabaseChecksumsResponse> databaseChecksumWithHttpInfo(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull DatabaseFormat format) throws ApiException {
     return databaseChecksumWithHttpInfo(id, format, null);
   }
 
@@ -213,7 +214,7 @@ public class DatabaseWireApi {
    * @return ApiResponse&lt;DatabaseChecksumsResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<DatabaseChecksumsResponse> databaseChecksumWithHttpInfo(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format, Map<String, String> headers) throws ApiException {
+  public ApiResponse<DatabaseChecksumsResponse> databaseChecksumWithHttpInfo(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull DatabaseFormat format, Map<String, String> headers) throws ApiException {
     HttpRequest.Builder localVarRequestBuilder = databaseChecksumRequestBuilder(id, format, headers);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
@@ -261,7 +262,7 @@ public class DatabaseWireApi {
     }
   }
 
-  private HttpRequest.Builder databaseChecksumRequestBuilder(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format, Map<String, String> headers) throws ApiException {
+  private HttpRequest.Builder databaseChecksumRequestBuilder(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull DatabaseFormat format, Map<String, String> headers) throws ApiException {
     // verify the required parameter 'id' is set
     if (id == null) {
       throw new ApiException(400, "Missing the required parameter 'id' when calling databaseChecksum");
@@ -310,7 +311,7 @@ public class DatabaseWireApi {
 
   /**
    * Metadata
-   * Poll this to decide whether today&#39;s build is worth fetching: it carries &#x60;updated&#x60; and &#x60;entries&#x60; without downloading anything.  No &#x60;format&#x60; parameter - one document describes every format the dataset is built in. 
+   * Poll this to decide whether today&#39;s build is worth fetching: it carries &#x60;updated&#x60; and &#x60;entries&#x60; without downloading anything.  No &#x60;format&#x60; parameter - one document describes every format the database is built in. 
    * @param id  (required)
    * @return DatabaseMetadata
    * @throws ApiException if fails to make API call
@@ -321,7 +322,7 @@ public class DatabaseWireApi {
 
   /**
    * Metadata
-   * Poll this to decide whether today&#39;s build is worth fetching: it carries &#x60;updated&#x60; and &#x60;entries&#x60; without downloading anything.  No &#x60;format&#x60; parameter - one document describes every format the dataset is built in. 
+   * Poll this to decide whether today&#39;s build is worth fetching: it carries &#x60;updated&#x60; and &#x60;entries&#x60; without downloading anything.  No &#x60;format&#x60; parameter - one document describes every format the database is built in. 
    * @param id  (required)
    * @param headers Optional headers to include in the request
    * @return DatabaseMetadata
@@ -334,7 +335,7 @@ public class DatabaseWireApi {
 
   /**
    * Metadata
-   * Poll this to decide whether today&#39;s build is worth fetching: it carries &#x60;updated&#x60; and &#x60;entries&#x60; without downloading anything.  No &#x60;format&#x60; parameter - one document describes every format the dataset is built in. 
+   * Poll this to decide whether today&#39;s build is worth fetching: it carries &#x60;updated&#x60; and &#x60;entries&#x60; without downloading anything.  No &#x60;format&#x60; parameter - one document describes every format the database is built in. 
    * @param id  (required)
    * @return ApiResponse&lt;DatabaseMetadata&gt;
    * @throws ApiException if fails to make API call
@@ -345,7 +346,7 @@ public class DatabaseWireApi {
 
   /**
    * Metadata
-   * Poll this to decide whether today&#39;s build is worth fetching: it carries &#x60;updated&#x60; and &#x60;entries&#x60; without downloading anything.  No &#x60;format&#x60; parameter - one document describes every format the dataset is built in. 
+   * Poll this to decide whether today&#39;s build is worth fetching: it carries &#x60;updated&#x60; and &#x60;entries&#x60; without downloading anything.  No &#x60;format&#x60; parameter - one document describes every format the database is built in. 
    * @param id  (required)
    * @param headers Optional headers to include in the request
    * @return ApiResponse&lt;DatabaseMetadata&gt;
@@ -444,10 +445,10 @@ public class DatabaseWireApi {
    * Download
    * Answers &#x60;302&#x60; with a time-limited URL pointing straight at object storage. Follow the redirect; the link authorizes the START of a transfer, so one already running is not interrupted when it lapses. 
    * @param id Dataset id, e.g. vpn_ip_extended_v1 (required)
-   * @param format Not every dataset is built in every format. The &#x60;_provider&#x60; catalogues are keyed by provider id rather than by IP range, so no MMDB exists for them.  (required)
+   * @param format Not every database is built in every format. The &#x60;_provider&#x60; catalogues are keyed by provider id rather than by IP range, so no MMDB exists for them.  (required)
    * @throws ApiException if fails to make API call
    */
-  public void downloadDatabase(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format) throws ApiException {
+  public void downloadDatabase(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull DatabaseFormat format) throws ApiException {
     downloadDatabase(id, format, null);
   }
 
@@ -455,11 +456,11 @@ public class DatabaseWireApi {
    * Download
    * Answers &#x60;302&#x60; with a time-limited URL pointing straight at object storage. Follow the redirect; the link authorizes the START of a transfer, so one already running is not interrupted when it lapses. 
    * @param id Dataset id, e.g. vpn_ip_extended_v1 (required)
-   * @param format Not every dataset is built in every format. The &#x60;_provider&#x60; catalogues are keyed by provider id rather than by IP range, so no MMDB exists for them.  (required)
+   * @param format Not every database is built in every format. The &#x60;_provider&#x60; catalogues are keyed by provider id rather than by IP range, so no MMDB exists for them.  (required)
    * @param headers Optional headers to include in the request
    * @throws ApiException if fails to make API call
    */
-  public void downloadDatabase(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format, Map<String, String> headers) throws ApiException {
+  public void downloadDatabase(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull DatabaseFormat format, Map<String, String> headers) throws ApiException {
     downloadDatabaseWithHttpInfo(id, format, headers);
   }
 
@@ -467,11 +468,11 @@ public class DatabaseWireApi {
    * Download
    * Answers &#x60;302&#x60; with a time-limited URL pointing straight at object storage. Follow the redirect; the link authorizes the START of a transfer, so one already running is not interrupted when it lapses. 
    * @param id Dataset id, e.g. vpn_ip_extended_v1 (required)
-   * @param format Not every dataset is built in every format. The &#x60;_provider&#x60; catalogues are keyed by provider id rather than by IP range, so no MMDB exists for them.  (required)
+   * @param format Not every database is built in every format. The &#x60;_provider&#x60; catalogues are keyed by provider id rather than by IP range, so no MMDB exists for them.  (required)
    * @return ApiResponse&lt;Void&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<Void> downloadDatabaseWithHttpInfo(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format) throws ApiException {
+  public ApiResponse<Void> downloadDatabaseWithHttpInfo(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull DatabaseFormat format) throws ApiException {
     return downloadDatabaseWithHttpInfo(id, format, null);
   }
 
@@ -479,12 +480,12 @@ public class DatabaseWireApi {
    * Download
    * Answers &#x60;302&#x60; with a time-limited URL pointing straight at object storage. Follow the redirect; the link authorizes the START of a transfer, so one already running is not interrupted when it lapses. 
    * @param id Dataset id, e.g. vpn_ip_extended_v1 (required)
-   * @param format Not every dataset is built in every format. The &#x60;_provider&#x60; catalogues are keyed by provider id rather than by IP range, so no MMDB exists for them.  (required)
+   * @param format Not every database is built in every format. The &#x60;_provider&#x60; catalogues are keyed by provider id rather than by IP range, so no MMDB exists for them.  (required)
    * @param headers Optional headers to include in the request
    * @return ApiResponse&lt;Void&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<Void> downloadDatabaseWithHttpInfo(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format, Map<String, String> headers) throws ApiException {
+  public ApiResponse<Void> downloadDatabaseWithHttpInfo(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull DatabaseFormat format, Map<String, String> headers) throws ApiException {
     HttpRequest.Builder localVarRequestBuilder = downloadDatabaseRequestBuilder(id, format, headers);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
@@ -521,7 +522,7 @@ public class DatabaseWireApi {
     }
   }
 
-  private HttpRequest.Builder downloadDatabaseRequestBuilder(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull String format, Map<String, String> headers) throws ApiException {
+  private HttpRequest.Builder downloadDatabaseRequestBuilder(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull DatabaseFormat format, Map<String, String> headers) throws ApiException {
     // verify the required parameter 'id' is set
     if (id == null) {
       throw new ApiException(400, "Missing the required parameter 'id' when calling downloadDatabase");
@@ -570,7 +571,7 @@ public class DatabaseWireApi {
 
   /**
    * List
-   * Every dataset this organization holds a licence for, with the term and the license_type right beside each one. 
+   * Every database this organization holds a licence for, with the term and the license_type right beside each one. 
    * @return DatabaseList
    * @throws ApiException if fails to make API call
    */
@@ -580,7 +581,7 @@ public class DatabaseWireApi {
 
   /**
    * List
-   * Every dataset this organization holds a licence for, with the term and the license_type right beside each one. 
+   * Every database this organization holds a licence for, with the term and the license_type right beside each one. 
    * @param headers Optional headers to include in the request
    * @return DatabaseList
    * @throws ApiException if fails to make API call
@@ -592,7 +593,7 @@ public class DatabaseWireApi {
 
   /**
    * List
-   * Every dataset this organization holds a licence for, with the term and the license_type right beside each one. 
+   * Every database this organization holds a licence for, with the term and the license_type right beside each one. 
    * @return ApiResponse&lt;DatabaseList&gt;
    * @throws ApiException if fails to make API call
    */
@@ -602,7 +603,7 @@ public class DatabaseWireApi {
 
   /**
    * List
-   * Every dataset this organization holds a licence for, with the term and the license_type right beside each one. 
+   * Every database this organization holds a licence for, with the term and the license_type right beside each one. 
    * @param headers Optional headers to include in the request
    * @return ApiResponse&lt;DatabaseList&gt;
    * @throws ApiException if fails to make API call

@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import io.vpndetection.model.DatabaseFormat;
 import io.vpndetection.model.DatabaseFormatSize;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,44 +61,9 @@ public class DatabaseVersion {
   @javax.annotation.Nonnull
   private List<DatabaseFormatSize> formats = new ArrayList<>();
 
-  /**
-   * Gets or Sets sampleFormats
-   */
-  public enum SampleFormatsEnum {
-    CSVGZ(String.valueOf("csvgz")),
-    
-    MMDB(String.valueOf("mmdb"));
-
-    private String value;
-
-    SampleFormatsEnum(String value) {
-      this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static SampleFormatsEnum fromValue(String value) {
-      for (SampleFormatsEnum b : SampleFormatsEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-  }
-
   public static final String JSON_PROPERTY_SAMPLE_FORMATS = "sample_formats";
   @javax.annotation.Nullable
-  private List<SampleFormatsEnum> sampleFormats = new ArrayList<>();
+  private List<DatabaseFormat> sampleFormats = new ArrayList<>();
 
   public DatabaseVersion() { 
   }
@@ -108,7 +74,7 @@ public class DatabaseVersion {
   }
 
   /**
-   * The versioned dataset id, e.g. &#x60;vpn_ip_v1&#x60;. Pass this to download.
+   * The versioned database id, e.g. &#x60;vpn_ip_v1&#x60;. Pass this to download.
    * @return id
    */
   @javax.annotation.Nonnull
@@ -206,12 +172,12 @@ public class DatabaseVersion {
   }
 
 
-  public DatabaseVersion sampleFormats(@javax.annotation.Nullable List<SampleFormatsEnum> sampleFormats) {
+  public DatabaseVersion sampleFormats(@javax.annotation.Nullable List<DatabaseFormat> sampleFormats) {
     this.sampleFormats = sampleFormats;
     return this;
   }
 
-  public DatabaseVersion addSampleFormatsItem(SampleFormatsEnum sampleFormatsItem) {
+  public DatabaseVersion addSampleFormatsItem(DatabaseFormat sampleFormatsItem) {
     if (this.sampleFormats == null) {
       this.sampleFormats = new ArrayList<>();
     }
@@ -226,14 +192,14 @@ public class DatabaseVersion {
   @javax.annotation.Nullable
   @JsonProperty(value = JSON_PROPERTY_SAMPLE_FORMATS, required = false)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public List<SampleFormatsEnum> getSampleFormats() {
+  public List<DatabaseFormat> getSampleFormats() {
     return sampleFormats;
   }
 
 
   @JsonProperty(value = JSON_PROPERTY_SAMPLE_FORMATS, required = false)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setSampleFormats(@javax.annotation.Nullable List<SampleFormatsEnum> sampleFormats) {
+  public void setSampleFormats(@javax.annotation.Nullable List<DatabaseFormat> sampleFormats) {
     this.sampleFormats = sampleFormats;
   }
 
@@ -343,9 +309,11 @@ public class DatabaseVersion {
     // add `sample_formats` to the URL query string
     if (getSampleFormats() != null) {
       for (int i = 0; i < getSampleFormats().size(); i++) {
-        joiner.add(String.format(java.util.Locale.ROOT, "%ssample_formats%s%s=%s", prefix, suffix,
-            "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix),
-            ApiClient.urlEncode(ApiClient.valueToString(getSampleFormats().get(i)))));
+        if (getSampleFormats().get(i) != null) {
+          joiner.add(String.format(java.util.Locale.ROOT, "%ssample_formats%s%s=%s", prefix, suffix,
+              "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix),
+              ApiClient.urlEncode(ApiClient.valueToString(getSampleFormats().get(i)))));
+        }
       }
     }
 

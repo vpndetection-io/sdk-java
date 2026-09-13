@@ -25,6 +25,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.vpndetection.model.DatabaseVersion;
+import io.vpndetection.model.LicenseType;
+import io.vpndetection.model.Standing;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import io.vpndetection.internal.ApiClient;
 /**
- * One dataset FAMILY your organization is licensed for. A license covers the family, while a download names a specific version, so the ids you pass to the download and checksum endpoints come from &#x60;versions&#x60;. 
+ * One database FAMILY your organization is licensed for. A license covers the family, while a download names a specific version, so the ids you pass to the download and checksum endpoints come from &#x60;versions&#x60;. 
  */
 @JsonPropertyOrder({
   Database.JSON_PROPERTY_BASE,
@@ -63,46 +65,9 @@ public class Database {
   @javax.annotation.Nonnull
   private String summary;
 
-  /**
-   * What your license permits you to do with the data.
-   */
-  public enum LicenseTypeEnum {
-    EVALUATION(String.valueOf("evaluation")),
-    
-    STANDARD(String.valueOf("standard")),
-    
-    REDISTRIBUTE(String.valueOf("redistribute"));
-
-    private String value;
-
-    LicenseTypeEnum(String value) {
-      this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static LicenseTypeEnum fromValue(String value) {
-      for (LicenseTypeEnum b : LicenseTypeEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-  }
-
   public static final String JSON_PROPERTY_LICENSE_TYPE = "license_type";
   @javax.annotation.Nonnull
-  private LicenseTypeEnum licenseType;
+  private LicenseType licenseType;
 
   public static final String JSON_PROPERTY_STARTS = "starts";
   @javax.annotation.Nullable
@@ -124,46 +89,9 @@ public class Database {
   @javax.annotation.Nonnull
   private Boolean inTerm;
 
-  /**
-   * &#x60;licensed&#x60; is a live grant, &#x60;expired&#x60; one whose term has ended, and &#x60;unlicensed&#x60; a dataset published but never bought. 
-   */
-  public enum StandingEnum {
-    EXPIRED(String.valueOf("expired")),
-    
-    LICENSED(String.valueOf("licensed")),
-    
-    UNLICENSED(String.valueOf("unlicensed"));
-
-    private String value;
-
-    StandingEnum(String value) {
-      this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static StandingEnum fromValue(String value) {
-      for (StandingEnum b : StandingEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-  }
-
   public static final String JSON_PROPERTY_STANDING = "standing";
   @javax.annotation.Nonnull
-  private StandingEnum standing;
+  private Standing standing;
 
   public static final String JSON_PROPERTY_VERSIONS = "versions";
   @javax.annotation.Nonnull
@@ -178,7 +106,7 @@ public class Database {
   }
 
   /**
-   * The dataset family, e.g. &#x60;vpn_ip&#x60;. What the license is held against.
+   * The database family, e.g. &#x60;vpn_ip&#x60;. What the license is held against.
    * @return base
    */
   @javax.annotation.Nonnull
@@ -244,26 +172,26 @@ public class Database {
   }
 
 
-  public Database licenseType(@javax.annotation.Nonnull LicenseTypeEnum licenseType) {
+  public Database licenseType(@javax.annotation.Nonnull LicenseType licenseType) {
     this.licenseType = licenseType;
     return this;
   }
 
   /**
-   * What your license permits you to do with the data.
+   * Get licenseType
    * @return licenseType
    */
   @javax.annotation.Nonnull
   @JsonProperty(value = JSON_PROPERTY_LICENSE_TYPE, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public LicenseTypeEnum getLicenseType() {
+  public LicenseType getLicenseType() {
     return licenseType;
   }
 
 
   @JsonProperty(value = JSON_PROPERTY_LICENSE_TYPE, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLicenseType(@javax.annotation.Nonnull LicenseTypeEnum licenseType) {
+  public void setLicenseType(@javax.annotation.Nonnull LicenseType licenseType) {
     this.licenseType = licenseType;
   }
 
@@ -388,26 +316,26 @@ public class Database {
   }
 
 
-  public Database standing(@javax.annotation.Nonnull StandingEnum standing) {
+  public Database standing(@javax.annotation.Nonnull Standing standing) {
     this.standing = standing;
     return this;
   }
 
   /**
-   * &#x60;licensed&#x60; is a live grant, &#x60;expired&#x60; one whose term has ended, and &#x60;unlicensed&#x60; a dataset published but never bought. 
+   * Get standing
    * @return standing
    */
   @javax.annotation.Nonnull
   @JsonProperty(value = JSON_PROPERTY_STANDING, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public StandingEnum getStanding() {
+  public Standing getStanding() {
     return standing;
   }
 
 
   @JsonProperty(value = JSON_PROPERTY_STANDING, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStanding(@javax.annotation.Nonnull StandingEnum standing) {
+  public void setStanding(@javax.annotation.Nonnull Standing standing) {
     this.standing = standing;
   }
 
