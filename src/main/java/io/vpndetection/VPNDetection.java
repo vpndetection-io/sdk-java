@@ -6,16 +6,24 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.vpndetection.api.EntitlementWireApi;
 import io.vpndetection.api.LookupWireApi;
 import io.vpndetection.internal.ApiClient;
+import io.vpndetection.model.BatchLookupError;
+import io.vpndetection.model.BatchLookupRequest;
+import io.vpndetection.model.BatchLookupResponse;
 import io.vpndetection.model.Entitlement;
+import io.vpndetection.model.LookupResponse;
 
 import java.net.Authenticator;
 import java.net.CookieHandler;
 import java.net.ProxySelector;
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -38,6 +46,10 @@ import javax.net.ssl.SSLParameters;
  */
 public final class VPNDetection implements AutoCloseable {
     public static final String DEFAULT_BASE_URL = "https://api.vpndetection.io";
+
+    // The most addresses POST /batch takes in one call; a larger batch is sent in chunks of this
+    // size.
+    private static final int BATCH_MAX = 1000;
 
     private final LookupWireApi lookupApi;
     private final EntitlementWireApi entitlementApi;
@@ -201,12 +213,16 @@ public final class VPNDetection implements AutoCloseable {
     }
 
     /**
-     * Classify many addresses concurrently.
+     * Classify many addresses in as few requests as possible.
      *
-     * <p>Keyed by address rather than positional, so duplicates in the input collapse to a single
-     * request and the caller never has to line two lists up. An address that fails carries its
-     * error as its value, so one bad entry cannot lose the rest of the answers. Iteration order is
-     * the order the addresses were first seen in the input.
+     * <p>Bogons are answered locally and cached answers are reused; everything else goes to the
+     * batch endpoint in chunks of up to 1000 addresses, with at most {@code concurrency} chunks in
+     * flight. Keyed by address rather than positional, so duplicates in the input collapse to a
+     * single entry and the caller never has to line two lists up. An address that fails carries its
+     * error as its value, so one bad entry cannot lose the rest of the answers: the API reports a
+     * per-entry failure with the status the single lookup would have answered, and a chunk that
+     * fails as a whole marks every address in it. Iteration order is the order the addresses were
+     * first seen in the input.
      */
     public LinkedHashMap<String, BatchResult> lookupBatch(Collection<String> ips, BatchOptions options) {
         Objects.requireNonNull(ips, "ips");
@@ -216,12 +232,34 @@ public final class VPNDetection implements AutoCloseable {
         // the override at the client's setting, which passes any test that does not measure peak.
         Semaphore limit = perCall == null ? gate : new Semaphore(perCall);
 
-        LinkedHashMap<String, CompletableFuture<BatchResult>> pending = new LinkedHashMap<>();
-        for (String ip : new LinkedHashSet<>(ips)) {
-            pending.put(ip, submit(limit, ip, options));
+        LinkedHashSet<String> unique = new LinkedHashSet<>(ips);
+        Map<String, BatchResult> answers = new HashMap<>();
+        List<String> pending = new ArrayList<>();
+        for (String ip : unique) {
+            if (Bogon.isBogon(ip)) {
+                answers.put(ip, BatchResult.found(Result.bogon(ip)));
+                continue;
+            }
+            Result hit = cache == null ? null : cache.getIfPresent(ip);
+            if (hit != null) {
+                answers.put(ip, BatchResult.found(hit));
+                continue;
+            }
+            pending.add(ip);
+        }
+
+        List<CompletableFuture<Map<String, BatchResult>>> chunks = new ArrayList<>();
+        for (int from = 0; from < pending.size(); from += BATCH_MAX) {
+            List<String> chunk = List.copyOf(pending.subList(from, Math.min(from + BATCH_MAX, pending.size())));
+            chunks.add(submit(limit, chunk, options));
+        }
+        for (CompletableFuture<Map<String, BatchResult>> chunk : chunks) {
+            answers.putAll(chunk.join());
         }
         LinkedHashMap<String, BatchResult> out = new LinkedHashMap<>();
-        pending.forEach((ip, future) -> out.put(ip, future.join()));
+        for (String ip : unique) {
+            out.put(ip, answers.get(ip));
+        }
         return out;
     }
 
@@ -255,25 +293,69 @@ public final class VPNDetection implements AutoCloseable {
     }
 
     // The permit is taken on the CALLING thread, before the task is handed to the executor, so at
-    // most `concurrency` tasks ever exist. Acquiring inside the task would queue every address at
-    // once and let a large batch conjure a thread per address.
-    private CompletableFuture<BatchResult> submit(Semaphore limit, String ip, LookupOptions options) {
+    // most `concurrency` chunks ever exist. Acquiring inside the task would queue every chunk at
+    // once and let a large batch conjure a thread per chunk.
+    private CompletableFuture<Map<String, BatchResult>> submit(
+            Semaphore limit, List<String> chunk, LookupOptions options) {
         try {
             limit.acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return CompletableFuture.completedFuture(BatchResult.failed(
+            return CompletableFuture.completedFuture(failedChunk(chunk,
                     new VPNDetectionException(ErrorKind.NETWORK, "interrupted while starting a batch", e)));
         }
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return BatchResult.found(lookup(ip, options));
-            } catch (VPNDetectionException e) {
-                return BatchResult.failed(e);
+                return lookupChunk(chunk, options);
             } finally {
                 limit.release();
             }
         }, executor);
+    }
+
+    // One POST /batch, mapped back onto the addresses it was asked about. A chunk-level failure -
+    // the call refused, the transport failing, the retries exhausted - becomes every address's
+    // error, exactly as it would have been had each been looked up alone.
+    private Map<String, BatchResult> lookupChunk(List<String> chunk, LookupOptions options) {
+        Integer perCall = options.retriesOrNull();
+        BatchLookupResponse body;
+        try {
+            body = Wire.execute(perCall != null ? perCall : retries,
+                    () -> lookupApi.lookupBatch(new BatchLookupRequest().ips(chunk)));
+        } catch (VPNDetectionException e) {
+            return failedChunk(chunk, e);
+        }
+        Map<String, LookupResponse> served = body.getResults() == null ? Map.of() : body.getResults();
+        Map<String, BatchLookupError> failed = body.getErrors() == null ? Map.of() : body.getErrors();
+        Map<String, BatchResult> out = new HashMap<>();
+        for (String ip : chunk) {
+            LookupResponse answer = served.get(ip);
+            if (answer != null) {
+                Result result = Result.of(answer);
+                if (cache != null) {
+                    cache.put(ip, result);
+                }
+                out.put(ip, BatchResult.found(result));
+                continue;
+            }
+            BatchLookupError entry = failed.get(ip);
+            if (entry != null) {
+                int status = entry.getStatus() == null ? 500 : entry.getStatus();
+                out.put(ip, BatchResult.failed(Wire.fromEntry(status, entry.getError())));
+                continue;
+            }
+            out.put(ip, BatchResult.failed(new VPNDetectionException(
+                    ErrorKind.SERVER_ERROR, "the batch answer did not include " + ip, 200, null, null)));
+        }
+        return out;
+    }
+
+    private static Map<String, BatchResult> failedChunk(List<String> chunk, VPNDetectionException error) {
+        Map<String, BatchResult> out = new HashMap<>();
+        for (String ip : chunk) {
+            out.put(ip, BatchResult.failed(error));
+        }
+        return out;
     }
 
     private static HttpClient defaultHttpClient() {
@@ -340,7 +422,7 @@ public final class VPNDetection implements AutoCloseable {
             return this;
         }
 
-        /** Concurrent in-flight requests during a batch. Default 8. */
+        /** Concurrent batch requests - chunks of up to 1000 addresses - during a batch. Default 8. */
         public Builder concurrency(int concurrency) {
             if (concurrency < 1) {
                 throw new IllegalArgumentException("concurrency must be at least 1");

@@ -2,7 +2,6 @@ package io.vpndetection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -187,7 +187,8 @@ class ConformanceTest {
             for (JsonNode bad : expect.get("errorKeys")) {
                 BatchResult entry = got.get(bad.asText());
                 assertFalse(entry.isSuccess(), bad.asText() + " should carry its error");
-                assertNotNull(entry.error().orElseThrow().kind());
+                assertEquals(expect.get("errorKinds").get(bad.asText()).asText(),
+                        wire(entry.error().orElseThrow().kind()), bad.asText());
             }
             assertFalse(got.get("1.1.1.1").orElseThrow().isVpn(), "the good address still answered");
         }
@@ -204,6 +205,55 @@ class ConformanceTest {
                 client.lookupBatch(strings(c.get("input")));
             }
             assertEquals(c.get("expect").get("httpRequests").asInt(), http.calls.size());
+        }
+    }
+
+    @Test
+    void aLargeBatchIsSentInChunksOfAThousand() {
+        JsonNode c = batchCase("chunks-of-one-thousand");
+        Map<String, StubHttpClient.Route> routes = new HashMap<>();
+        for (String ip : strings(c.get("input"))) {
+            routes.put(ip, StubHttpClient.Route.ok("{\"ip\": \"" + ip + "\", \"is_vpn\": false}"));
+        }
+        StubHttpClient http = StubHttpClient.of(routes);
+
+        try (VPNDetection client = clientOn(http).cacheEnabled(false).build()) {
+            LinkedHashMap<String, BatchResult> got = client.lookupBatch(strings(c.get("input")));
+            JsonNode expect = c.get("expect");
+
+            assertEquals(expect.get("keyCount").asInt(), got.size());
+            assertEquals(expect.get("httpRequests").asInt(), http.calls.size());
+            for (String ip : strings(c.get("input"))) {
+                assertEquals(ip, got.get(ip).orElseThrow().ip(), ip + " should be answered for itself");
+            }
+        }
+    }
+
+    // A per-entry failure carries no headers, so its 429 can only be a spent allowance, and a 500
+    // is the server's; neither is retried per entry, because retries belong to the call and the
+    // call succeeded.
+    @Test
+    void anEntryErrorIsClassifiedByItsStatus() {
+        JsonNode c = batchCase("an-entry-error-is-classified-by-its-status");
+        StubHttpClient http = StubHttpClient.of(Map.of(
+                "1.1.1.1", StubHttpClient.Route.ok("{\"ip\": \"1.1.1.1\", \"is_vpn\": false}"),
+                "8.8.8.8", new StubHttpClient.Route(429,
+                        "{\"error\": \"request allowance exceeded; raise or remove your overage limit\"}",
+                        Map.of()),
+                "9.9.9.9", new StubHttpClient.Route(500, "{\"error\": \"lookup failed\"}", Map.of())));
+
+        try (VPNDetection client = clientOn(http).retries(3).build()) {
+            LinkedHashMap<String, BatchResult> got = client.lookupBatch(strings(c.get("input")));
+            JsonNode expect = c.get("expect");
+
+            assertEquals(strings(expect.get("keys")), new ArrayList<>(got.keySet()));
+            expect.get("errorKinds").fields().forEachRemaining(entry -> {
+                BatchResult answer = got.get(entry.getKey());
+                assertFalse(answer.isSuccess(), entry.getKey() + " should carry its error");
+                assertEquals(entry.getValue().asText(), wire(answer.error().orElseThrow().kind()),
+                        entry.getKey());
+            });
+            assertEquals(expect.get("httpRequests").asInt(), http.calls.size());
         }
     }
 
@@ -232,6 +282,11 @@ class ConformanceTest {
             client.lookup("1.1.1.1");
             assertEquals(2, http.calls.size());
         }
+    }
+
+    // The corpus spells a kind the way the wire does, which is the enum name in lower case.
+    private static String wire(ErrorKind kind) {
+        return kind.name().toLowerCase(Locale.ROOT);
     }
 
     private static VPNDetection.Builder clientOn(StubHttpClient http) {

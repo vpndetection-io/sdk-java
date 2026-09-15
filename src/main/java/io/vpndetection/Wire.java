@@ -74,6 +74,15 @@ final class Wire {
     }
 
     /**
+     * A per-entry failure inside a successful batch: the status the single lookup would have
+     * answered, and its message, with no headers at all - so a 429 here is a spent allowance, which
+     * is the only kind the API puts in an entry.
+     */
+    static VPNDetectionException fromEntry(int status, String message) {
+        return new VPNDetectionException(kindOf(status, null), message, status, null, null);
+    }
+
+    /**
      * What an HTTP status means, for the generated calls and for the raw dataset transfer alike.
      *
      * @param retryAfter the response's {@code Retry-After}, which is the only thing separating a

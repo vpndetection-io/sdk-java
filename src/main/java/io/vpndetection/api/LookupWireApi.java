@@ -18,6 +18,8 @@ import io.vpndetection.internal.ApiResponse;
 import io.vpndetection.internal.Configuration;
 import io.vpndetection.internal.Pair;
 
+import io.vpndetection.model.BatchLookupRequest;
+import io.vpndetection.model.BatchLookupResponse;
 import io.vpndetection.model.LookupError;
 import io.vpndetection.model.LookupResponse;
 
@@ -167,6 +169,129 @@ public class LookupWireApi {
       file.deleteOnExit(); // best effort cleanup
     }
     return file;
+  }
+
+  /**
+   * Batch
+   * Answers up to 1000 addresses in one call. Each distinct string in &#x60;ips&#x60; is one lookup: it costs exactly what &#x60;GET /{ip}&#x60; costs for that address and comes back with exactly the fields that call would carry for your plan. Exact duplicates collapse to one entry and one lookup.  Both maps in the answer are keyed by the string you sent, so nothing has to be lined up by position; the &#x60;ip&#x60; inside each result is the normalized form. An address that could not be answered sits in &#x60;errors&#x60; with the status and message the single lookup would have given, and never disturbs the others: a string that is not an address is a &#x60;400&#x60; there, and an allowance that runs out part way through leaves the remaining entries as &#x60;429&#x60;s.  The call itself fails only for the reasons below, and a &#x60;429&#x60; on the call always carries &#x60;Retry-After&#x60;: the batch is admitted or refused whole by the rate limit, so a per-entry &#x60;429&#x60; is always a spent allowance and never a throttle. 
+   * @param batchLookupRequest  (required)
+   * @return BatchLookupResponse
+   * @throws ApiException if fails to make API call
+   */
+  public BatchLookupResponse lookupBatch(@javax.annotation.Nonnull BatchLookupRequest batchLookupRequest) throws ApiException {
+    return lookupBatch(batchLookupRequest, null);
+  }
+
+  /**
+   * Batch
+   * Answers up to 1000 addresses in one call. Each distinct string in &#x60;ips&#x60; is one lookup: it costs exactly what &#x60;GET /{ip}&#x60; costs for that address and comes back with exactly the fields that call would carry for your plan. Exact duplicates collapse to one entry and one lookup.  Both maps in the answer are keyed by the string you sent, so nothing has to be lined up by position; the &#x60;ip&#x60; inside each result is the normalized form. An address that could not be answered sits in &#x60;errors&#x60; with the status and message the single lookup would have given, and never disturbs the others: a string that is not an address is a &#x60;400&#x60; there, and an allowance that runs out part way through leaves the remaining entries as &#x60;429&#x60;s.  The call itself fails only for the reasons below, and a &#x60;429&#x60; on the call always carries &#x60;Retry-After&#x60;: the batch is admitted or refused whole by the rate limit, so a per-entry &#x60;429&#x60; is always a spent allowance and never a throttle. 
+   * @param batchLookupRequest  (required)
+   * @param headers Optional headers to include in the request
+   * @return BatchLookupResponse
+   * @throws ApiException if fails to make API call
+   */
+  public BatchLookupResponse lookupBatch(@javax.annotation.Nonnull BatchLookupRequest batchLookupRequest, Map<String, String> headers) throws ApiException {
+    ApiResponse<BatchLookupResponse> localVarResponse = lookupBatchWithHttpInfo(batchLookupRequest, headers);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Batch
+   * Answers up to 1000 addresses in one call. Each distinct string in &#x60;ips&#x60; is one lookup: it costs exactly what &#x60;GET /{ip}&#x60; costs for that address and comes back with exactly the fields that call would carry for your plan. Exact duplicates collapse to one entry and one lookup.  Both maps in the answer are keyed by the string you sent, so nothing has to be lined up by position; the &#x60;ip&#x60; inside each result is the normalized form. An address that could not be answered sits in &#x60;errors&#x60; with the status and message the single lookup would have given, and never disturbs the others: a string that is not an address is a &#x60;400&#x60; there, and an allowance that runs out part way through leaves the remaining entries as &#x60;429&#x60;s.  The call itself fails only for the reasons below, and a &#x60;429&#x60; on the call always carries &#x60;Retry-After&#x60;: the batch is admitted or refused whole by the rate limit, so a per-entry &#x60;429&#x60; is always a spent allowance and never a throttle. 
+   * @param batchLookupRequest  (required)
+   * @return ApiResponse&lt;BatchLookupResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<BatchLookupResponse> lookupBatchWithHttpInfo(@javax.annotation.Nonnull BatchLookupRequest batchLookupRequest) throws ApiException {
+    return lookupBatchWithHttpInfo(batchLookupRequest, null);
+  }
+
+  /**
+   * Batch
+   * Answers up to 1000 addresses in one call. Each distinct string in &#x60;ips&#x60; is one lookup: it costs exactly what &#x60;GET /{ip}&#x60; costs for that address and comes back with exactly the fields that call would carry for your plan. Exact duplicates collapse to one entry and one lookup.  Both maps in the answer are keyed by the string you sent, so nothing has to be lined up by position; the &#x60;ip&#x60; inside each result is the normalized form. An address that could not be answered sits in &#x60;errors&#x60; with the status and message the single lookup would have given, and never disturbs the others: a string that is not an address is a &#x60;400&#x60; there, and an allowance that runs out part way through leaves the remaining entries as &#x60;429&#x60;s.  The call itself fails only for the reasons below, and a &#x60;429&#x60; on the call always carries &#x60;Retry-After&#x60;: the batch is admitted or refused whole by the rate limit, so a per-entry &#x60;429&#x60; is always a spent allowance and never a throttle. 
+   * @param batchLookupRequest  (required)
+   * @param headers Optional headers to include in the request
+   * @return ApiResponse&lt;BatchLookupResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<BatchLookupResponse> lookupBatchWithHttpInfo(@javax.annotation.Nonnull BatchLookupRequest batchLookupRequest, Map<String, String> headers) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = lookupBatchRequestBuilder(batchLookupRequest, headers);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      InputStream localVarResponseBody = null;
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("lookupBatch", localVarResponse);
+        }
+        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
+        if (localVarResponseBody == null) {
+          return new ApiResponse<BatchLookupResponse>(
+              localVarResponse.statusCode(),
+              localVarResponse.headers().map(),
+              null
+          );
+        }
+
+        
+        
+        String responseBody = new String(localVarResponseBody.readAllBytes());
+        BatchLookupResponse responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<BatchLookupResponse>() {});
+        
+
+        return new ApiResponse<BatchLookupResponse>(
+            localVarResponse.statusCode(),
+            localVarResponse.headers().map(),
+            responseValue
+        );
+      } finally {
+        if (localVarResponseBody != null) {
+          localVarResponseBody.close();
+        }
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder lookupBatchRequestBuilder(@javax.annotation.Nonnull BatchLookupRequest batchLookupRequest, Map<String, String> headers) throws ApiException {
+    // verify the required parameter 'batchLookupRequest' is set
+    if (batchLookupRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'batchLookupRequest' when calling lookupBatch");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/batch";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(batchLookupRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    // Add custom headers if provided
+    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
   }
 
   /**

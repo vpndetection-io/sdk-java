@@ -31,7 +31,7 @@ class ClientTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static JsonNode data;
 
-    private static final List<String> ADDRESSES = addresses(12);
+    private static final List<String> ADDRESSES = addresses(6001);
 
     @BeforeAll
     static void loadCorpus() throws IOException {
@@ -58,7 +58,7 @@ class ClientTest {
                 .httpClient(http).cacheEnabled(false).build()) {
             client.lookupBatch(ADDRESSES, new BatchOptions().concurrency(3));
 
-            assertEquals(ADDRESSES.size(), http.calls.size());
+            assertEquals(7, http.calls.size(), "one request per chunk of 1000");
             assertTrue(http.peak.get() <= 3,
                     "peak in flight was " + http.peak.get() + ", expected at most 3");
             assertTrue(http.peak.get() > 1, "requests should still overlap");
@@ -147,10 +147,12 @@ class ClientTest {
         executor.shutdown();
     }
 
+    // Enough addresses for seven chunks of the batch endpoint's 1000, so a concurrency bound has
+    // something to bound: one request per chunk, and only the chunks overlap.
     private static List<String> addresses(int count) {
         List<String> out = new ArrayList<>(count);
-        for (int i = 1; i <= count; i++) {
-            out.add("9.9.9." + i);
+        for (int i = 0; i < count; i++) {
+            out.add("9." + (1 + i / 65536) + "." + (i / 256 % 256) + "." + (i % 256));
         }
         return List.copyOf(out);
     }
