@@ -172,7 +172,7 @@ class DatabaseTest {
         }
         DatabaseMetadata meta = client().database().metadata(DATASET_ID);
         assertEquals(DATASET_ID, meta.getId());
-        Integer size = meta.getSize() == null ? null : meta.getSize().get(FORMAT.wireValue());
+        Long size = meta.getSize() == null ? null : meta.getSize().get(FORMAT.wireValue());
         assertNotNull(size, DATASET_ID + " publishes no size to check a transfer against");
         assertTrue(size > 0, DATASET_ID + " publishes a size of " + size);
         assertTrue(size <= CEILING, DATASET_ID + " is " + size + " bytes, past the ceiling");
