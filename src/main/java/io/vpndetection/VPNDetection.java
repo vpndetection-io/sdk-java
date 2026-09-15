@@ -3,10 +3,10 @@ package io.vpndetection;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
-import io.vpndetection.api.AccountWireApi;
+import io.vpndetection.api.EntitlementWireApi;
 import io.vpndetection.api.LookupWireApi;
 import io.vpndetection.internal.ApiClient;
-import io.vpndetection.model.AccountMe;
+import io.vpndetection.model.Entitlement;
 
 import java.net.Authenticator;
 import java.net.CookieHandler;
@@ -40,7 +40,7 @@ public final class VPNDetection implements AutoCloseable {
     public static final String DEFAULT_BASE_URL = "https://api.vpndetection.io";
 
     private final LookupWireApi lookupApi;
-    private final AccountWireApi accountApi;
+    private final EntitlementWireApi entitlementApi;
     private final DatabaseApi database;
     private final Cache<String, Result> cache;
     private final Semaphore gate;
@@ -59,7 +59,7 @@ public final class VPNDetection implements AutoCloseable {
         }
 
         this.lookupApi = new LookupWireApi(api);
-        this.accountApi = new AccountWireApi(api);
+        this.entitlementApi = new EntitlementWireApi(api);
         this.retries = b.retries;
         this.database = new DatabaseApi(api, b.retries);
         this.cache = b.cacheEnabled
@@ -152,8 +152,8 @@ public final class VPNDetection implements AutoCloseable {
     }
 
     /** What this client's key is entitled to, with the client's defaults. */
-    public AccountMe myAccount() {
-        return myAccount(new LookupOptions());
+    public Entitlement myEntitlement() {
+        return myEntitlement(new LookupOptions());
     }
 
     /**
@@ -161,7 +161,7 @@ public final class VPNDetection implements AutoCloseable {
      *
      * <p>Named for what it answers rather than {@code me}, which sits one letter from {@code myIp}
      * and means something quite different: one is which address you are calling FROM, the other is
-     * which account you are calling AS.
+     * what the key you are calling WITH may spend.
      *
      * <p>Unlike a lookup there is no useful unauthenticated answer, so a client built without an API
      * key gets an unauthorized error rather than a partial one.
@@ -173,18 +173,18 @@ public final class VPNDetection implements AutoCloseable {
      * <p>Deliberately NOT cached: the whole point is what has been spent, and a cached answer is a
      * wrong one within seconds of the next request.
      */
-    public AccountMe myAccount(LookupOptions options) {
+    public Entitlement myEntitlement(LookupOptions options) {
         Objects.requireNonNull(options, "options");
         Integer perCall = options.retriesOrNull();
-        return Wire.execute(perCall != null ? perCall : retries, () -> accountApi.accountMe());
+        return Wire.execute(perCall != null ? perCall : retries, () -> entitlementApi.myEntitlement());
     }
 
-    public CompletableFuture<AccountMe> myAccountAsync() {
-        return myAccountAsync(new LookupOptions());
+    public CompletableFuture<Entitlement> myEntitlementAsync() {
+        return myEntitlementAsync(new LookupOptions());
     }
 
-    public CompletableFuture<AccountMe> myAccountAsync(LookupOptions options) {
-        return CompletableFuture.supplyAsync(() -> myAccount(options), executor);
+    public CompletableFuture<Entitlement> myEntitlementAsync(LookupOptions options) {
+        return CompletableFuture.supplyAsync(() -> myEntitlement(options), executor);
     }
 
     public CompletableFuture<Result> lookupAsync(String ip) {

@@ -24,38 +24,38 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.vpndetection.model.DbChecksums;
 import java.util.Arrays;
+import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import io.vpndetection.internal.ApiClient;
 /**
- * DatabaseChecksumsResponse
+ * AccountUser
  */
 @JsonPropertyOrder({
-  DatabaseChecksumsResponse.JSON_PROPERTY_ID,
-  DatabaseChecksumsResponse.JSON_PROPERTY_FORMAT,
-  DatabaseChecksumsResponse.JSON_PROPERTY_CHECKSUMS
+  AccountUser.JSON_PROPERTY_ID,
+  AccountUser.JSON_PROPERTY_FULLNAME,
+  AccountUser.JSON_PROPERTY_EMAIL
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
-public class DatabaseChecksumsResponse {
+public class AccountUser {
   public static final String JSON_PROPERTY_ID = "id";
   @javax.annotation.Nonnull
-  private String id;
+  private UUID id;
 
-  public static final String JSON_PROPERTY_FORMAT = "format";
-  @javax.annotation.Nonnull
-  private String format;
+  public static final String JSON_PROPERTY_FULLNAME = "fullname";
+  @javax.annotation.Nullable
+  private String fullname;
 
-  public static final String JSON_PROPERTY_CHECKSUMS = "checksums";
-  @javax.annotation.Nonnull
-  private DbChecksums checksums;
+  public static final String JSON_PROPERTY_EMAIL = "email";
+  @javax.annotation.Nullable
+  private String email;
 
-  public DatabaseChecksumsResponse() { 
+  public AccountUser() { 
   }
 
-  public DatabaseChecksumsResponse id(@javax.annotation.Nonnull String id) {
+  public AccountUser id(@javax.annotation.Nonnull UUID id) {
     this.id = id;
     return this;
   }
@@ -67,68 +67,68 @@ public class DatabaseChecksumsResponse {
   @javax.annotation.Nonnull
   @JsonProperty(value = JSON_PROPERTY_ID, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public String getId() {
+  public UUID getId() {
     return id;
   }
 
 
   @JsonProperty(value = JSON_PROPERTY_ID, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setId(@javax.annotation.Nonnull String id) {
+  public void setId(@javax.annotation.Nonnull UUID id) {
     this.id = id;
   }
 
 
-  public DatabaseChecksumsResponse format(@javax.annotation.Nonnull String format) {
-    this.format = format;
+  public AccountUser fullname(@javax.annotation.Nullable String fullname) {
+    this.fullname = fullname;
     return this;
   }
 
   /**
-   * Get format
-   * @return format
+   * Get fullname
+   * @return fullname
    */
-  @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_FORMAT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public String getFormat() {
-    return format;
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_FULLNAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public String getFullname() {
+    return fullname;
   }
 
 
-  @JsonProperty(value = JSON_PROPERTY_FORMAT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFormat(@javax.annotation.Nonnull String format) {
-    this.format = format;
+  @JsonProperty(value = JSON_PROPERTY_FULLNAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setFullname(@javax.annotation.Nullable String fullname) {
+    this.fullname = fullname;
   }
 
 
-  public DatabaseChecksumsResponse checksums(@javax.annotation.Nonnull DbChecksums checksums) {
-    this.checksums = checksums;
+  public AccountUser email(@javax.annotation.Nullable String email) {
+    this.email = email;
     return this;
   }
 
   /**
-   * Get checksums
-   * @return checksums
+   * Get email
+   * @return email
    */
-  @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CHECKSUMS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public DbChecksums getChecksums() {
-    return checksums;
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_EMAIL, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public String getEmail() {
+    return email;
   }
 
 
-  @JsonProperty(value = JSON_PROPERTY_CHECKSUMS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setChecksums(@javax.annotation.Nonnull DbChecksums checksums) {
-    this.checksums = checksums;
+  @JsonProperty(value = JSON_PROPERTY_EMAIL, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setEmail(@javax.annotation.Nullable String email) {
+    this.email = email;
   }
 
 
   /**
-   * Return true if this DatabaseChecksumsResponse object is equal to o.
+   * Return true if this AccountUser object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -138,24 +138,24 @@ public class DatabaseChecksumsResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    DatabaseChecksumsResponse databaseChecksumsResponse = (DatabaseChecksumsResponse) o;
-    return Objects.equals(this.id, databaseChecksumsResponse.id) &&
-        Objects.equals(this.format, databaseChecksumsResponse.format) &&
-        Objects.equals(this.checksums, databaseChecksumsResponse.checksums);
+    AccountUser accountUser = (AccountUser) o;
+    return Objects.equals(this.id, accountUser.id) &&
+        Objects.equals(this.fullname, accountUser.fullname) &&
+        Objects.equals(this.email, accountUser.email);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, format, checksums);
+    return Objects.hash(id, fullname, email);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class DatabaseChecksumsResponse {\n");
+    sb.append("class AccountUser {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
-    sb.append("    format: ").append(toIndentedString(format)).append("\n");
-    sb.append("    checksums: ").append(toIndentedString(checksums)).append("\n");
+    sb.append("    fullname: ").append(toIndentedString(fullname)).append("\n");
+    sb.append("    email: ").append(toIndentedString(email)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -205,14 +205,14 @@ public class DatabaseChecksumsResponse {
       joiner.add(String.format(java.util.Locale.ROOT, "%sid%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getId()))));
     }
 
-    // add `format` to the URL query string
-    if (getFormat() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sformat%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getFormat()))));
+    // add `fullname` to the URL query string
+    if (getFullname() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%sfullname%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getFullname()))));
     }
 
-    // add `checksums` to the URL query string
-    if (getChecksums() != null) {
-      joiner.add(getChecksums().toUrlQueryString(prefix + "checksums" + suffix));
+    // add `email` to the URL query string
+    if (getEmail() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%semail%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getEmail()))));
     }
 
     return joiner.toString();

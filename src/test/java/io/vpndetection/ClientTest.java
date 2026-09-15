@@ -9,8 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.vpndetection.model.AccountMe;
-import io.vpndetection.model.AccountPlan;
+import io.vpndetection.model.Entitlement;
+import io.vpndetection.model.EntitlementPlan;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -154,7 +154,7 @@ class ClientTest {
         }
         return List.copyOf(out);
     }
-    private static final String ACCOUNT_BODY = """
+    private static final String ENTITLEMENT_BODY = """
             {
               "org_id": "85bb51e4-2eb6-4a31-8e4d-02ba8b98fe61",
               "apikey": {
@@ -199,43 +199,43 @@ class ClientTest {
     }
 
     @Test
-    void myAccountReportsThePlanAndTheUsage() {
+    void myEntitlementReportsThePlanAndTheUsage() {
         StubHttpClient http = StubHttpClient.of(Map.of(
-                "api/v1/account/me", StubHttpClient.Route.ok(ACCOUNT_BODY)));
+                "api/v1/entitlement", StubHttpClient.Route.ok(ENTITLEMENT_BODY)));
 
         try (VPNDetection client = VPNDetection.builder().httpClient(http).build()) {
-            AccountMe account = client.myAccount();
-            assertEquals("max", account.getPlan().getKey());
-            assertEquals(AccountPlan.TierEnum.MAX, account.getPlan().getTier());
-            assertEquals(580L, account.getUsage().getRequests());
-            assertEquals(5000000L, account.getUsage().getQuota());
+            Entitlement ent = client.myEntitlement();
+            assertEquals("max", ent.getPlan().getKey());
+            assertEquals(EntitlementPlan.TierEnum.MAX, ent.getPlan().getTier());
+            assertEquals(580L, ent.getUsage().getRequests());
+            assertEquals(5000000L, ent.getUsage().getQuota());
             // Null means NEVER stop, which is not the same as a limit of zero.
-            assertNull(account.getUsage().getHardLimit());
-            assertTrue(account.getApikey().getAllowedCidrs().isEmpty());
+            assertNull(ent.getUsage().getHardLimit());
+            assertTrue(ent.getApikey().getAllowedCidrs().isEmpty());
         }
     }
 
     @Test
-    void myAccountIsNotCached() {
+    void myEntitlementIsNotCached() {
         // The whole point is what has been spent.
         StubHttpClient http = StubHttpClient.of(Map.of(
-                "api/v1/account/me", StubHttpClient.Route.ok(ACCOUNT_BODY)));
+                "api/v1/entitlement", StubHttpClient.Route.ok(ENTITLEMENT_BODY)));
 
         try (VPNDetection client = VPNDetection.builder().httpClient(http).build()) {
-            client.myAccount();
-            client.myAccount();
+            client.myEntitlement();
+            client.myEntitlement();
             assertEquals(2, http.calls.size());
         }
     }
 
     @Test
-    void myAccountSurfacesAnUnauthorizedKey() {
+    void myEntitlementSurfacesAnUnauthorizedKey() {
         StubHttpClient http = StubHttpClient.of(Map.of(
-                "api/v1/account/me",
+                "api/v1/entitlement",
                 new StubHttpClient.Route(401, "{\"error\": \"invalid API key\"}", Map.of())));
 
         try (VPNDetection client = VPNDetection.builder().httpClient(http).retries(0).build()) {
-            assertThrows(VPNDetectionException.class, client::myAccount);
+            assertThrows(VPNDetectionException.class, client::myEntitlement);
         }
     }
 

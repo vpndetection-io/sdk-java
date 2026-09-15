@@ -18,8 +18,8 @@ import io.vpndetection.internal.ApiResponse;
 import io.vpndetection.internal.Configuration;
 import io.vpndetection.internal.Pair;
 
-import io.vpndetection.model.LookupError;
-import io.vpndetection.model.LookupResponse;
+import io.vpndetection.model.Entitlement;
+import io.vpndetection.model.EntitlementError;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,7 +53,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
-public class LookupWireApi {
+public class EntitlementWireApi {
   /**
    * Utility class for extending HttpRequest.Builder functionality.
    */
@@ -82,11 +82,11 @@ public class LookupWireApi {
   private final Consumer<HttpResponse<InputStream>> memberVarResponseInterceptor;
   private final Consumer<HttpResponse<InputStream>> memberVarAsyncResponseInterceptor;
 
-  public LookupWireApi() {
+  public EntitlementWireApi() {
     this(Configuration.getDefaultApiClient());
   }
 
-  public LookupWireApi(ApiClient apiClient) {
+  public EntitlementWireApi(ApiClient apiClient) {
     memberVarHttpClient = apiClient.getHttpClient();
     memberVarObjectMapper = apiClient.getObjectMapper();
     memberVarBaseUri = apiClient.getBaseUri();
@@ -170,50 +170,46 @@ public class LookupWireApi {
   }
 
   /**
-   * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the plan behind the presented key; with no key the answer is &#x60;ip&#x60; and &#x60;is_vpn&#x60;. 
-   * @param ip The IPv4 or IPv6 address to classify. (required)
-   * @return LookupResponse
+   * Plan and usage
+   * Answers what the presented key is, what plan is behind it, and what has been spent against that plan&#39;s allowance in the current window. 
+   * @return Entitlement
    * @throws ApiException if fails to make API call
    */
-  public LookupResponse lookupIp(@javax.annotation.Nonnull String ip) throws ApiException {
-    return lookupIp(ip, null);
+  public Entitlement myEntitlement() throws ApiException {
+    return myEntitlement(null);
   }
 
   /**
-   * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the plan behind the presented key; with no key the answer is &#x60;ip&#x60; and &#x60;is_vpn&#x60;. 
-   * @param ip The IPv4 or IPv6 address to classify. (required)
+   * Plan and usage
+   * Answers what the presented key is, what plan is behind it, and what has been spent against that plan&#39;s allowance in the current window. 
    * @param headers Optional headers to include in the request
-   * @return LookupResponse
+   * @return Entitlement
    * @throws ApiException if fails to make API call
    */
-  public LookupResponse lookupIp(@javax.annotation.Nonnull String ip, Map<String, String> headers) throws ApiException {
-    ApiResponse<LookupResponse> localVarResponse = lookupIpWithHttpInfo(ip, headers);
+  public Entitlement myEntitlement(Map<String, String> headers) throws ApiException {
+    ApiResponse<Entitlement> localVarResponse = myEntitlementWithHttpInfo(headers);
     return localVarResponse.getData();
   }
 
   /**
-   * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the plan behind the presented key; with no key the answer is &#x60;ip&#x60; and &#x60;is_vpn&#x60;. 
-   * @param ip The IPv4 or IPv6 address to classify. (required)
-   * @return ApiResponse&lt;LookupResponse&gt;
+   * Plan and usage
+   * Answers what the presented key is, what plan is behind it, and what has been spent against that plan&#39;s allowance in the current window. 
+   * @return ApiResponse&lt;Entitlement&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<LookupResponse> lookupIpWithHttpInfo(@javax.annotation.Nonnull String ip) throws ApiException {
-    return lookupIpWithHttpInfo(ip, null);
+  public ApiResponse<Entitlement> myEntitlementWithHttpInfo() throws ApiException {
+    return myEntitlementWithHttpInfo(null);
   }
 
   /**
-   * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the plan behind the presented key; with no key the answer is &#x60;ip&#x60; and &#x60;is_vpn&#x60;. 
-   * @param ip The IPv4 or IPv6 address to classify. (required)
+   * Plan and usage
+   * Answers what the presented key is, what plan is behind it, and what has been spent against that plan&#39;s allowance in the current window. 
    * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;LookupResponse&gt;
+   * @return ApiResponse&lt;Entitlement&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<LookupResponse> lookupIpWithHttpInfo(@javax.annotation.Nonnull String ip, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = lookupIpRequestBuilder(ip, headers);
+  public ApiResponse<Entitlement> myEntitlementWithHttpInfo(Map<String, String> headers) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = myEntitlementRequestBuilder(headers);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -224,11 +220,11 @@ public class LookupWireApi {
       InputStream localVarResponseBody = null;
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("lookupIp", localVarResponse);
+          throw getApiException("myEntitlement", localVarResponse);
         }
         localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
         if (localVarResponseBody == null) {
-          return new ApiResponse<LookupResponse>(
+          return new ApiResponse<Entitlement>(
               localVarResponse.statusCode(),
               localVarResponse.headers().map(),
               null
@@ -238,10 +234,10 @@ public class LookupWireApi {
         
         
         String responseBody = new String(localVarResponseBody.readAllBytes());
-        LookupResponse responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<LookupResponse>() {});
+        Entitlement responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Entitlement>() {});
         
 
-        return new ApiResponse<LookupResponse>(
+        return new ApiResponse<Entitlement>(
             localVarResponse.statusCode(),
             localVarResponse.headers().map(),
             responseValue
@@ -260,125 +256,11 @@ public class LookupWireApi {
     }
   }
 
-  private HttpRequest.Builder lookupIpRequestBuilder(@javax.annotation.Nonnull String ip, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'ip' is set
-    if (ip == null) {
-      throw new ApiException(400, "Missing the required parameter 'ip' when calling lookupIp");
-    }
+  private HttpRequest.Builder myEntitlementRequestBuilder(Map<String, String> headers) throws ApiException {
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/{ip}"
-        .replace("{ip}", ApiClient.urlEncode(ip.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * My IP
-   * Answers what is known about the address this request came from, which is the same answer &#x60;GET /{ip}&#x60; gives for that address: the plan behind the presented key decides which fields come back, and the request counts against the same allowance.  The address is the one our edge observed, so a request through a proxy or a VPN reports the exit it left through rather than the machine that made it. That is usually the point of asking. 
-   * @return LookupResponse
-   * @throws ApiException if fails to make API call
-   */
-  public LookupResponse lookupMyIp() throws ApiException {
-    return lookupMyIp(null);
-  }
-
-  /**
-   * My IP
-   * Answers what is known about the address this request came from, which is the same answer &#x60;GET /{ip}&#x60; gives for that address: the plan behind the presented key decides which fields come back, and the request counts against the same allowance.  The address is the one our edge observed, so a request through a proxy or a VPN reports the exit it left through rather than the machine that made it. That is usually the point of asking. 
-   * @param headers Optional headers to include in the request
-   * @return LookupResponse
-   * @throws ApiException if fails to make API call
-   */
-  public LookupResponse lookupMyIp(Map<String, String> headers) throws ApiException {
-    ApiResponse<LookupResponse> localVarResponse = lookupMyIpWithHttpInfo(headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * My IP
-   * Answers what is known about the address this request came from, which is the same answer &#x60;GET /{ip}&#x60; gives for that address: the plan behind the presented key decides which fields come back, and the request counts against the same allowance.  The address is the one our edge observed, so a request through a proxy or a VPN reports the exit it left through rather than the machine that made it. That is usually the point of asking. 
-   * @return ApiResponse&lt;LookupResponse&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<LookupResponse> lookupMyIpWithHttpInfo() throws ApiException {
-    return lookupMyIpWithHttpInfo(null);
-  }
-
-  /**
-   * My IP
-   * Answers what is known about the address this request came from, which is the same answer &#x60;GET /{ip}&#x60; gives for that address: the plan behind the presented key decides which fields come back, and the request counts against the same allowance.  The address is the one our edge observed, so a request through a proxy or a VPN reports the exit it left through rather than the machine that made it. That is usually the point of asking. 
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;LookupResponse&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<LookupResponse> lookupMyIpWithHttpInfo(Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = lookupMyIpRequestBuilder(headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("lookupMyIp", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<LookupResponse>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
-        }
-
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        LookupResponse responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<LookupResponse>() {});
-        
-
-        return new ApiResponse<LookupResponse>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder lookupMyIpRequestBuilder(Map<String, String> headers) throws ApiException {
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/myip";
+    String localVarPath = "/api/v1/entitlement";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 

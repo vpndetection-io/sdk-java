@@ -30,27 +30,27 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import io.vpndetection.internal.ApiClient;
 /**
- * Error
+ * AccountRc
  */
 @JsonPropertyOrder({
-  Error.JSON_PROPERTY_RC
+  AccountRc.JSON_PROPERTY_RC
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
-public class Error {
+public class AccountRc {
   public static final String JSON_PROPERTY_RC = "rc";
   @javax.annotation.Nonnull
   private String rc;
 
-  public Error() { 
+  public AccountRc() { 
   }
 
-  public Error rc(@javax.annotation.Nonnull String rc) {
+  public AccountRc rc(@javax.annotation.Nonnull String rc) {
     this.rc = rc;
     return this;
   }
 
   /**
-   * Get rc
+   * The outcome. &#x60;SUCCESS&#x60; on success; otherwise the reason.
    * @return rc
    */
   @javax.annotation.Nonnull
@@ -69,7 +69,7 @@ public class Error {
 
 
   /**
-   * Return true if this Error object is equal to o.
+   * Return true if this AccountRc object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,8 +79,8 @@ public class Error {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Error error = (Error) o;
-    return Objects.equals(this.rc, error.rc);
+    AccountRc accountRc = (AccountRc) o;
+    return Objects.equals(this.rc, accountRc.rc);
   }
 
   @Override
@@ -91,7 +91,7 @@ public class Error {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Error {\n");
+    sb.append("class AccountRc {\n");
     sb.append("    rc: ").append(toIndentedString(rc)).append("\n");
     sb.append("}");
     return sb.toString();

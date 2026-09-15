@@ -24,27 +24,35 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import io.vpndetection.model.ApikeyDetail;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import io.vpndetection.internal.ApiClient;
 /**
- * Error
+ * ApikeyList
  */
 @JsonPropertyOrder({
-  Error.JSON_PROPERTY_RC
+  ApikeyList.JSON_PROPERTY_RC,
+  ApikeyList.JSON_PROPERTY_KEYS
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
-public class Error {
+public class ApikeyList {
   public static final String JSON_PROPERTY_RC = "rc";
   @javax.annotation.Nonnull
   private String rc;
 
-  public Error() { 
+  public static final String JSON_PROPERTY_KEYS = "keys";
+  @javax.annotation.Nonnull
+  private List<ApikeyDetail> keys = new ArrayList<>();
+
+  public ApikeyList() { 
   }
 
-  public Error rc(@javax.annotation.Nonnull String rc) {
+  public ApikeyList rc(@javax.annotation.Nonnull String rc) {
     this.rc = rc;
     return this;
   }
@@ -68,8 +76,40 @@ public class Error {
   }
 
 
+  public ApikeyList keys(@javax.annotation.Nonnull List<ApikeyDetail> keys) {
+    this.keys = keys;
+    return this;
+  }
+
+  public ApikeyList addKeysItem(ApikeyDetail keysItem) {
+    if (this.keys == null) {
+      this.keys = new ArrayList<>();
+    }
+    this.keys.add(keysItem);
+    return this;
+  }
+
   /**
-   * Return true if this Error object is equal to o.
+   * Get keys
+   * @return keys
+   */
+  @javax.annotation.Nonnull
+  @JsonProperty(value = JSON_PROPERTY_KEYS, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public List<ApikeyDetail> getKeys() {
+    return keys;
+  }
+
+
+  @JsonProperty(value = JSON_PROPERTY_KEYS, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setKeys(@javax.annotation.Nonnull List<ApikeyDetail> keys) {
+    this.keys = keys;
+  }
+
+
+  /**
+   * Return true if this ApikeyList object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,20 +119,22 @@ public class Error {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Error error = (Error) o;
-    return Objects.equals(this.rc, error.rc);
+    ApikeyList apikeyList = (ApikeyList) o;
+    return Objects.equals(this.rc, apikeyList.rc) &&
+        Objects.equals(this.keys, apikeyList.keys);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(rc);
+    return Objects.hash(rc, keys);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Error {\n");
+    sb.append("class ApikeyList {\n");
     sb.append("    rc: ").append(toIndentedString(rc)).append("\n");
+    sb.append("    keys: ").append(toIndentedString(keys)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -140,6 +182,16 @@ public class Error {
     // add `rc` to the URL query string
     if (getRc() != null) {
       joiner.add(String.format(java.util.Locale.ROOT, "%src%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getRc()))));
+    }
+
+    // add `keys` to the URL query string
+    if (getKeys() != null) {
+      for (int i = 0; i < getKeys().size(); i++) {
+        if (getKeys().get(i) != null) {
+          joiner.add(getKeys().get(i).toUrlQueryString(String.format(java.util.Locale.ROOT, "%skeys%s%s", prefix, suffix,
+          "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix))));
+        }
+      }
     }
 
     return joiner.toString();

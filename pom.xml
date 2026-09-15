@@ -6,7 +6,7 @@
 
     <groupId>io.vpndetection</groupId>
     <artifactId>vpndetection</artifactId>
-    <version>5.0.0</version>
+    <version>6.0.0</version>
     <packaging>jar</packaging>
 
     <name>vpndetection</name>
@@ -41,6 +41,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <jackson.version>2.22.2</jackson.version>
         <caffeine.version>3.2.4</caffeine.version>
+        <httpclient.version>4.5.14</httpclient.version>
         <junit.version>5.14.4</junit.version>
     </properties>
 
@@ -65,7 +66,7 @@
 
     <dependencies>
         <!-- HTTP is java.net.http.HttpClient, from the JDK. Jackson and Caffeine are
-             the only libraries a consumer inherits. -->
+             the only libraries a consumer inherits by choice. -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -78,6 +79,25 @@
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
             <version>${caffeine.version}</version>
+        </dependency>
+
+        <!-- openapi-generator's `native` library does NOT use the JDK client for a
+             form-encoded or multipart body: it emits org.apache.http builders for
+             those and nothing else. The OAuth token and revoke endpoints are
+             form-encoded, so this is what makes the generated client compile at
+             all. httpclient pulls httpcore; httpmime is the multipart half.
+             Compile-only: nothing we hand-write calls it, and the endpoints it
+             serves are not on this SDK's idiomatic surface. Revisit if the
+             generator ever emits JDK-native form encoding. -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>${httpclient.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>${httpclient.version}</version>
         </dependency>
 
         <!-- The generated sources carry javax.annotation.Nullable and

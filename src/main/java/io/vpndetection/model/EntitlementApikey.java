@@ -24,38 +24,41 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.vpndetection.model.DbChecksums;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import io.vpndetection.internal.ApiClient;
 /**
- * DatabaseChecksumsResponse
+ * The credential itself. The key is never echoed - only its id, which is what the console shows and what you can act on. 
  */
 @JsonPropertyOrder({
-  DatabaseChecksumsResponse.JSON_PROPERTY_ID,
-  DatabaseChecksumsResponse.JSON_PROPERTY_FORMAT,
-  DatabaseChecksumsResponse.JSON_PROPERTY_CHECKSUMS
+  EntitlementApikey.JSON_PROPERTY_ID,
+  EntitlementApikey.JSON_PROPERTY_EXPIRES,
+  EntitlementApikey.JSON_PROPERTY_ALLOWED_CIDRS
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
-public class DatabaseChecksumsResponse {
+public class EntitlementApikey {
   public static final String JSON_PROPERTY_ID = "id";
   @javax.annotation.Nonnull
-  private String id;
+  private UUID id;
 
-  public static final String JSON_PROPERTY_FORMAT = "format";
+  public static final String JSON_PROPERTY_EXPIRES = "expires";
+  @javax.annotation.Nullable
+  private OffsetDateTime expires;
+
+  public static final String JSON_PROPERTY_ALLOWED_CIDRS = "allowed_cidrs";
   @javax.annotation.Nonnull
-  private String format;
+  private List<String> allowedCidrs = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_CHECKSUMS = "checksums";
-  @javax.annotation.Nonnull
-  private DbChecksums checksums;
-
-  public DatabaseChecksumsResponse() { 
+  public EntitlementApikey() { 
   }
 
-  public DatabaseChecksumsResponse id(@javax.annotation.Nonnull String id) {
+  public EntitlementApikey id(@javax.annotation.Nonnull UUID id) {
     this.id = id;
     return this;
   }
@@ -67,68 +70,76 @@ public class DatabaseChecksumsResponse {
   @javax.annotation.Nonnull
   @JsonProperty(value = JSON_PROPERTY_ID, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public String getId() {
+  public UUID getId() {
     return id;
   }
 
 
   @JsonProperty(value = JSON_PROPERTY_ID, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setId(@javax.annotation.Nonnull String id) {
+  public void setId(@javax.annotation.Nonnull UUID id) {
     this.id = id;
   }
 
 
-  public DatabaseChecksumsResponse format(@javax.annotation.Nonnull String format) {
-    this.format = format;
+  public EntitlementApikey expires(@javax.annotation.Nullable OffsetDateTime expires) {
+    this.expires = expires;
     return this;
   }
 
   /**
-   * Get format
-   * @return format
+   * Null for a key with no end date, which is the normal case.
+   * @return expires
    */
-  @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_FORMAT, required = true)
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_EXPIRES, required = false)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public String getFormat() {
-    return format;
+  public OffsetDateTime getExpires() {
+    return expires;
   }
 
 
-  @JsonProperty(value = JSON_PROPERTY_FORMAT, required = true)
+  @JsonProperty(value = JSON_PROPERTY_EXPIRES, required = false)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFormat(@javax.annotation.Nonnull String format) {
-    this.format = format;
+  public void setExpires(@javax.annotation.Nullable OffsetDateTime expires) {
+    this.expires = expires;
   }
 
 
-  public DatabaseChecksumsResponse checksums(@javax.annotation.Nonnull DbChecksums checksums) {
-    this.checksums = checksums;
+  public EntitlementApikey allowedCidrs(@javax.annotation.Nonnull List<String> allowedCidrs) {
+    this.allowedCidrs = allowedCidrs;
+    return this;
+  }
+
+  public EntitlementApikey addAllowedCidrsItem(String allowedCidrsItem) {
+    if (this.allowedCidrs == null) {
+      this.allowedCidrs = new ArrayList<>();
+    }
+    this.allowedCidrs.add(allowedCidrsItem);
     return this;
   }
 
   /**
-   * Get checksums
-   * @return checksums
+   * The source addresses this key may be used from. EMPTY means unrestricted, never \&quot;deny all\&quot;. 
+   * @return allowedCidrs
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CHECKSUMS, required = true)
+  @JsonProperty(value = JSON_PROPERTY_ALLOWED_CIDRS, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public DbChecksums getChecksums() {
-    return checksums;
+  public List<String> getAllowedCidrs() {
+    return allowedCidrs;
   }
 
 
-  @JsonProperty(value = JSON_PROPERTY_CHECKSUMS, required = true)
+  @JsonProperty(value = JSON_PROPERTY_ALLOWED_CIDRS, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setChecksums(@javax.annotation.Nonnull DbChecksums checksums) {
-    this.checksums = checksums;
+  public void setAllowedCidrs(@javax.annotation.Nonnull List<String> allowedCidrs) {
+    this.allowedCidrs = allowedCidrs;
   }
 
 
   /**
-   * Return true if this DatabaseChecksumsResponse object is equal to o.
+   * Return true if this EntitlementApikey object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -138,24 +149,24 @@ public class DatabaseChecksumsResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    DatabaseChecksumsResponse databaseChecksumsResponse = (DatabaseChecksumsResponse) o;
-    return Objects.equals(this.id, databaseChecksumsResponse.id) &&
-        Objects.equals(this.format, databaseChecksumsResponse.format) &&
-        Objects.equals(this.checksums, databaseChecksumsResponse.checksums);
+    EntitlementApikey entitlementApikey = (EntitlementApikey) o;
+    return Objects.equals(this.id, entitlementApikey.id) &&
+        Objects.equals(this.expires, entitlementApikey.expires) &&
+        Objects.equals(this.allowedCidrs, entitlementApikey.allowedCidrs);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, format, checksums);
+    return Objects.hash(id, expires, allowedCidrs);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class DatabaseChecksumsResponse {\n");
+    sb.append("class EntitlementApikey {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
-    sb.append("    format: ").append(toIndentedString(format)).append("\n");
-    sb.append("    checksums: ").append(toIndentedString(checksums)).append("\n");
+    sb.append("    expires: ").append(toIndentedString(expires)).append("\n");
+    sb.append("    allowedCidrs: ").append(toIndentedString(allowedCidrs)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -205,14 +216,18 @@ public class DatabaseChecksumsResponse {
       joiner.add(String.format(java.util.Locale.ROOT, "%sid%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getId()))));
     }
 
-    // add `format` to the URL query string
-    if (getFormat() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sformat%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getFormat()))));
+    // add `expires` to the URL query string
+    if (getExpires() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%sexpires%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getExpires()))));
     }
 
-    // add `checksums` to the URL query string
-    if (getChecksums() != null) {
-      joiner.add(getChecksums().toUrlQueryString(prefix + "checksums" + suffix));
+    // add `allowed_cidrs` to the URL query string
+    if (getAllowedCidrs() != null) {
+      for (int i = 0; i < getAllowedCidrs().size(); i++) {
+        joiner.add(String.format(java.util.Locale.ROOT, "%sallowed_cidrs%s%s=%s", prefix, suffix,
+            "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix),
+            ApiClient.urlEncode(ApiClient.valueToString(getAllowedCidrs().get(i)))));
+      }
     }
 
     return joiner.toString();

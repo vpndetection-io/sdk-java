@@ -30,21 +30,26 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import io.vpndetection.internal.ApiClient;
 /**
- * Error
+ * AccountRevealedApikey
  */
 @JsonPropertyOrder({
-  Error.JSON_PROPERTY_RC
+  AccountRevealedApikey.JSON_PROPERTY_RC,
+  AccountRevealedApikey.JSON_PROPERTY_KEY
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
-public class Error {
+public class AccountRevealedApikey {
   public static final String JSON_PROPERTY_RC = "rc";
   @javax.annotation.Nonnull
   private String rc;
 
-  public Error() { 
+  public static final String JSON_PROPERTY_KEY = "key";
+  @javax.annotation.Nonnull
+  private String key;
+
+  public AccountRevealedApikey() { 
   }
 
-  public Error rc(@javax.annotation.Nonnull String rc) {
+  public AccountRevealedApikey rc(@javax.annotation.Nonnull String rc) {
     this.rc = rc;
     return this;
   }
@@ -68,8 +73,32 @@ public class Error {
   }
 
 
+  public AccountRevealedApikey key(@javax.annotation.Nonnull String key) {
+    this.key = key;
+    return this;
+  }
+
   /**
-   * Return true if this Error object is equal to o.
+   * The secret.
+   * @return key
+   */
+  @javax.annotation.Nonnull
+  @JsonProperty(value = JSON_PROPERTY_KEY, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public String getKey() {
+    return key;
+  }
+
+
+  @JsonProperty(value = JSON_PROPERTY_KEY, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setKey(@javax.annotation.Nonnull String key) {
+    this.key = key;
+  }
+
+
+  /**
+   * Return true if this AccountRevealedApikey object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,20 +108,22 @@ public class Error {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Error error = (Error) o;
-    return Objects.equals(this.rc, error.rc);
+    AccountRevealedApikey accountRevealedApikey = (AccountRevealedApikey) o;
+    return Objects.equals(this.rc, accountRevealedApikey.rc) &&
+        Objects.equals(this.key, accountRevealedApikey.key);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(rc);
+    return Objects.hash(rc, key);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Error {\n");
+    sb.append("class AccountRevealedApikey {\n");
     sb.append("    rc: ").append(toIndentedString(rc)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -140,6 +171,11 @@ public class Error {
     // add `rc` to the URL query string
     if (getRc() != null) {
       joiner.add(String.format(java.util.Locale.ROOT, "%src%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getRc()))));
+    }
+
+    // add `key` to the URL query string
+    if (getKey() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%skey%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getKey()))));
     }
 
     return joiner.toString();

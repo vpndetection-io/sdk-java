@@ -67,7 +67,7 @@ Same answer `lookup` would give for that address, and the same cost against your
 ### Your plan and usage
 
 ```java
-AccountMe acct = client.myAccount();
+Entitlement acct = client.myEntitlement();
 System.out.println(acct.getPlan().getKey());         // max
 System.out.println(acct.getUsage().getRequests());  // 580
 System.out.println(acct.getUsage().getWindowEnd()); // when the allowance resets
@@ -75,7 +75,7 @@ System.out.println(acct.getUsage().getWindowEnd()); // when the allowance resets
 
 Usage counts against the anniversary of your subscription, not the calendar month and not the billing period, and it is the same number a lookup is gated on. `getHardLimit()` is `null` on an uncapped plan, which is not the same as zero.
 
-`myIpAsync()` and `myAccountAsync()` return a `CompletableFuture` of the same thing.
+`myIpAsync()` and `myEntitlementAsync()` return a `CompletableFuture` of the same thing.
 
 ### Batch lookup
 

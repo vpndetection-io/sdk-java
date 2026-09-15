@@ -24,43 +24,40 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import io.vpndetection.internal.ApiClient;
 /**
- * DatabaseMetadataColumn
+ * AccountCreateApikeyRequest
  */
 @JsonPropertyOrder({
-  DatabaseMetadataColumn.JSON_PROPERTY_NAME,
-  DatabaseMetadataColumn.JSON_PROPERTY_TYPE,
-  DatabaseMetadataColumn.JSON_PROPERTY_DESCRIPTION
+  AccountCreateApikeyRequest.JSON_PROPERTY_NAME,
+  AccountCreateApikeyRequest.JSON_PROPERTY_ALLOWED_SCOPES
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
-public class DatabaseMetadataColumn {
+public class AccountCreateApikeyRequest {
   public static final String JSON_PROPERTY_NAME = "name";
   @javax.annotation.Nonnull
   private String name;
 
-  public static final String JSON_PROPERTY_TYPE = "type";
-  @javax.annotation.Nonnull
-  private String type;
-
-  public static final String JSON_PROPERTY_DESCRIPTION = "description";
+  public static final String JSON_PROPERTY_ALLOWED_SCOPES = "allowed_scopes";
   @javax.annotation.Nullable
-  private String description;
+  private List<String> allowedScopes = new ArrayList<>();
 
-  public DatabaseMetadataColumn() { 
+  public AccountCreateApikeyRequest() { 
   }
 
-  public DatabaseMetadataColumn name(@javax.annotation.Nonnull String name) {
+  public AccountCreateApikeyRequest name(@javax.annotation.Nonnull String name) {
     this.name = name;
     return this;
   }
 
   /**
-   * Get name
+   * A label you will recognise later. Shown wherever the key is listed.
    * @return name
    */
   @javax.annotation.Nonnull
@@ -78,56 +75,40 @@ public class DatabaseMetadataColumn {
   }
 
 
-  public DatabaseMetadataColumn type(@javax.annotation.Nonnull String type) {
-    this.type = type;
+  public AccountCreateApikeyRequest allowedScopes(@javax.annotation.Nullable List<String> allowedScopes) {
+    this.allowedScopes = allowedScopes;
+    return this;
+  }
+
+  public AccountCreateApikeyRequest addAllowedScopesItem(String allowedScopesItem) {
+    if (this.allowedScopes == null) {
+      this.allowedScopes = new ArrayList<>();
+    }
+    this.allowedScopes.add(allowedScopesItem);
     return this;
   }
 
   /**
-   * Get type
-   * @return type
-   */
-  @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TYPE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public String getType() {
-    return type;
-  }
-
-
-  @JsonProperty(value = JSON_PROPERTY_TYPE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(@javax.annotation.Nonnull String type) {
-    this.type = type;
-  }
-
-
-  public DatabaseMetadataColumn description(@javax.annotation.Nullable String description) {
-    this.description = description;
-    return this;
-  }
-
-  /**
-   * Get description
-   * @return description
+   * What the new key may do. Omit for a key that carries no named scope, which is the safe default.
+   * @return allowedScopes
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_DESCRIPTION, required = false)
+  @JsonProperty(value = JSON_PROPERTY_ALLOWED_SCOPES, required = false)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public String getDescription() {
-    return description;
+  public List<String> getAllowedScopes() {
+    return allowedScopes;
   }
 
 
-  @JsonProperty(value = JSON_PROPERTY_DESCRIPTION, required = false)
+  @JsonProperty(value = JSON_PROPERTY_ALLOWED_SCOPES, required = false)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setDescription(@javax.annotation.Nullable String description) {
-    this.description = description;
+  public void setAllowedScopes(@javax.annotation.Nullable List<String> allowedScopes) {
+    this.allowedScopes = allowedScopes;
   }
 
 
   /**
-   * Return true if this DatabaseMetadataColumn object is equal to o.
+   * Return true if this AccountCreateApikeyRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -137,24 +118,22 @@ public class DatabaseMetadataColumn {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    DatabaseMetadataColumn databaseMetadataColumn = (DatabaseMetadataColumn) o;
-    return Objects.equals(this.name, databaseMetadataColumn.name) &&
-        Objects.equals(this.type, databaseMetadataColumn.type) &&
-        Objects.equals(this.description, databaseMetadataColumn.description);
+    AccountCreateApikeyRequest accountCreateApikeyRequest = (AccountCreateApikeyRequest) o;
+    return Objects.equals(this.name, accountCreateApikeyRequest.name) &&
+        Objects.equals(this.allowedScopes, accountCreateApikeyRequest.allowedScopes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, type, description);
+    return Objects.hash(name, allowedScopes);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class DatabaseMetadataColumn {\n");
+    sb.append("class AccountCreateApikeyRequest {\n");
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
-    sb.append("    description: ").append(toIndentedString(description)).append("\n");
+    sb.append("    allowedScopes: ").append(toIndentedString(allowedScopes)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -204,14 +183,13 @@ public class DatabaseMetadataColumn {
       joiner.add(String.format(java.util.Locale.ROOT, "%sname%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getName()))));
     }
 
-    // add `type` to the URL query string
-    if (getType() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%stype%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getType()))));
-    }
-
-    // add `description` to the URL query string
-    if (getDescription() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sdescription%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getDescription()))));
+    // add `allowed_scopes` to the URL query string
+    if (getAllowedScopes() != null) {
+      for (int i = 0; i < getAllowedScopes().size(); i++) {
+        joiner.add(String.format(java.util.Locale.ROOT, "%sallowed_scopes%s%s=%s", prefix, suffix,
+            "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix),
+            ApiClient.urlEncode(ApiClient.valueToString(getAllowedScopes().get(i)))));
+      }
     }
 
     return joiner.toString();

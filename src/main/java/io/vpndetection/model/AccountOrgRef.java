@@ -25,51 +25,52 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
+import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import io.vpndetection.internal.ApiClient;
 /**
- * Error
+ * AccountOrgRef
  */
 @JsonPropertyOrder({
-  Error.JSON_PROPERTY_RC
+  AccountOrgRef.JSON_PROPERTY_ID
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
-public class Error {
-  public static final String JSON_PROPERTY_RC = "rc";
+public class AccountOrgRef {
+  public static final String JSON_PROPERTY_ID = "id";
   @javax.annotation.Nonnull
-  private String rc;
+  private UUID id;
 
-  public Error() { 
+  public AccountOrgRef() { 
   }
 
-  public Error rc(@javax.annotation.Nonnull String rc) {
-    this.rc = rc;
+  public AccountOrgRef id(@javax.annotation.Nonnull UUID id) {
+    this.id = id;
     return this;
   }
 
   /**
-   * Get rc
-   * @return rc
+   * Get id
+   * @return id
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_RC, required = true)
+  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public String getRc() {
-    return rc;
+  public UUID getId() {
+    return id;
   }
 
 
-  @JsonProperty(value = JSON_PROPERTY_RC, required = true)
+  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRc(@javax.annotation.Nonnull String rc) {
-    this.rc = rc;
+  public void setId(@javax.annotation.Nonnull UUID id) {
+    this.id = id;
   }
 
 
   /**
-   * Return true if this Error object is equal to o.
+   * Return true if this AccountOrgRef object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,20 +80,20 @@ public class Error {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Error error = (Error) o;
-    return Objects.equals(this.rc, error.rc);
+    AccountOrgRef accountOrgRef = (AccountOrgRef) o;
+    return Objects.equals(this.id, accountOrgRef.id);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(rc);
+    return Objects.hash(id);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Error {\n");
-    sb.append("    rc: ").append(toIndentedString(rc)).append("\n");
+    sb.append("class AccountOrgRef {\n");
+    sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -137,9 +138,9 @@ public class Error {
 
     StringJoiner joiner = new StringJoiner("&");
 
-    // add `rc` to the URL query string
-    if (getRc() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%src%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getRc()))));
+    // add `id` to the URL query string
+    if (getId() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%sid%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getId()))));
     }
 
     return joiner.toString();

@@ -30,46 +30,75 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import io.vpndetection.internal.ApiClient;
 /**
- * Error
+ * OauthError
  */
 @JsonPropertyOrder({
-  Error.JSON_PROPERTY_RC
+  OauthError.JSON_PROPERTY_ERROR,
+  OauthError.JSON_PROPERTY_ERROR_DESCRIPTION
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
-public class Error {
-  public static final String JSON_PROPERTY_RC = "rc";
+public class OauthError {
+  public static final String JSON_PROPERTY_ERROR = "error";
   @javax.annotation.Nonnull
-  private String rc;
+  private String error;
 
-  public Error() { 
+  public static final String JSON_PROPERTY_ERROR_DESCRIPTION = "error_description";
+  @javax.annotation.Nullable
+  private String errorDescription;
+
+  public OauthError() { 
   }
 
-  public Error rc(@javax.annotation.Nonnull String rc) {
-    this.rc = rc;
+  public OauthError error(@javax.annotation.Nonnull String error) {
+    this.error = error;
     return this;
   }
 
   /**
-   * Get rc
-   * @return rc
+   * Get error
+   * @return error
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_RC, required = true)
+  @JsonProperty(value = JSON_PROPERTY_ERROR, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public String getRc() {
-    return rc;
+  public String getError() {
+    return error;
   }
 
 
-  @JsonProperty(value = JSON_PROPERTY_RC, required = true)
+  @JsonProperty(value = JSON_PROPERTY_ERROR, required = true)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRc(@javax.annotation.Nonnull String rc) {
-    this.rc = rc;
+  public void setError(@javax.annotation.Nonnull String error) {
+    this.error = error;
+  }
+
+
+  public OauthError errorDescription(@javax.annotation.Nullable String errorDescription) {
+    this.errorDescription = errorDescription;
+    return this;
+  }
+
+  /**
+   * Get errorDescription
+   * @return errorDescription
+   */
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_ERROR_DESCRIPTION, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public String getErrorDescription() {
+    return errorDescription;
+  }
+
+
+  @JsonProperty(value = JSON_PROPERTY_ERROR_DESCRIPTION, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setErrorDescription(@javax.annotation.Nullable String errorDescription) {
+    this.errorDescription = errorDescription;
   }
 
 
   /**
-   * Return true if this Error object is equal to o.
+   * Return true if this OauthError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,20 +108,22 @@ public class Error {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Error error = (Error) o;
-    return Objects.equals(this.rc, error.rc);
+    OauthError oauthError = (OauthError) o;
+    return Objects.equals(this.error, oauthError.error) &&
+        Objects.equals(this.errorDescription, oauthError.errorDescription);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(rc);
+    return Objects.hash(error, errorDescription);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Error {\n");
-    sb.append("    rc: ").append(toIndentedString(rc)).append("\n");
+    sb.append("class OauthError {\n");
+    sb.append("    error: ").append(toIndentedString(error)).append("\n");
+    sb.append("    errorDescription: ").append(toIndentedString(errorDescription)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -137,9 +168,14 @@ public class Error {
 
     StringJoiner joiner = new StringJoiner("&");
 
-    // add `rc` to the URL query string
-    if (getRc() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%src%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getRc()))));
+    // add `error` to the URL query string
+    if (getError() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%serror%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getError()))));
+    }
+
+    // add `error_description` to the URL query string
+    if (getErrorDescription() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%serror_description%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getErrorDescription()))));
     }
 
     return joiner.toString();

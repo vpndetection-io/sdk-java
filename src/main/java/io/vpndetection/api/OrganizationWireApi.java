@@ -18,8 +18,8 @@ import io.vpndetection.internal.ApiResponse;
 import io.vpndetection.internal.Configuration;
 import io.vpndetection.internal.Pair;
 
-import io.vpndetection.model.LookupError;
-import io.vpndetection.model.LookupResponse;
+import io.vpndetection.model.AccountOrgWrap;
+import io.vpndetection.model.AccountRc;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,7 +53,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
-public class LookupWireApi {
+public class OrganizationWireApi {
   /**
    * Utility class for extending HttpRequest.Builder functionality.
    */
@@ -82,11 +82,11 @@ public class LookupWireApi {
   private final Consumer<HttpResponse<InputStream>> memberVarResponseInterceptor;
   private final Consumer<HttpResponse<InputStream>> memberVarAsyncResponseInterceptor;
 
-  public LookupWireApi() {
+  public OrganizationWireApi() {
     this(Configuration.getDefaultApiClient());
   }
 
-  public LookupWireApi(ApiClient apiClient) {
+  public OrganizationWireApi(ApiClient apiClient) {
     memberVarHttpClient = apiClient.getHttpClient();
     memberVarObjectMapper = apiClient.getObjectMapper();
     memberVarBaseUri = apiClient.getBaseUri();
@@ -170,50 +170,46 @@ public class LookupWireApi {
   }
 
   /**
-   * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the plan behind the presented key; with no key the answer is &#x60;ip&#x60; and &#x60;is_vpn&#x60;. 
-   * @param ip The IPv4 or IPv6 address to classify. (required)
-   * @return LookupResponse
+   * Organization
+   * The organization this credential is scoped to.  There is no way to name a different one. A credential describes exactly one organization, so an identifier in the path could only ever be your own or a refusal. 
+   * @return AccountOrgWrap
    * @throws ApiException if fails to make API call
    */
-  public LookupResponse lookupIp(@javax.annotation.Nonnull String ip) throws ApiException {
-    return lookupIp(ip, null);
+  public AccountOrgWrap accountOrg() throws ApiException {
+    return accountOrg(null);
   }
 
   /**
-   * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the plan behind the presented key; with no key the answer is &#x60;ip&#x60; and &#x60;is_vpn&#x60;. 
-   * @param ip The IPv4 or IPv6 address to classify. (required)
+   * Organization
+   * The organization this credential is scoped to.  There is no way to name a different one. A credential describes exactly one organization, so an identifier in the path could only ever be your own or a refusal. 
    * @param headers Optional headers to include in the request
-   * @return LookupResponse
+   * @return AccountOrgWrap
    * @throws ApiException if fails to make API call
    */
-  public LookupResponse lookupIp(@javax.annotation.Nonnull String ip, Map<String, String> headers) throws ApiException {
-    ApiResponse<LookupResponse> localVarResponse = lookupIpWithHttpInfo(ip, headers);
+  public AccountOrgWrap accountOrg(Map<String, String> headers) throws ApiException {
+    ApiResponse<AccountOrgWrap> localVarResponse = accountOrgWithHttpInfo(headers);
     return localVarResponse.getData();
   }
 
   /**
-   * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the plan behind the presented key; with no key the answer is &#x60;ip&#x60; and &#x60;is_vpn&#x60;. 
-   * @param ip The IPv4 or IPv6 address to classify. (required)
-   * @return ApiResponse&lt;LookupResponse&gt;
+   * Organization
+   * The organization this credential is scoped to.  There is no way to name a different one. A credential describes exactly one organization, so an identifier in the path could only ever be your own or a refusal. 
+   * @return ApiResponse&lt;AccountOrgWrap&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<LookupResponse> lookupIpWithHttpInfo(@javax.annotation.Nonnull String ip) throws ApiException {
-    return lookupIpWithHttpInfo(ip, null);
+  public ApiResponse<AccountOrgWrap> accountOrgWithHttpInfo() throws ApiException {
+    return accountOrgWithHttpInfo(null);
   }
 
   /**
-   * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the plan behind the presented key; with no key the answer is &#x60;ip&#x60; and &#x60;is_vpn&#x60;. 
-   * @param ip The IPv4 or IPv6 address to classify. (required)
+   * Organization
+   * The organization this credential is scoped to.  There is no way to name a different one. A credential describes exactly one organization, so an identifier in the path could only ever be your own or a refusal. 
    * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;LookupResponse&gt;
+   * @return ApiResponse&lt;AccountOrgWrap&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<LookupResponse> lookupIpWithHttpInfo(@javax.annotation.Nonnull String ip, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = lookupIpRequestBuilder(ip, headers);
+  public ApiResponse<AccountOrgWrap> accountOrgWithHttpInfo(Map<String, String> headers) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = accountOrgRequestBuilder(headers);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -224,11 +220,11 @@ public class LookupWireApi {
       InputStream localVarResponseBody = null;
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("lookupIp", localVarResponse);
+          throw getApiException("accountOrg", localVarResponse);
         }
         localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
         if (localVarResponseBody == null) {
-          return new ApiResponse<LookupResponse>(
+          return new ApiResponse<AccountOrgWrap>(
               localVarResponse.statusCode(),
               localVarResponse.headers().map(),
               null
@@ -238,10 +234,10 @@ public class LookupWireApi {
         
         
         String responseBody = new String(localVarResponseBody.readAllBytes());
-        LookupResponse responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<LookupResponse>() {});
+        AccountOrgWrap responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<AccountOrgWrap>() {});
         
 
-        return new ApiResponse<LookupResponse>(
+        return new ApiResponse<AccountOrgWrap>(
             localVarResponse.statusCode(),
             localVarResponse.headers().map(),
             responseValue
@@ -260,16 +256,11 @@ public class LookupWireApi {
     }
   }
 
-  private HttpRequest.Builder lookupIpRequestBuilder(@javax.annotation.Nonnull String ip, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'ip' is set
-    if (ip == null) {
-      throw new ApiException(400, "Missing the required parameter 'ip' when calling lookupIp");
-    }
+  private HttpRequest.Builder accountOrgRequestBuilder(Map<String, String> headers) throws ApiException {
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/{ip}"
-        .replace("{ip}", ApiClient.urlEncode(ip.toString()));
+    String localVarPath = "/api/v1/iam/org";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
@@ -288,46 +279,46 @@ public class LookupWireApi {
   }
 
   /**
-   * My IP
-   * Answers what is known about the address this request came from, which is the same answer &#x60;GET /{ip}&#x60; gives for that address: the plan behind the presented key decides which fields come back, and the request counts against the same allowance.  The address is the one our edge observed, so a request through a proxy or a VPN reports the exit it left through rather than the machine that made it. That is usually the point of asking. 
-   * @return LookupResponse
+   * Members
+   * Read-only. Adding or removing a member is an invitation flow with email in the middle rather than a POST, and modelling it as one here would promise something this API does not do. 
+   * @return AccountRc
    * @throws ApiException if fails to make API call
    */
-  public LookupResponse lookupMyIp() throws ApiException {
-    return lookupMyIp(null);
+  public AccountRc accountOrgMembers() throws ApiException {
+    return accountOrgMembers(null);
   }
 
   /**
-   * My IP
-   * Answers what is known about the address this request came from, which is the same answer &#x60;GET /{ip}&#x60; gives for that address: the plan behind the presented key decides which fields come back, and the request counts against the same allowance.  The address is the one our edge observed, so a request through a proxy or a VPN reports the exit it left through rather than the machine that made it. That is usually the point of asking. 
+   * Members
+   * Read-only. Adding or removing a member is an invitation flow with email in the middle rather than a POST, and modelling it as one here would promise something this API does not do. 
    * @param headers Optional headers to include in the request
-   * @return LookupResponse
+   * @return AccountRc
    * @throws ApiException if fails to make API call
    */
-  public LookupResponse lookupMyIp(Map<String, String> headers) throws ApiException {
-    ApiResponse<LookupResponse> localVarResponse = lookupMyIpWithHttpInfo(headers);
+  public AccountRc accountOrgMembers(Map<String, String> headers) throws ApiException {
+    ApiResponse<AccountRc> localVarResponse = accountOrgMembersWithHttpInfo(headers);
     return localVarResponse.getData();
   }
 
   /**
-   * My IP
-   * Answers what is known about the address this request came from, which is the same answer &#x60;GET /{ip}&#x60; gives for that address: the plan behind the presented key decides which fields come back, and the request counts against the same allowance.  The address is the one our edge observed, so a request through a proxy or a VPN reports the exit it left through rather than the machine that made it. That is usually the point of asking. 
-   * @return ApiResponse&lt;LookupResponse&gt;
+   * Members
+   * Read-only. Adding or removing a member is an invitation flow with email in the middle rather than a POST, and modelling it as one here would promise something this API does not do. 
+   * @return ApiResponse&lt;AccountRc&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<LookupResponse> lookupMyIpWithHttpInfo() throws ApiException {
-    return lookupMyIpWithHttpInfo(null);
+  public ApiResponse<AccountRc> accountOrgMembersWithHttpInfo() throws ApiException {
+    return accountOrgMembersWithHttpInfo(null);
   }
 
   /**
-   * My IP
-   * Answers what is known about the address this request came from, which is the same answer &#x60;GET /{ip}&#x60; gives for that address: the plan behind the presented key decides which fields come back, and the request counts against the same allowance.  The address is the one our edge observed, so a request through a proxy or a VPN reports the exit it left through rather than the machine that made it. That is usually the point of asking. 
+   * Members
+   * Read-only. Adding or removing a member is an invitation flow with email in the middle rather than a POST, and modelling it as one here would promise something this API does not do. 
    * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;LookupResponse&gt;
+   * @return ApiResponse&lt;AccountRc&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<LookupResponse> lookupMyIpWithHttpInfo(Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = lookupMyIpRequestBuilder(headers);
+  public ApiResponse<AccountRc> accountOrgMembersWithHttpInfo(Map<String, String> headers) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = accountOrgMembersRequestBuilder(headers);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -338,11 +329,11 @@ public class LookupWireApi {
       InputStream localVarResponseBody = null;
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("lookupMyIp", localVarResponse);
+          throw getApiException("accountOrgMembers", localVarResponse);
         }
         localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
         if (localVarResponseBody == null) {
-          return new ApiResponse<LookupResponse>(
+          return new ApiResponse<AccountRc>(
               localVarResponse.statusCode(),
               localVarResponse.headers().map(),
               null
@@ -352,10 +343,10 @@ public class LookupWireApi {
         
         
         String responseBody = new String(localVarResponseBody.readAllBytes());
-        LookupResponse responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<LookupResponse>() {});
+        AccountRc responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<AccountRc>() {});
         
 
-        return new ApiResponse<LookupResponse>(
+        return new ApiResponse<AccountRc>(
             localVarResponse.statusCode(),
             localVarResponse.headers().map(),
             responseValue
@@ -374,11 +365,11 @@ public class LookupWireApi {
     }
   }
 
-  private HttpRequest.Builder lookupMyIpRequestBuilder(Map<String, String> headers) throws ApiException {
+  private HttpRequest.Builder accountOrgMembersRequestBuilder(Map<String, String> headers) throws ApiException {
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/myip";
+    String localVarPath = "/api/v1/iam/org/members";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
