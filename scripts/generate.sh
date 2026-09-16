@@ -41,6 +41,9 @@ NAMES="listDatabases_200_response=DatabaseList"
 NAMES="${NAMES},listDownloads_200_response=DownloadList"
 NAMES="${NAMES},databaseChecksum_200_response=DatabaseChecksumsResponse"
 
+# Without these the token response's `mslm:` members come out as getMslmApikeyId/getMslmApikey.
+MEMBERS="mslm:apikey_id=apikeyId,mslm:apikey=apikey"
+
 rm -rf .gen
 mkdir -p .gen
 
@@ -52,6 +55,7 @@ docker run --rm \
     -g java --library native \
     -o /out \
     --inline-schema-name-mappings "$NAMES" \
+    --name-mappings "$MEMBERS" \
     --api-name-suffix WireApi \
     --additional-properties="$PROPS" \
     >/dev/null
@@ -63,6 +67,18 @@ for pkg in internal api model ; do
     rm -rf "src/main/java/io/vpndetection/${pkg}"
     cp -R ".gen/src/main/java/io/vpndetection/${pkg}" "src/main/java/io/vpndetection/${pkg}"
 done
+
+# The generated OAuth class is public by accident and nothing calls it: client.oauth() is the
+# surface. Deprecated for the next major to delete (docs/sdk/deprecation.md, the ledger).
+AUTHORIZATION="src/main/java/io/vpndetection/api/AuthorizationWireApi.java"
+sed -i \
+    -e 's|^@javax.annotation.Generated(|/** @deprecated Use {@link io.vpndetection.VPNDetection#oauth()}. */\n&|' \
+    -e 's|^public class AuthorizationWireApi {$|@Deprecated(forRemoval = true)\n&|' \
+    "$AUTHORIZATION"
+if [ "$(grep -c -e '^/\*\* @deprecated' -e '^@Deprecated(forRemoval = true)$' "$AUTHORIZATION")" != 2 ] ; then
+    echo "could not mark ${AUTHORIZATION} deprecated: its class declaration changed shape" >&2
+    exit 1
+fi
 
 rm -rf .gen
 echo "regenerated src/main/java/io/vpndetection/{internal,api,model} from spec/openapi.yaml"
