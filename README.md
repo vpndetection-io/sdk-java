@@ -205,6 +205,26 @@ byte[] raw = client.database().downloadBytes("cdn_ip_v1", DatabaseFormat.CSVGZ);
 
 `downloadBytes` holds the whole file in memory, and the catalog runs from `cdn_ip_v1` at 10 KB to `resproxy_ip_90d_v1` at 1.79 GB, so use `download` for anything you have not measured.
 
+### Sign in with OAuth (device flow)
+
+A program running on the person's own machine can let them sign in with a browser and pick one of their API keys, instead of asking them to paste it:
+
+```java
+VPNDetection client = VPNDetection.create();
+
+DeviceAuthorization device = client.oauth().deviceAuthorization("your-client-id",
+        new DeviceAuthorizationOptions().scope("account.read apikeys.read apikeys.reveal"));
+System.out.println("Open " + device.getVerificationUri() + " and enter " + device.getUserCode());
+
+TokenResponse token = client.oauth().pollDeviceToken("your-client-id", device);
+if (token.getApikey() == null) {
+    throw new IllegalStateException("no API key came back: none was picked, or it cannot be shown again");
+}
+VPNDetection keyed = VPNDetection.builder().apiKey(token.getApikey()).build();
+```
+
+A denied sign-in throws `OauthAccessDeniedException` and a code that ran out `OauthExpiredTokenException`, and client IDs are issued on request from support@vpndetection.io. `client.oauth().revoke("your-client-id", token.getRefreshToken())` signs the machine out again.
+
 ### Absent is not false
 
 Only `ip` and `isVpn` come back on every plan. The rest are `Optional`, where empty means "not in your plan" rather than "checked, and no".

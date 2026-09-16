@@ -11,7 +11,10 @@ import java.time.Duration;
 public final class BatchOptions extends LookupOptions {
     private Integer concurrency;
 
-    /** Concurrent batch requests - chunks of up to 1000 addresses - for THIS batch only. */
+    /**
+     * Concurrent batch requests - chunks of up to 1000 addresses - for THIS batch only. Below 1, the
+     * batch is refused as {@link ErrorKind#BAD_REQUEST} before any request.
+     */
     public BatchOptions concurrency(int concurrency) {
         this.concurrency = concurrency;
         return this;

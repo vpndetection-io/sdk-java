@@ -9,8 +9,10 @@ import java.util.Optional;
  * <p>Unchecked, so a lookup can sit inside a stream, a lambda or a {@code CompletableFuture} chain
  * without being wrapped first. What went wrong is in {@link #kind()}, and {@link #retryable()}
  * answers whether trying again could help.
+ *
+ * <p>Not final, so that {@link OauthException} is one: a catch-all still catches an OAuth refusal.
  */
-public final class VPNDetectionException extends RuntimeException {
+public class VPNDetectionException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 
     private final ErrorKind kind;

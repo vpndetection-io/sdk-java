@@ -55,6 +55,7 @@ public final class VPNDetection implements AutoCloseable {
     private final LookupWireApi lookupApi;
     private final EntitlementWireApi entitlementApi;
     private final DatabaseApi database;
+    private final OauthApi oauth;
     private final Cache<String, Result> cache;
     private final Semaphore gate;
     private final ExecutorService ownedExecutor;
@@ -77,6 +78,8 @@ public final class VPNDetection implements AutoCloseable {
         this.retries = b.retries;
         this.requestTimeout = b.requestTimeout;
         this.database = new DatabaseApi(api, b.retries);
+        this.oauth = new OauthApi(http, api.getObjectMapper(), b.baseUrl, b.retries, b.requestTimeout,
+                OauthApi.SYSTEM);
         this.cache = b.cacheEnabled
                 ? Caffeine.newBuilder().maximumSize(b.cacheSize).expireAfterWrite(b.cacheTtl).build()
                 : null;
@@ -233,6 +236,11 @@ public final class VPNDetection implements AutoCloseable {
         Objects.requireNonNull(ips, "ips");
         Objects.requireNonNull(options, "options");
         Integer perCall = options.concurrencyOrNull();
+        if (perCall != null && perCall < 1) {
+            // A semaphore with no permits admits no chunk, so the batch would wait forever.
+            throw new VPNDetectionException(ErrorKind.BAD_REQUEST,
+                    "concurrency must be at least 1, got " + perCall);
+        }
         // A per-call concurrency gets its OWN semaphore. Reusing the instance's would silently cap
         // the override at the client's setting, which passes any test that does not measure peak.
         Semaphore limit = perCall == null ? gate : new Semaphore(perCall);
@@ -289,6 +297,15 @@ public final class VPNDetection implements AutoCloseable {
     /** The licensed dataset downloads, for keys that carry the {@code db.download} scope. */
     public DatabaseApi database() {
         return database;
+    }
+
+    /**
+     * Sign a person in with OAuth's device flow, so a program on their machine is handed one of their
+     * API keys instead of asking them to paste it. These requests never carry this client's key, so a
+     * client built without one serves them the same.
+     */
+    public OauthApi oauth() {
+        return oauth;
     }
 
     /** Releases the thread pool this client created. A supplied executor is left alone. */

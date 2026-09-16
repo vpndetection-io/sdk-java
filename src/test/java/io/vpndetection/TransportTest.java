@@ -77,6 +77,26 @@ class TransportTest {
         }
     }
 
+    // Where a runtime bounds each read rather than the whole attempt, a full stall proves nothing;
+    // this body never stops arriving, one byte at a time.
+    @Test
+    void theTimeoutCoversABodyThatTricklesIn() {
+        try (VPNDetection client = clientWithTimeout(Duration.ofMillis(300))) {
+            assertTimesOut(() -> client.lookup("7.7.7.7"), "after 300ms");
+        }
+    }
+
+    // The second call carries no override, so a per-call value that stuck to the client fails it.
+    @Test
+    void anOauthRequestIsHeldToItsTimeoutOverTheBody() {
+        try (VPNDetection client = clientWithTimeout(Duration.ofMillis(700))) {
+            assertTimesOut(() -> client.oauth().exchangeDeviceCode("sdk-java-test", "mo_dc_stall",
+                    new OauthOptions().requestTimeout(Duration.ofMillis(300))), "after 300ms");
+            assertTimesOut(() -> client.oauth().exchangeDeviceCode("sdk-java-test", "mo_dc_stall"),
+                    "after 700ms");
+        }
+    }
+
     private VPNDetection clientWithTimeout(Duration timeout) {
         return VPNDetection.builder()
                 .baseUrl("http://127.0.0.1:" + server.getAddress().getPort())
@@ -97,8 +117,9 @@ class TransportTest {
         assertTrue(took < 5000, "took " + took + "ms, past the bound");
     }
 
-    // 1.1.1.1 is served, notanip is refused, 8.8.8.8 stalls half way through its body and 9.9.9.9
-    // stalls before its headers, each until the test is over.
+    // 1.1.1.1 is served, notanip is refused, 8.8.8.8 and the token endpoint stall half way through
+    // their bodies, 7.7.7.7 trickles its body a byte every 20 ms, and 9.9.9.9 stalls before its
+    // headers, each until the test is over.
     private void answer(HttpExchange exchange) throws IOException {
         String path = exchange.getRequestURI().getPath();
         exchange.getResponseHeaders().add("content-type", "application/json");
@@ -117,6 +138,16 @@ class TransportTest {
                     out.flush();
                     stall();
                     break;
+                case "/oauth/token":
+                    exchange.sendResponseHeaders(200, 100);
+                    out.write("{\"access_token\": ".getBytes(StandardCharsets.UTF_8));
+                    out.flush();
+                    stall();
+                    break;
+                case "/7.7.7.7":
+                    exchange.sendResponseHeaders(200, 400);
+                    trickle(out, 400);
+                    break;
                 default:
                     stall();
                     break;
@@ -132,6 +163,22 @@ class TransportTest {
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         exchange.sendResponseHeaders(status, bytes.length);
         out.write(bytes);
+    }
+
+    // A byte every 20 ms, so no single read waits long, for longer than any bound here allows.
+    private void trickle(OutputStream out, int bytes) throws IOException {
+        for (int i = 0; i < bytes; i++) {
+            out.write(' ');
+            out.flush();
+            try {
+                if (release.await(20, TimeUnit.MILLISECONDS)) {
+                    return;
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
     }
 
     private void stall() {

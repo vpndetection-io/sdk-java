@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -215,6 +216,23 @@ class ClientTest {
             for (String ip : ips) {
                 assertEquals(ip, got.get(ip).orElseThrow().ip(), ip + " should be answered for itself");
             }
+        }
+    }
+
+    // A semaphore with no permits would admit no chunk, and the batch would wait forever.
+    @Test
+    void aPerCallConcurrencyBelowOneIsRefusedBeforeAnyRequest() {
+        StubHttpClient http = StubHttpClient.echoing(Duration.ZERO);
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).build()) {
+            for (int concurrency : new int[] {0, -1}) {
+                BatchOptions options = new BatchOptions().concurrency(concurrency);
+                // Bounded from outside: an unrefused value blocks the calling thread for good.
+                VPNDetectionException e = assertTimeoutPreemptively(Duration.ofSeconds(5), () -> assertThrows(
+                        VPNDetectionException.class, () -> client.lookupBatch(List.of("1.1.1.1"), options)));
+                assertEquals(ErrorKind.BAD_REQUEST, e.kind());
+                assertEquals("concurrency must be at least 1, got " + concurrency, e.getMessage());
+            }
+            assertEquals(0, http.calls.size());
         }
     }
 

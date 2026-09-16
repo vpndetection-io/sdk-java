@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -216,6 +217,23 @@ class ConformanceTest {
             routes.put(ip, StubHttpClient.Route.ok("{\"ip\": \"" + ip + "\", \"is_vpn\": false}"));
         }
         StubHttpClient http = StubHttpClient.of(routes);
+
+        try (VPNDetection client = clientOn(http).cacheEnabled(false).build()) {
+            LinkedHashMap<String, BatchResult> got = client.lookupBatch(strings(c.get("input")));
+            JsonNode expect = c.get("expect");
+
+            assertEquals(expect.get("keyCount").asInt(), got.size());
+            assertEquals(expect.get("httpRequests").asInt(), http.calls.size());
+            for (String ip : strings(c.get("input"))) {
+                assertEquals(ip, got.get(ip).orElseThrow().ip(), ip + " should be answered for itself");
+            }
+        }
+    }
+
+    @Test
+    void anUncappedBatchIsChunkedRatherThanRefused() {
+        JsonNode c = batchCase("uncapped-input-is-chunked");
+        StubHttpClient http = StubHttpClient.echoing(Duration.ZERO);
 
         try (VPNDetection client = clientOn(http).cacheEnabled(false).build()) {
             LinkedHashMap<String, BatchResult> got = client.lookupBatch(strings(c.get("input")));
