@@ -51,6 +51,7 @@ public final class VPNDetection implements AutoCloseable {
     // size.
     private static final int BATCH_MAX = 1000;
 
+    private final ApiClient api;
     private final LookupWireApi lookupApi;
     private final EntitlementWireApi entitlementApi;
     private final DatabaseApi database;
@@ -59,10 +60,11 @@ public final class VPNDetection implements AutoCloseable {
     private final ExecutorService ownedExecutor;
     private final Executor executor;
     private final int retries;
+    private final Duration requestTimeout;
 
     private VPNDetection(Builder b) {
-        HttpClient http = b.httpClient != null ? b.httpClient : defaultHttpClient();
-        ApiClient api = new ApiClient(new FixedHttpClientBuilder(http),
+        HttpClient http = new DeadlineHttpClient(b.httpClient != null ? b.httpClient : defaultHttpClient());
+        this.api = new ApiClient(new FixedHttpClientBuilder(http),
                 ApiClient.createDefaultObjectMapper(), b.baseUrl);
         api.setReadTimeout(b.requestTimeout);
         if (b.apiKey != null) {
@@ -73,6 +75,7 @@ public final class VPNDetection implements AutoCloseable {
         this.lookupApi = new LookupWireApi(api);
         this.entitlementApi = new EntitlementWireApi(api);
         this.retries = b.retries;
+        this.requestTimeout = b.requestTimeout;
         this.database = new DatabaseApi(api, b.retries);
         this.cache = b.cacheEnabled
                 ? Caffeine.newBuilder().maximumSize(b.cacheSize).expireAfterWrite(b.cacheTtl).build()
@@ -124,9 +127,8 @@ public final class VPNDetection implements AutoCloseable {
         if (hit != null) {
             return hit;
         }
-        Integer perCall = options.retriesOrNull();
-        Result result = Wire.execute(perCall != null ? perCall : retries,
-                () -> Result.of(lookupApi.lookupIp(ip)));
+        LookupWireApi wire = lookupApi(options);
+        Result result = Wire.execute(retries(options), () -> Result.of(wire.lookupIp(ip)));
         if (cache != null) {
             cache.put(ip, result);
         }
@@ -150,9 +152,8 @@ public final class VPNDetection implements AutoCloseable {
      */
     public Result myIp(LookupOptions options) {
         Objects.requireNonNull(options, "options");
-        Integer perCall = options.retriesOrNull();
-        return Wire.execute(perCall != null ? perCall : retries,
-                () -> Result.of(lookupApi.lookupMyIp()));
+        LookupWireApi wire = lookupApi(options);
+        return Wire.execute(retries(options), () -> Result.of(wire.lookupMyIp()));
     }
 
     public CompletableFuture<Result> myIpAsync() {
@@ -187,8 +188,9 @@ public final class VPNDetection implements AutoCloseable {
      */
     public Entitlement myEntitlement(LookupOptions options) {
         Objects.requireNonNull(options, "options");
-        Integer perCall = options.retriesOrNull();
-        return Wire.execute(perCall != null ? perCall : retries, () -> entitlementApi.myEntitlement());
+        ApiClient scoped = scoped(options);
+        EntitlementWireApi wire = scoped == api ? entitlementApi : new EntitlementWireApi(scoped);
+        return Wire.execute(retries(options), wire::myEntitlement);
     }
 
     public CompletableFuture<Entitlement> myEntitlementAsync() {
@@ -248,10 +250,12 @@ public final class VPNDetection implements AutoCloseable {
             pending.add(ip);
         }
 
+        LookupWireApi wire = lookupApi(options);
+        int callRetries = retries(options);
         List<CompletableFuture<Map<String, BatchResult>>> chunks = new ArrayList<>();
         for (int from = 0; from < pending.size(); from += BATCH_MAX) {
             List<String> chunk = List.copyOf(pending.subList(from, Math.min(from + BATCH_MAX, pending.size())));
-            chunks.add(submit(limit, chunk, options));
+            chunks.add(submit(limit, chunk, wire, callRetries));
         }
         for (CompletableFuture<Map<String, BatchResult>> chunk : chunks) {
             answers.putAll(chunk.join());
@@ -292,11 +296,44 @@ public final class VPNDetection implements AutoCloseable {
         }
     }
 
+    static Duration positive(Duration value, String name) {
+        Objects.requireNonNull(value, name);
+        if (value.isZero() || value.isNegative()) {
+            throw new IllegalArgumentException(name + " must be positive");
+        }
+        return value;
+    }
+
+    private int retries(LookupOptions options) {
+        Integer perCall = options.retriesOrNull();
+        return perCall != null ? perCall : retries;
+    }
+
+    private LookupWireApi lookupApi(LookupOptions options) {
+        ApiClient scoped = scoped(options);
+        return scoped == api ? lookupApi : new LookupWireApi(scoped);
+    }
+
+    // A generated API class reads its timeout once, when it is built, so a per-call timeout needs
+    // an instance of its own. That is a handful of field copies over the SAME HttpClient, not a
+    // second connection pool.
+    private ApiClient scoped(LookupOptions options) {
+        Duration perCall = options.requestTimeoutOrNull();
+        if (perCall == null || perCall.equals(requestTimeout)) {
+            return api;
+        }
+        ApiClient scoped = new ApiClient(new FixedHttpClientBuilder(api.getHttpClient()),
+                api.getObjectMapper(), api.getBaseUri());
+        scoped.setReadTimeout(perCall);
+        scoped.setRequestInterceptor(api.getRequestInterceptor());
+        return scoped;
+    }
+
     // The permit is taken on the CALLING thread, before the task is handed to the executor, so at
     // most `concurrency` chunks ever exist. Acquiring inside the task would queue every chunk at
     // once and let a large batch conjure a thread per chunk.
     private CompletableFuture<Map<String, BatchResult>> submit(
-            Semaphore limit, List<String> chunk, LookupOptions options) {
+            Semaphore limit, List<String> chunk, LookupWireApi wire, int callRetries) {
         try {
             limit.acquire();
         } catch (InterruptedException e) {
@@ -306,7 +343,7 @@ public final class VPNDetection implements AutoCloseable {
         }
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return lookupChunk(chunk, options);
+                return lookupChunk(chunk, wire, callRetries);
             } finally {
                 limit.release();
             }
@@ -316,12 +353,10 @@ public final class VPNDetection implements AutoCloseable {
     // One POST /batch, mapped back onto the addresses it was asked about. A chunk-level failure -
     // the call refused, the transport failing, the retries exhausted - becomes every address's
     // error, exactly as it would have been had each been looked up alone.
-    private Map<String, BatchResult> lookupChunk(List<String> chunk, LookupOptions options) {
-        Integer perCall = options.retriesOrNull();
+    private Map<String, BatchResult> lookupChunk(List<String> chunk, LookupWireApi wire, int callRetries) {
         BatchLookupResponse body;
         try {
-            body = Wire.execute(perCall != null ? perCall : retries,
-                    () -> lookupApi.lookupBatch(new BatchLookupRequest().ips(chunk)));
+            body = Wire.execute(callRetries, () -> wire.lookupBatch(new BatchLookupRequest().ips(chunk)));
         } catch (VPNDetectionException e) {
             return failedChunk(chunk, e);
         }
@@ -440,17 +475,24 @@ public final class VPNDetection implements AutoCloseable {
             return this;
         }
 
-        /** How long one request may take before it is abandoned. Default 30 seconds. */
+        /**
+         * How long one attempt at a call may take, response body included, before it is abandoned
+         * as a retryable {@link ErrorKind#NETWORK} failure. Default 30 seconds.
+         *
+         * <p>Per ATTEMPT, so a call that is retried can take longer in total. Overridable per call
+         * with {@link LookupOptions#requestTimeout}. A dataset transfer is not bounded by it.
+         */
         public Builder requestTimeout(Duration requestTimeout) {
-            this.requestTimeout = Objects.requireNonNull(requestTimeout, "requestTimeout");
+            this.requestTimeout = positive(requestTimeout, "requestTimeout");
             return this;
         }
 
         /**
          * Use a specific {@link HttpClient}, for a proxy, a custom SSL context or a test double.
          *
-         * <p>It must NOT follow redirects, or {@link Database#downloadUrl} will fetch the dataset
-         * instead of returning its link.
+         * <p>It must NOT follow redirects, or {@link DatabaseApi#downloadUrl} will fetch the dataset
+         * instead of returning its link. API calls go through its {@code sendAsync}, which is how
+         * {@link #requestTimeout} holds even where the client itself ignores a request's timeout.
          */
         public Builder httpClient(HttpClient httpClient) {
             this.httpClient = Objects.requireNonNull(httpClient, "httpClient");

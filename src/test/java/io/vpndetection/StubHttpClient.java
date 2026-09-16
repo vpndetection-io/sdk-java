@@ -73,6 +73,14 @@ final class StubHttpClient extends HttpClient {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    // A thread per call rather than the common pool, whose own parallelism would cap how many
+    // requests overlap below what the client allows, so a concurrency test would measure the stub.
+    private static final Executor THREAD_PER_CALL = task -> {
+        Thread worker = new Thread(task, "stub-http");
+        worker.setDaemon(true);
+        worker.start();
+    };
+
     private final Function<String, Route> responder;
     private final Duration delay;
 
@@ -94,6 +102,17 @@ final class StubHttpClient extends HttpClient {
     static StubHttpClient echoing(Duration delay) {
         return new StubHttpClient(
                 ip -> Route.ok("{\"ip\": \"" + ip + "\", \"is_vpn\": false}"), delay);
+    }
+
+    /**
+     * Takes every request and ignores its timeout, answering only after longer than any bound a
+     * test sets - and then with a failure no timeout produces, so a bound that did not hold fails
+     * an assertion rather than hanging the suite.
+     */
+    static StubHttpClient hanging() {
+        return new StubHttpClient(
+                ip -> new Route(503, "{\"error\": \"the stub stopped waiting\"}", Map.of()),
+                Duration.ofSeconds(15));
     }
 
     @Override
@@ -195,7 +214,7 @@ final class StubHttpClient extends HttpClient {
     @Override
     public <T> CompletableFuture<HttpResponse<T>> sendAsync(
             HttpRequest request, HttpResponse.BodyHandler<T> handler) {
-        return CompletableFuture.supplyAsync(() -> send(request, handler));
+        return CompletableFuture.supplyAsync(() -> send(request, handler), THREAD_PER_CALL);
     }
 
     @Override

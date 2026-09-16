@@ -62,7 +62,7 @@ public final class Options<R> {
 
     /**
      * How long a lookup may hold the request. Defaults to 2500ms, a much tighter bound than the
-     * client's own. Ignored when {@link #client} is given.
+     * client's own, and applied per lookup, so it holds for a {@link #client} you pass in as well.
      */
     public Options<R> timeout(Duration timeout) {
         this.timeout = timeout;

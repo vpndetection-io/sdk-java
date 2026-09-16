@@ -26,6 +26,7 @@ public final class Core<R> {
 
     private final Options<R> options;
     private final VPNDetection client;
+    private final LookupOptions lookupOptions;
     private final Function<R, String> selector;
     private final List<Map<String, Object>> condition;
     private final Set<String> warned = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -53,6 +54,9 @@ public final class Core<R> {
             }
             this.client = builder.build();
         }
+        // Per call rather than only on the client built above, so an injected client is held to
+        // the request path's bound too.
+        this.lookupOptions = new LookupOptions().retries(options.retries).requestTimeout(options.timeout);
     }
 
     /** Whether a condition was configured at all. */
@@ -90,7 +94,7 @@ public final class Core<R> {
 
         Result result;
         try {
-            result = client.lookup(ip, new LookupOptions().retries(options.retries));
+            result = client.lookup(ip, lookupOptions);
         } catch (VPNDetectionException e) {
             return new Lookup(options.failClosed, ip, null, e);
         }

@@ -9,11 +9,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.vpndetection.middleware.Core;
+import io.vpndetection.middleware.Lookup;
+import io.vpndetection.middleware.Options;
 import io.vpndetection.model.Entitlement;
 import io.vpndetection.model.EntitlementPlan;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -104,6 +108,94 @@ class ClientTest {
             // 1 initial attempt plus 2 retries, rather than the instance's 0.
             assertEquals(3, http.calls.size());
         }
+    }
+
+    // The transport here ignores the request's own timeout and outlasts every bound, so only a race
+    // the client owns ends the call in time, and only the per-call bound names 200ms.
+    @Test
+    void aPerCallTimeoutBelowTheClientsFiresAsARetryableNetworkError() {
+        StubHttpClient http = StubHttpClient.hanging();
+        LookupOptions quick = new LookupOptions().requestTimeout(Duration.ofMillis(200));
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).cacheEnabled(false)
+                .retries(0).requestTimeout(Duration.ofSeconds(10)).build()) {
+            Map<String, Executable> calls = new LinkedHashMap<>();
+            calls.put("lookup", () -> client.lookup("9.9.9.9", quick));
+            calls.put("myIp", () -> client.myIp(quick));
+            calls.put("myEntitlement", () -> client.myEntitlement(quick));
+
+            for (Map.Entry<String, Executable> call : calls.entrySet()) {
+                long started = System.nanoTime();
+                VPNDetectionException e = assertThrows(VPNDetectionException.class, call.getValue());
+                long took = Duration.ofNanos(System.nanoTime() - started).toMillis();
+
+                assertEquals(ErrorKind.NETWORK, e.kind(), call.getKey());
+                assertTrue(e.retryable(), call.getKey());
+                assertTrue(e.getMessage().contains("after 200ms"), call.getKey() + ": " + e.getMessage());
+                assertTrue(took < 5000, call.getKey() + " took " + took + "ms, past its own bound");
+            }
+        }
+    }
+
+    @Test
+    void aPerCallTimeoutBoundsEveryChunkOfABatch() {
+        StubHttpClient http = StubHttpClient.hanging();
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).cacheEnabled(false)
+                .retries(0).requestTimeout(Duration.ofSeconds(10)).build()) {
+            long started = System.nanoTime();
+            LinkedHashMap<String, BatchResult> got = client.lookupBatch(addresses(1500),
+                    new BatchOptions().requestTimeout(Duration.ofMillis(200)));
+            long took = Duration.ofNanos(System.nanoTime() - started).toMillis();
+
+            assertEquals(2, http.calls.size(), "one request per chunk");
+            assertEquals(1500, got.size());
+            for (BatchResult answer : got.values()) {
+                VPNDetectionException e = answer.error().orElseThrow();
+                assertEquals(ErrorKind.NETWORK, e.kind());
+                assertTrue(e.getMessage().contains("after 200ms"), e.getMessage());
+            }
+            assertTrue(took < 5000, "the batch took " + took + "ms, past its own bound");
+        }
+    }
+
+    // Per ATTEMPT: a timeout is retryable, and each retry starts a fresh budget rather than
+    // inheriting whatever the first attempt left.
+    @Test
+    void aTimedOutAttemptIsRetriedWithAFreshBudget() {
+        StubHttpClient http = StubHttpClient.hanging();
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).cacheEnabled(false)
+                .retries(0).build()) {
+            long started = System.nanoTime();
+            assertThrows(VPNDetectionException.class, () -> client.lookup("9.9.9.9",
+                    new LookupOptions().retries(2).requestTimeout(Duration.ofMillis(150))));
+            long took = Duration.ofNanos(System.nanoTime() - started).toMillis();
+
+            assertEquals(3, http.calls.size());
+            assertTrue(took >= 450, "took " + took + "ms, less than three attempts of 150ms each");
+        }
+    }
+
+    // An injected client keeps its own, looser bound; the request path's still applies per lookup.
+    @Test
+    void theMiddlewareTimeoutHoldsForAnInjectedClient() {
+        try (VPNDetection client = VPNDetection.builder().httpClient(StubHttpClient.hanging())
+                .cacheEnabled(false).requestTimeout(Duration.ofSeconds(10)).build()) {
+            Core<String> core = new Core<>(new Options<String>().client(client)
+                    .timeout(Duration.ofMillis(200)), request -> request);
+
+            Lookup answer = core.evaluate("9.9.9.9");
+            VPNDetectionException e = answer.error().orElseThrow();
+            assertEquals(ErrorKind.NETWORK, e.kind());
+            assertTrue(e.getMessage().contains("after 200ms"), e.getMessage());
+            assertFalse(answer.isBlocked(), "a failed lookup fails open");
+        }
+    }
+
+    @Test
+    void aTimeoutMustBePositive() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new LookupOptions().requestTimeout(Duration.ZERO));
+        assertThrows(IllegalArgumentException.class,
+                () -> VPNDetection.builder().requestTimeout(Duration.ofMillis(-1)));
     }
 
     @Test

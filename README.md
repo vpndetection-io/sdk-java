@@ -95,10 +95,11 @@ for (var entry : results.entrySet()) {
 
 Results are keyed by address, in the order you first listed each one, so duplicates in your list collapse into a single entry and one address failing never loses the rest: it carries its error as its value, with the status the API would have given that address on its own.
 
-How many chunks are in flight at once, and how many times a failed chunk is retried, are configurable per call:
+How many chunks are in flight at once, how many times a failed chunk is retried, and how long each attempt may take are configurable per call:
 
 ```java
-var results = client.lookupBatch(manyIps, new BatchOptions().concurrency(4).retries(4));
+var results = client.lookupBatch(manyIps,
+        new BatchOptions().concurrency(4).retries(4).requestTimeout(Duration.ofSeconds(10)));
 ```
 
 There are `CompletableFuture` variants of both, for when you would rather not block:
@@ -176,6 +177,18 @@ try {
 
 Note that `RATE_LIMITED` and `QUOTA_EXCEEDED` both arrive as HTTP 429 and are not the same thing. A rate limit is when the API faces extreme traffic bursts and so retrying later works; but a spent quota needs your allowance raised or the window to roll over. The library retries rate limits for you, but not if your quota is exceeded.
 
+### Timeouts
+
+Each attempt at an API call may take 30 seconds, response body included, before it fails as a retryable `NETWORK` error. Change it for the client, or for a single call:
+
+```java
+VPNDetection client = VPNDetection.builder().requestTimeout(Duration.ofSeconds(5)).build();
+
+Result result = client.lookup("45.83.91.1", new LookupOptions().requestTimeout(Duration.ofSeconds(2)));
+```
+
+The bound is per attempt, so a call that is retried can take longer in total. Database downloads are not bounded by it, since a large one can take minutes.
+
 ### Database downloads
 
 If your key carries the `db.download` scope, the licensed databases are available through `client.database()`. A license covers a database family, and the ids the transfers take come from its `getVersions()`. There are three ways to take one: to a file, as a time-limited link you transfer yourself, or as bytes.
@@ -185,9 +198,9 @@ var databases = client.database().list();
 
 // Streamed straight to disk, so nothing bigger than a chunk is ever held in memory.
 long written = client.database().download(
-        "vpn_ip_extended_v1", DatasetFormat.MMDB, Path.of("vpn_ip_extended_v1.mmdb"));
-String url = client.database().downloadUrl("vpn_ip_extended_v1", DatasetFormat.MMDB);
-byte[] raw = client.database().downloadBytes("cdn_ip_v1", DatasetFormat.CSVGZ);
+        "vpn_ip_extended_v1", DatabaseFormat.MMDB, Path.of("vpn_ip_extended_v1.mmdb"));
+String url = client.database().downloadUrl("vpn_ip_extended_v1", DatabaseFormat.MMDB);
+byte[] raw = client.database().downloadBytes("cdn_ip_v1", DatabaseFormat.CSVGZ);
 ```
 
 `downloadBytes` holds the whole file in memory, and the catalog runs from `cdn_ip_v1` at 10 KB to `resproxy_ip_90d_v1` at 1.79 GB, so use `download` for anything you have not measured.

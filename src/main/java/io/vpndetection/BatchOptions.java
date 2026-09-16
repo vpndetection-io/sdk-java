@@ -1,5 +1,7 @@
 package io.vpndetection;
 
+import java.time.Duration;
+
 /**
  * Per-call overrides for one batch. Anything left unset falls back to the client's setting.
  *
@@ -18,6 +20,13 @@ public final class BatchOptions extends LookupOptions {
     @Override
     public BatchOptions retries(int retries) {
         super.retries(retries);
+        return this;
+    }
+
+    /** How long one attempt at one chunk may take, for THIS batch only. */
+    @Override
+    public BatchOptions requestTimeout(Duration requestTimeout) {
+        super.requestTimeout(requestTimeout);
         return this;
     }
 
