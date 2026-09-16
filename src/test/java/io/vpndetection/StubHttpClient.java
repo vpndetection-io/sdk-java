@@ -100,6 +100,11 @@ final class StubHttpClient extends HttpClient {
                 Duration.ZERO);
     }
 
+    /** Answers each path with whatever {@code responder} returns for it at the time it is asked. */
+    static StubHttpClient responding(Function<String, Route> responder) {
+        return new StubHttpClient(responder, Duration.ZERO);
+    }
+
     /** Answers any address with a not-a-VPN verdict, slowly enough for calls to overlap. */
     static StubHttpClient echoing(Duration delay) {
         return new StubHttpClient(

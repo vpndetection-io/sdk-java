@@ -3,6 +3,7 @@ package io.vpndetection;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** The licensed dataset endpoints, which no shared corpus covers. */
 class DatabaseTest {
@@ -176,6 +178,63 @@ class DatabaseTest {
         }
 
         assertEquals(1, http.calls.size(), "a 403 was retried");
+    }
+
+    // Only the response HEAD of a transfer is retried. A 5xx there has written nothing, so it is as
+    // transient as the API's; a body that dies part way is never fetched again, or the second copy
+    // would append to the bytes already written. Each half pins the other, so neither passes
+    // vacuously, and each counts storage requests before it looks at the outcome.
+    @Test
+    void aStorage5xxBeforeTheBodyIsRetried() {
+        AtomicInteger storage = new AtomicInteger();
+        StubHttpClient http = StubHttpClient.responding(path -> switch (path) {
+            case "api/v1/database/download" ->
+                    new StubHttpClient.Route(302, "", Map.of("Location", SIGNED_URL));
+            case "signed/cdn_ip_v1.csvgz" -> storage.incrementAndGet() == 1
+                    ? new StubHttpClient.Route(503, "", Map.of())
+                    : new StubHttpClient.Route(200, PAYLOAD,
+                            Map.of("Content-Length", String.valueOf(PAYLOAD.length)));
+            default -> new StubHttpClient.Route(404, "", Map.of());
+        });
+
+        Object outcome;
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey("k").retries(2).build()) {
+            outcome = client.database().downloadBytes("cdn_ip_v1", DatabaseFormat.CSVGZ);
+        } catch (VPNDetectionException e) {
+            outcome = e;
+        }
+
+        assertEquals(2, storage.get(), "object storage should see the 503 and its retry");
+        assertArrayEquals(PAYLOAD, assertInstanceOf(byte[].class, outcome));
+    }
+
+    @Test
+    void aTransferThatEndsShortIsNotFetchedAgain(@TempDir Path dir) {
+        StubHttpClient http = transferring(PAYLOAD.length * 4);
+
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey("k").retries(2).build()) {
+            Object toFile;
+            try {
+                toFile = client.database().download("cdn_ip_v1", DatabaseFormat.CSVGZ, dir.resolve("out.gz"));
+            } catch (VPNDetectionException e) {
+                toFile = e;
+            }
+            assertEquals(1, storageCalls(http), "download fetched a short body again");
+            assertInstanceOf(VPNDetectionException.class, toFile);
+
+            Object inMemory;
+            try {
+                inMemory = client.database().downloadBytes("cdn_ip_v1", DatabaseFormat.CSVGZ);
+            } catch (VPNDetectionException e) {
+                inMemory = e;
+            }
+            assertEquals(2, storageCalls(http), "downloadBytes fetched a short body again");
+            assertInstanceOf(VPNDetectionException.class, inMemory);
+        }
+    }
+
+    private static long storageCalls(StubHttpClient http) {
+        return http.calls.stream().filter(SIGNED_URL::equals).count();
     }
 
     /** A granted download: the API redirects, and object storage answers the given length. */
