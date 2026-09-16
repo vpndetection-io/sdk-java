@@ -1,6 +1,7 @@
 package io.vpndetection.integration;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.SequenceInputStream;
@@ -12,6 +13,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,7 +21,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Flow;
+import java.util.function.Consumer;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSession;
@@ -89,11 +94,16 @@ final class RecordingHttpClient extends HttpClient {
                 new SequenceInputStream(new ByteArrayInputStream(head), body));
     }
 
+    // A library that races the whole response against its timeout reads the answer through here
+    // rather than through send, so the body is captured on this path too.
     @Override
     public <T> CompletableFuture<HttpResponse<T>> sendAsync(
             HttpRequest request, HttpResponse.BodyHandler<T> handler) {
         note(request);
-        return delegate.sendAsync(request, handler);
+        String path = request.uri().getPath();
+        return delegate.sendAsync(request, info -> isJson(info.headers())
+                ? new Capturing<>(handler.apply(info), whole -> bodies.put(path, whole))
+                : handler.apply(info));
     }
 
     @Override
@@ -116,7 +126,11 @@ final class RecordingHttpClient extends HttpClient {
     }
 
     private static boolean isJson(HttpResponse<?> response) {
-        return response.headers().firstValue("Content-Type")
+        return isJson(response.headers());
+    }
+
+    private static boolean isJson(HttpHeaders headers) {
+        return headers.firstValue("Content-Type")
                 .filter(type -> type.startsWith("application/json")).isPresent();
     }
 
@@ -163,6 +177,58 @@ final class RecordingHttpClient extends HttpClient {
     @Override
     public Optional<Executor> executor() {
         return delegate.executor();
+    }
+
+    /** Passes every buffer on to the library's subscriber, keeping a copy of a body that fits. */
+    private static final class Capturing<T> implements HttpResponse.BodySubscriber<T> {
+        private final HttpResponse.BodySubscriber<T> downstream;
+        private final Consumer<byte[]> onWhole;
+        private final ByteArrayOutputStream copy = new ByteArrayOutputStream();
+        private boolean tooBig;
+
+        Capturing(HttpResponse.BodySubscriber<T> downstream, Consumer<byte[]> onWhole) {
+            this.downstream = downstream;
+            this.onWhole = onWhole;
+        }
+
+        @Override
+        public CompletionStage<T> getBody() {
+            return downstream.getBody();
+        }
+
+        @Override
+        public void onSubscribe(Flow.Subscription subscription) {
+            downstream.onSubscribe(subscription);
+        }
+
+        @Override
+        public void onNext(List<ByteBuffer> items) {
+            for (ByteBuffer item : items) {
+                ByteBuffer view = item.duplicate();
+                tooBig = tooBig || copy.size() + view.remaining() > MAX_CAPTURED_BODY;
+                if (!tooBig) {
+                    byte[] chunk = new byte[view.remaining()];
+                    view.get(chunk);
+                    copy.writeBytes(chunk);
+                }
+            }
+            downstream.onNext(items);
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+            downstream.onError(throwable);
+        }
+
+        // Kept BEFORE the library hears the body is complete, so a test reading it afterwards
+        // cannot race the copy.
+        @Override
+        public void onComplete() {
+            if (!tooBig) {
+                onWhole.accept(copy.toByteArray());
+            }
+            downstream.onComplete();
+        }
     }
 
     /** The delegate's response with its body replaced by one that replays the captured head. */

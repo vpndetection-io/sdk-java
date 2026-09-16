@@ -20,6 +20,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -140,8 +141,17 @@ class LookupTest {
         // read as a failure to deduplicate.
         Set<String> asked = new TreeSet<>();
         probe.recorder().facts().forEach(fact -> asked.add(fact.path()));
-        assertEquals(new TreeSet<>(Set.of("/8.8.8.8", "/" + Staging.PROBE)), asked,
-                "the batch asked for something other than the two servable addresses");
+        assertEquals(Set.of("/batch"), asked, "the batch went somewhere other than POST /batch");
+        // The endpoint keys its answer by exactly the strings it was sent, so this is what went out.
+        Map<String, Object> served = Staging.jsonBody(probe.recorder(), "/batch");
+        Set<String> sent = new TreeSet<>();
+        for (String part : List.of("results", "errors")) {
+            if (served.get(part) instanceof Map<?, ?> entries) {
+                entries.keySet().forEach(ip -> sent.add((String) ip));
+            }
+        }
+        assertEquals(new TreeSet<>(Set.of("8.8.8.8", Staging.PROBE)), sent,
+                "the batch sent something other than the two servable addresses");
         assertTrue(got.get("10.0.0.1").orElseThrow().isBogon());
         for (String ip : List.of(Staging.PROBE, "8.8.8.8")) {
             assertTrue(got.get(ip).isSuccess(), ip + " failed: " + got.get(ip));
