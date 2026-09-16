@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /** The Java-specific API surface, as distinct from the shared corpus in {@link ConformanceTest}. */
 class ClientTest {
@@ -196,6 +197,25 @@ class ClientTest {
                 () -> new LookupOptions().requestTimeout(Duration.ZERO));
         assertThrows(IllegalArgumentException.class,
                 () -> VPNDetection.builder().requestTimeout(Duration.ofMillis(-1)));
+    }
+
+    // No cap on what one call takes: chunking to the endpoint's 1000 is the client's job.
+    @Test
+    void aBatchOfAnyLengthIsSentAsChunksOfAThousand() {
+        List<String> ips = addresses(2500);
+        StubHttpClient http = StubHttpClient.echoing(Duration.ZERO);
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).cacheEnabled(false).build()) {
+            LinkedHashMap<String, BatchResult> got = client.lookupBatch(ips);
+
+            assertEquals(3, http.calls.size(), "three requests in all");
+            assertEquals(List.of(500, 1000, 1000),
+                    http.batchSizes.stream().sorted().collect(Collectors.toList()),
+                    "every request is a POST /batch of at most 1000");
+            assertEquals(ips, new ArrayList<>(got.keySet()));
+            for (String ip : ips) {
+                assertEquals(ip, got.get(ip).orElseThrow().ip(), ip + " should be answered for itself");
+            }
+        }
     }
 
     @Test

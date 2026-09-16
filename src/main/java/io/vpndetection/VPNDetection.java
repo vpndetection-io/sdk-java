@@ -217,6 +217,9 @@ public final class VPNDetection implements AutoCloseable {
     /**
      * Classify many addresses in as few requests as possible.
      *
+     * <p>Takes any number of addresses: sending them in chunks the endpoint accepts is this
+     * method's job, not the caller's.
+     *
      * <p>Bogons are answered locally and cached answers are reused; everything else goes to the
      * batch endpoint in chunks of up to 1000 addresses, with at most {@code concurrency} chunks in
      * flight. Keyed by address rather than positional, so duplicates in the input collapse to a

@@ -79,7 +79,7 @@ Usage counts against the anniversary of your subscription, not the calendar mont
 
 ### Batch lookup
 
-Look up many addresses at once. Bogons and cached answers are handled locally, and everything else goes to the batch endpoint in chunks of up to 1000 addresses, in parallel:
+Look up as many addresses as you like in one call. Bogons and cached answers are handled locally, and everything else goes to the batch endpoint in chunks of up to 1000 addresses, in parallel:
 
 ```java
 var results = client.lookupBatch(List.of("45.83.91.1", "8.8.8.8", "1.1.1.1"));
