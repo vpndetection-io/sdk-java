@@ -24,7 +24,7 @@
              registry and passes the newest published release as an exact version, so a
              daily run keeps testing whatever is newest rather than whichever version
              somebody happened to commit. -->
-        <vpndetection.version>[6.0,7.0)</vpndetection.version>
+        <vpndetection.version>[6.2,7.0)</vpndetection.version>
         <junit.version>5.14.4</junit.version>
         <centralBaseUrl>https://repo1.maven.org/maven2</centralBaseUrl>
     </properties>
