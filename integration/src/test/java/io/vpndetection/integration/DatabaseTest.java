@@ -79,7 +79,7 @@ class DatabaseTest {
             assertNotNull(dataset.getName(), dataset.getBase() + " carries no name");
             assertNotNull(dataset.getStanding(), dataset.getBase() + " carries no standing");
             // `list` answers the WHOLE catalogue, so an unlicensed family is a normal row
-            // with no licence type at all. Asserting one either way is what tells a null
+            // with no license type at all. Asserting one either way is what tells a null
             // apart from a value this client cannot read.
             if (dataset.getStanding() == Standing.UNLICENSED) {
                 assertNull(dataset.getLicenseType(), dataset.getBase() + " is unlicensed and carries a right");
