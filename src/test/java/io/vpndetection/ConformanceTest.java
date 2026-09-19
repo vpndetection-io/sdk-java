@@ -154,6 +154,35 @@ class ConformanceTest {
         }
     }
 
+    /**
+     * Every refusal the corpus marks non-retryable is sent ONCE with retries ON.
+     *
+     * <p>The test above runs with retries off, where one request is guaranteed, so its count cannot
+     * tell a client that retries a refusal from one that does not.
+     */
+    @Test
+    void aNonRetryableRefusalIsSentOnceWithRetriesOn() throws IOException {
+        int checked = 0;
+        for (JsonNode c : data.get("errors")) {
+            if (c.get("expect").get("retryable").asBoolean()) {
+                continue;
+            }
+            String name = c.get("name").asText();
+            Map<String, String> headers = new HashMap<>();
+            c.get("headers").fieldNames().forEachRemaining(
+                    h -> headers.put(h, c.get("headers").get(h).asText()));
+            StubHttpClient http = StubHttpClient.of(Map.of("1.1.1.1", new StubHttpClient.Route(
+                    c.get("status").asInt(), MAPPER.writeValueAsString(c.get("body")), headers)));
+
+            try (VPNDetection client = clientOn(http).retries(2).build()) {
+                assertThrows(VPNDetectionException.class, () -> client.lookup("1.1.1.1"), name);
+                assertEquals(1, http.calls.size(), name + ": a non-retryable refusal was retried");
+            }
+            checked++;
+        }
+        assertTrue(checked > 0, "the corpus names no non-retryable refusal to check");
+    }
+
     @Test
     void batchDedupesShortCircuitsBogonsAndKeysByAddress() {
         JsonNode c = batchCase("dedup-bogon-and-order-free-keying");

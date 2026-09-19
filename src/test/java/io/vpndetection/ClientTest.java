@@ -1,5 +1,6 @@
 package io.vpndetection;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.function.Executable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -192,12 +194,73 @@ class ClientTest {
         }
     }
 
+    /**
+     * A timeout no attempt can meet is refused where it is SET, not on every call.
+     *
+     * <p>Before 6.2.1 a duration past {@code Long.MAX_VALUE} nanoseconds built a client whose every
+     * call then threw a raw {@code ArithmeticException: long overflow}. The boundary is asserted on
+     * both sides, so a check against the wrong unit fails, and on every surface that takes one.
+     */
     @Test
-    void aTimeoutMustBePositive() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new LookupOptions().requestTimeout(Duration.ZERO));
-        assertThrows(IllegalArgumentException.class,
-                () -> VPNDetection.builder().requestTimeout(Duration.ofMillis(-1)));
+    void aTimeoutNoAttemptCanMeetIsRefusedWhereItIsSet() {
+        StubHttpClient http = StubHttpClient.of(Map.of());
+        Duration longest = Duration.ofNanos(Long.MAX_VALUE);
+
+        for (Duration refused : new Duration[] {Duration.ZERO, Duration.ofMillis(-1),
+                longest.plusNanos(1), ChronoUnit.FOREVER.getDuration()}) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> VPNDetection.builder().httpClient(http).requestTimeout(refused),
+                    refused + " was accepted by the builder");
+            assertThrows(IllegalArgumentException.class,
+                    () -> new LookupOptions().requestTimeout(refused),
+                    refused + " was accepted per call");
+            assertThrows(IllegalArgumentException.class,
+                    () -> new BatchOptions().requestTimeout(refused),
+                    refused + " was accepted per call");
+            assertThrows(IllegalArgumentException.class,
+                    () -> new OauthOptions().requestTimeout(refused),
+                    refused + " was accepted per call");
+        }
+        assertDoesNotThrow(
+                () -> VPNDetection.builder().httpClient(http).requestTimeout(Duration.ofNanos(1)).build());
+        assertDoesNotThrow(
+                () -> VPNDetection.builder().httpClient(http).requestTimeout(longest).build());
+        assertEquals(0, http.calls.size(), "refusing a timeout reached the network");
+    }
+
+    /**
+     * A trailing slash on the base URL is dropped rather than doubled into every path, which
+     * production answers with a redirect this client does not follow. The stub answers ANY path, so
+     * a doubled one fails at the assertion on the URL rather than as an unknown route.
+     */
+    @Test
+    void aTrailingSlashOnTheBaseUrlIsNotDoubledIntoThePath() {
+        StubHttpClient http = StubHttpClient.responding(path -> switch (path) {
+            case "api/v1/database/list" -> StubHttpClient.Route.ok(
+                    "{\"databases\": [{\"base\": \"vpn_ip\", \"name\": \"VPN IP\","
+                            + " \"summary\": \"vpn_ip rows\","
+                            + " \"license_type\": \"standard\", \"in_term\": true,"
+                            + " \"starts\": \"2026-01-01T00:00:00.000Z\", \"expires\": null,"
+                            + " \"renews_at\": null, \"notice_due_at\": null,"
+                            + " \"standing\": \"licensed\", \"versions\": [{\"id\":"
+                            + " \"vpn_ip_extended_v1\", \"version\": 1, \"formats\":"
+                            + " [{\"format\": \"mmdb\", \"bytes\": 1234}]}]}]}");
+            default -> StubHttpClient.Route.ok("{\"ip\": \"45.83.91.1\", \"is_vpn\": false}");
+        });
+
+        for (String baseUrl : new String[] {"https://staging.vpndetection.io/",
+                "https://staging.vpndetection.io//"}) {
+            try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey("k")
+                    .cacheEnabled(false).baseUrl(baseUrl).build()) {
+                client.lookup("45.83.91.1");
+                client.database().list();
+            }
+        }
+        assertEquals(List.of(
+                "https://staging.vpndetection.io/45.83.91.1",
+                "https://staging.vpndetection.io/api/v1/database/list",
+                "https://staging.vpndetection.io/45.83.91.1",
+                "https://staging.vpndetection.io/api/v1/database/list"), http.calls);
     }
 
     // No cap on what one call takes: chunking to the endpoint's 1000 is the client's job.

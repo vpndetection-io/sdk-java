@@ -321,6 +321,12 @@ public final class VPNDetection implements AutoCloseable {
         if (value.isZero() || value.isNegative()) {
             throw new IllegalArgumentException(name + " must be positive");
         }
+        try {
+            // The deadline DeadlineHttpClient races is counted in nanoseconds.
+            value.toNanos();
+        } catch (ArithmeticException tooLong) {
+            throw new IllegalArgumentException(name + " is too long to count in nanoseconds", tooLong);
+        }
         return value;
     }
 
@@ -454,8 +460,16 @@ public final class VPNDetection implements AutoCloseable {
             return this;
         }
 
+        /**
+         * Where the API is served. Default {@value VPNDetection#DEFAULT_BASE_URL}.
+         *
+         * <p>A trailing slash is dropped. Every path this client appends begins with one, and a
+         * doubled slash is a different path to the server: production answers it with a redirect,
+         * which this client does not follow, so every call would fail.
+         */
         public Builder baseUrl(String baseUrl) {
-            this.baseUrl = Objects.requireNonNull(baseUrl, "baseUrl");
+            Objects.requireNonNull(baseUrl, "baseUrl");
+            this.baseUrl = baseUrl.replaceAll("/+$", "");
             return this;
         }
 
@@ -501,6 +515,10 @@ public final class VPNDetection implements AutoCloseable {
          *
          * <p>Per ATTEMPT, so a call that is retried can take longer in total. Overridable per call
          * with {@link LookupOptions#requestTimeout}. A dataset transfer is not bounded by it.
+         *
+         * @throws IllegalArgumentException for zero, a negative duration, or one too long to count
+         *     in nanoseconds (about 292 years). Accepted, each would fail EVERY call rather than
+         *     bound it, and the same holds for the per-call timeouts.
          */
         public Builder requestTimeout(Duration requestTimeout) {
             this.requestTimeout = positive(requestTimeout, "requestTimeout");
