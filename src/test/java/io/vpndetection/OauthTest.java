@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.vpndetection.OauthStub.Answer;
 import io.vpndetection.OauthStub.Sent;
@@ -359,6 +360,43 @@ class OauthTest {
             assertEquals(VPNDetectionException.class, e.getClass());
             assertEquals("the answer carried no authorization_endpoint", e.getMessage());
         }
+    }
+
+    // No corpus case: every response there decodes. One member left out per case, since a body
+    // missing two at once let a defaulting decoder survive elsewhere.
+    @Test
+    void anAnswerMissingAnyOneRequiredMemberIsTheOrdinaryError() throws JsonProcessingException {
+        JsonNode args = MAPPER.createObjectNode().put("clientId", CLIENT_ID).put("deviceCode", "mo_dc_x");
+        ObjectNode every = (ObjectNode) MAPPER.readTree("{\"issuer\": \"https://api.example.test\","
+                + " \"authorization_endpoint\": \"https://api.example.test/oauth/authorize\","
+                + " \"token_endpoint\": \"https://api.example.test/oauth/token\","
+                + " \"device_code\": \"mo_dc_x\", \"user_code\": \"BCDF-GHJK\","
+                + " \"verification_uri\": \"https://app.example.test/device\", \"expires_in\": 900,"
+                + " \"interval\": 1, \"access_token\": \"mo_at_x\", \"token_type\": \"Bearer\"}");
+        Map<String, List<String>> required = Map.of(
+                "metadata", List.of("issuer", "authorization_endpoint", "token_endpoint"),
+                "deviceAuthorization",
+                List.of("device_code", "user_code", "verification_uri", "expires_in", "interval"),
+                "exchangeDeviceCode", List.of("access_token", "token_type", "expires_in"));
+        required.forEach((operation, members) -> {
+            OauthStub whole = OauthStub.answering(Answer.of(200, every.toString()));
+            try (VPNDetection client = clientOn(whole).retries(0).build()) {
+                invoke(client.oauth(), operation, args);
+            }
+            for (String member : members) {
+                String name = operation + " without " + member;
+                ObjectNode body = every.deepCopy();
+                body.remove(member);
+                OauthStub http = OauthStub.answering(Answer.of(200, body.toString()));
+                try (VPNDetection client = clientOn(http).retries(0).build()) {
+                    VPNDetectionException e = assertThrows(VPNDetectionException.class,
+                            () -> invoke(client.oauth(), operation, args), name);
+                    assertEquals(VPNDetectionException.class, e.getClass(), name);
+                    assertEquals(ErrorKind.SERVER_ERROR, e.kind(), name);
+                    assertEquals(Optional.of(200), e.statusCode(), name);
+                }
+            }
+        });
     }
 
     private static VPNDetection.Builder clientOn(OauthStub http) {
