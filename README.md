@@ -1,4 +1,4 @@
-# [<img src="https://s3.vpndetection.io/vpndetection-public/brand/mark.svg" alt="VPNDetection" width="24"/>](https://vpndetection.io/) VPNDetection Java Client Library
+# [<img src="https://s3.vpndetection.io/vpndetection-public/brand/mark.svg" alt="VPNDetection" height="28"/>](https://vpndetection.io/) VPNDetection Java Client Library
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.vpndetection/vpndetection.svg)](https://central.sonatype.com/artifact/io.vpndetection/vpndetection)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
