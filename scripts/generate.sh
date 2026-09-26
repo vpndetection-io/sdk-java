@@ -69,7 +69,7 @@ for pkg in internal api model ; do
 done
 
 # The generated OAuth class is public by accident and nothing calls it: client.oauth() is the
-# surface. Deprecated for the next major to delete (docs/sdk/deprecation.md, the ledger).
+# surface. Deprecated for the next major to delete.
 AUTHORIZATION="src/main/java/io/vpndetection/api/AuthorizationWireApi.java"
 sed -i \
     -e 's|^@javax.annotation.Generated(|/** @deprecated Use {@link io.vpndetection.VPNDetection#oauth()}. */\n&|' \
