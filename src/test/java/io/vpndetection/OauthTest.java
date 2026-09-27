@@ -54,8 +54,6 @@ class OauthTest {
     private static final String CLIENT_ID = "sdk-java-test";
     // Longer than any poll here takes on the fake clock, short enough that a loop fails the test.
     private static final Duration OUTSIDE = Duration.ofSeconds(10);
-    // The corpus metadata still carries this; the published spec no longer advertises it.
-    private static final String UNPUBLISHED_MEMBER = "client_id_metadata_document_supported";
     private static final Map<String, Class<?>> TYPES = Map.of(
             "oauth", OauthException.class,
             "accessDenied", OauthAccessDeniedException.class,
@@ -201,7 +199,8 @@ class OauthTest {
             for (String wire : List.of("device_authorization_endpoint", "revocation_endpoint",
                     "scopes_supported", "response_types_supported", "grant_types_supported",
                     "code_challenge_methods_supported", "token_endpoint_auth_methods_supported",
-                    "authorization_response_iss_parameter_supported", "service_documentation")) {
+                    "authorization_response_iss_parameter_supported",
+                    "client_id_metadata_document_supported", "service_documentation")) {
                 assertNull(metadataMember(got, wire), wire + " must be absent");
             }
         }
@@ -512,11 +511,8 @@ class OauthTest {
     private static void assertMembers(JsonNode c, Function<String, Object> member) {
         String name = c.get("name").asText();
         JsonNode expect = c.get("expect");
-        expect.get("present").fields().forEachRemaining(f -> {
-            if (!f.getKey().equals(UNPUBLISHED_MEMBER)) {
-                assertEquals(value(f.getValue()), member.apply(f.getKey()), name + ": " + f.getKey());
-            }
-        });
+        expect.get("present").fields().forEachRemaining(f ->
+                assertEquals(value(f.getValue()), member.apply(f.getKey()), name + ": " + f.getKey()));
         for (JsonNode absent : expect.get("absent")) {
             assertNull(member.apply(absent.asText()), name + ": " + absent.asText() + " must be ABSENT");
         }
@@ -588,6 +584,8 @@ class OauthTest {
                 return m.getTokenEndpointAuthMethodsSupported();
             case "authorization_response_iss_parameter_supported":
                 return m.getAuthorizationResponseIssParameterSupported();
+            case "client_id_metadata_document_supported":
+                return m.getClientIdMetadataDocumentSupported();
             case "service_documentation":
                 return m.getServiceDocumentation();
             default:
