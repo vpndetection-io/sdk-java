@@ -28,8 +28,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import javax.net.ssl.SSLContext;
@@ -87,6 +90,9 @@ final class StubHttpClient extends HttpClient {
 
     private final Function<String, Route> responder;
     private final Duration delay;
+    // Set by gated(): every request waits for release(), and each arrival is counted first.
+    private CountDownLatch gate;
+    private final Semaphore arrived = new Semaphore(0);
 
     private StubHttpClient(Function<String, Route> responder, Duration delay) {
         this.responder = responder;
@@ -114,6 +120,29 @@ final class StubHttpClient extends HttpClient {
     }
 
     /**
+     * Holds every request until {@link #release()}, then answers it from {@code responder}, so
+     * calls that overlap are known to overlap rather than hoped to.
+     */
+    static StubHttpClient gated(Function<String, Route> responder) {
+        StubHttpClient stub = new StubHttpClient(responder, Duration.ZERO);
+        stub.gate = new CountDownLatch(1);
+        return stub;
+    }
+
+    void release() {
+        gate.countDown();
+    }
+
+    /** Waits until {@code count} requests have arrived in all, failing rather than hanging. */
+    void awaitArrivals(int count) throws InterruptedException {
+        while (calls.size() < count) {
+            if (!arrived.tryAcquire(10, TimeUnit.SECONDS)) {
+                throw new AssertionError("request " + count + " never arrived");
+            }
+        }
+    }
+
+    /**
      * Takes every request and ignores its timeout, answering only after longer than any bound a
      * test sets - and then with a failure no timeout produces, so a bound that did not hold fails
      * an assertion rather than hanging the suite.
@@ -128,10 +157,20 @@ final class StubHttpClient extends HttpClient {
     @SuppressWarnings("unchecked")
     public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> handler) {
         URI uri = request.uri();
+        JsonNode sentIps = "POST".equals(request.method()) && "/batch".equals(uri.getPath()) ? ips(request) : null;
         calls.add(uri.toString());
         authorizations.add(request.headers().firstValue("Authorization").orElse(null));
+        if (sentIps != null) {
+            for (JsonNode ip : sentIps) {
+                batchIps.add(ip.asText());
+            }
+        }
+        arrived.release();
         peak.accumulateAndGet(inFlight.incrementAndGet(), Math::max);
         try {
+            if (gate != null) {
+                gate.await();
+            }
             if (!delay.isZero()) {
                 Thread.sleep(delay.toMillis());
             }
@@ -162,9 +201,6 @@ final class StubHttpClient extends HttpClient {
         ObjectNode failures = MAPPER.createObjectNode();
         JsonNode ips = ips(request);
         batchSizes.add(ips.size());
-        for (JsonNode ip : ips) {
-            batchIps.add(ip.asText());
-        }
         for (JsonNode ip : ips) {
             Route route = responder.apply(ip.asText());
             JsonNode body = parse(new String(route.body, StandardCharsets.UTF_8));

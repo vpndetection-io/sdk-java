@@ -25,7 +25,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -57,6 +59,10 @@ public final class VPNDetection implements AutoCloseable {
     private final DatabaseApi database;
     private final OauthApi oauth;
     private final Cache<String, Result> cache;
+    // The requests in the air, by address, so concurrent misses for one address share one
+    // request: a lookup's, or the batch chunk carrying it. Only used with a cache, since without
+    // one every lookup is served. Guarded by synchronizing on the map itself.
+    private final Map<String, CompletableFuture<Result>> flights = new HashMap<>();
     private final Semaphore gate;
     private final ExecutorService ownedExecutor;
     private final Executor executor;
@@ -128,16 +134,90 @@ public final class VPNDetection implements AutoCloseable {
         if (Bogon.isBogon(carried)) {
             return Result.bogon(carried);
         }
-        Result hit = cache == null ? null : cache.getIfPresent(carried);
-        if (hit != null) {
-            return hit;
+        if (cache == null) {
+            return fetch(carried, options);
         }
+        CompletableFuture<Result> led;
+        while (true) {
+            CompletableFuture<Result> flight;
+            synchronized (flights) {
+                // Checked under the lock: a request that lands caches its answer before it leaves
+                // the board, so a miss here with nothing on the board means nobody is asking.
+                Result hit = cache.getIfPresent(carried);
+                if (hit != null) {
+                    return hit;
+                }
+                flight = flights.get(carried);
+                if (flight == null) {
+                    led = new CompletableFuture<>();
+                    flights.put(carried, led);
+                    break;
+                }
+            }
+            try {
+                return await(flight);
+            } catch (CancellationException e) {
+                // The call that led it was interrupted, which is no answer for this one: ask again.
+            }
+        }
+        try {
+            Result result = fetch(carried, options);
+            land(carried, led, result, null);
+            return result;
+        } catch (RuntimeException | Error e) {
+            land(carried, led, null, e);
+            throw e;
+        }
+    }
+
+    // One GET for one address, cached once it answers.
+    private Result fetch(String ip, LookupOptions options) {
         LookupWireApi wire = lookupApi(options);
-        Result result = Wire.execute(retries(options), () -> Result.of(wire.lookupIp(carried)));
+        Result result = Wire.execute(retries(options), () -> Result.of(wire.lookupIp(ip)));
         if (cache != null) {
-            cache.put(carried, result);
+            cache.put(ip, result);
         }
         return result;
+    }
+
+    // Waits for a request another call is making, interruptibly: its failure is this call's
+    // failure, and an interrupted leader surfaces as a CancellationException, meaning ask again.
+    private static Result await(CompletableFuture<Result> flight) {
+        try {
+            return flight.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new VPNDetectionException(ErrorKind.NETWORK, "interrupted while waiting for a lookup", e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException runtime) {
+                throw runtime;
+            }
+            if (cause instanceof Error error) {
+                throw error;
+            }
+            throw new VPNDetectionException(ErrorKind.NETWORK, String.valueOf(cause), cause);
+        }
+    }
+
+    // Takes a request off the board and hands its outcome to everyone waiting on it. A failure is
+    // passed on and never cached. A leader that failed because its thread was interrupted cancels
+    // the flight instead, which sends each waiter to ask again rather than fail with it. Called
+    // after the answer is cached, so nobody finds the board and the cache both empty for an
+    // address that has just been answered.
+    private void land(String ip, CompletableFuture<Result> flight, Result result, Throwable error) {
+        synchronized (flights) {
+            if (flights.get(ip) == flight) {
+                flights.remove(ip);
+            }
+        }
+        if (result != null) {
+            flight.complete(result);
+        } else if (error == null || Thread.currentThread().isInterrupted()) {
+            flight.cancel(false);
+        } else {
+            flight.completeExceptionally(error);
+        }
     }
 
     /** Classify the address this client is calling from, with the client's defaults. */
@@ -256,29 +336,54 @@ public final class VPNDetection implements AutoCloseable {
         }
         Map<String, BatchResult> answers = new HashMap<>();
         List<String> pending = new ArrayList<>();
+        // An address already in the air is awaited rather than sent again, and every address this
+        // batch sends is boarded before a chunk is built, so a lookup arriving meanwhile awaits the
+        // batch's answer.
+        Map<String, CompletableFuture<Result>> joined = new LinkedHashMap<>();
+        Map<String, CompletableFuture<Result>> boarded = new HashMap<>();
         for (String ip : unique) {
             if (Bogon.isBogon(ip)) {
                 answers.put(ip, BatchResult.found(Result.bogon(ip)));
                 continue;
             }
-            Result hit = cache == null ? null : cache.getIfPresent(ip);
-            if (hit != null) {
-                answers.put(ip, BatchResult.found(hit));
-                continue;
+            if (cache != null) {
+                synchronized (flights) {
+                    Result hit = cache.getIfPresent(ip);
+                    if (hit != null) {
+                        answers.put(ip, BatchResult.found(hit));
+                        continue;
+                    }
+                    CompletableFuture<Result> inAir = flights.get(ip);
+                    if (inAir != null) {
+                        joined.put(ip, inAir);
+                        continue;
+                    }
+                    CompletableFuture<Result> flight = new CompletableFuture<>();
+                    flights.put(ip, flight);
+                    boarded.put(ip, flight);
+                }
             }
             pending.add(ip);
         }
 
         LookupWireApi wire = lookupApi(options);
         int callRetries = retries(options);
-        List<CompletableFuture<Map<String, BatchResult>>> chunks = new ArrayList<>();
-        for (int from = 0; from < pending.size(); from += BATCH_MAX) {
-            List<String> chunk = List.copyOf(pending.subList(from, Math.min(from + BATCH_MAX, pending.size())));
-            chunks.add(submit(limit, chunk, wire, callRetries));
+        try {
+            List<CompletableFuture<Map<String, BatchResult>>> chunks = new ArrayList<>();
+            for (int from = 0; from < pending.size(); from += BATCH_MAX) {
+                List<String> chunk = List.copyOf(pending.subList(from, Math.min(from + BATCH_MAX, pending.size())));
+                chunks.add(submit(limit, chunk, wire, callRetries, boarded));
+            }
+            for (CompletableFuture<Map<String, BatchResult>> chunk : chunks) {
+                answers.putAll(chunk.join());
+            }
+        } catch (RuntimeException | Error e) {
+            // A chunk that never answered still releases whoever waits on its addresses. Landing
+            // twice is harmless: a flight takes its first outcome only.
+            boarded.forEach((ip, flight) -> land(ip, flight, null, null));
+            throw e;
         }
-        for (CompletableFuture<Map<String, BatchResult>> chunk : chunks) {
-            answers.putAll(chunk.join());
-        }
+        joined.forEach((ip, flight) -> answers.put(ip, awaitForBatch(ip, flight, options)));
         LinkedHashMap<String, BatchResult> out = new LinkedHashMap<>();
         for (String ip : asked) {
             out.put(ip, answers.get(Bogon.unmapped(ip)));
@@ -366,22 +471,50 @@ public final class VPNDetection implements AutoCloseable {
     // The permit is taken on the CALLING thread, before the task is handed to the executor, so at
     // most `concurrency` chunks ever exist. Acquiring inside the task would queue every chunk at
     // once and let a large batch conjure a thread per chunk.
-    private CompletableFuture<Map<String, BatchResult>> submit(
-            Semaphore limit, List<String> chunk, LookupWireApi wire, int callRetries) {
+    private CompletableFuture<Map<String, BatchResult>> submit(Semaphore limit, List<String> chunk,
+            LookupWireApi wire, int callRetries, Map<String, CompletableFuture<Result>> boarded) {
         try {
             limit.acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            // This batch was interrupted: whoever waits on these addresses asks again.
+            for (String ip : chunk) {
+                CompletableFuture<Result> flight = boarded.get(ip);
+                if (flight != null) {
+                    land(ip, flight, null, null);
+                }
+            }
             return CompletableFuture.completedFuture(failedChunk(chunk,
                     new VPNDetectionException(ErrorKind.NETWORK, "interrupted while starting a batch", e)));
         }
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return lookupChunk(chunk, wire, callRetries);
+                Map<String, BatchResult> answered = lookupChunk(chunk, wire, callRetries);
+                answered.forEach((ip, answer) -> {
+                    CompletableFuture<Result> flight = boarded.get(ip);
+                    if (flight != null) {
+                        land(ip, flight, answer.result().orElse(null), answer.error().orElse(null));
+                    }
+                });
+                return answered;
             } finally {
                 limit.release();
             }
         }, executor);
+    }
+
+    // A batch's answer for an address a lookup was already fetching. Should that lookup be
+    // interrupted, the address is asked again, as a lookup of its own under this batch's options.
+    private BatchResult awaitForBatch(String ip, CompletableFuture<Result> flight, BatchOptions options) {
+        try {
+            try {
+                return BatchResult.found(await(flight));
+            } catch (CancellationException e) {
+                return BatchResult.found(lookup(ip, options));
+            }
+        } catch (VPNDetectionException e) {
+            return BatchResult.failed(e);
+        }
     }
 
     // One POST /batch, mapped back onto the addresses it was asked about. A chunk-level failure -
