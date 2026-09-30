@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 6.2.2 are described by their release commits.
 
+## 6.3.2 - 2026-09-30
+
+### Fixes
+
+- Share one request per address among concurrent lookups and batches ([`9c5ac04`](https://github.com/vpndetection-io/sdk-java/commit/9c5ac04f6591cb7a7b2a97653409742fac25bcee))
+
 ## 6.3.1 - 2026-09-30
 
 ### Fixes
