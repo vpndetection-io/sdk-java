@@ -54,6 +54,46 @@ class ConformanceTest {
         }
     }
 
+    // A server listening on :: sees every IPv4 visitor as ::ffff:a.b.c.d. Read whole that is inside
+    // ::ffff:0:0/96, so an SDK that did not unmap answered each one locally as a bogon.
+    @Test
+    void anIpv4MappedAddressIsTheIpv4AddressItCarries() {
+        for (JsonNode c : data.get("ipv4Mapped")) {
+            String ip = c.get("ip").asText();
+            String carries = c.get("carries").asText();
+            boolean expect = c.get("expect").asBoolean();
+            assertEquals(expect, Bogon.isBogon(ip), ip + ": isBogon (" + c.get("why").asText() + ")");
+            Map<String, StubHttpClient.Route> routes = Map.of(carries,
+                    StubHttpClient.Route.ok("{\"ip\": \"" + carries + "\", \"is_vpn\": false}"));
+
+            StubHttpClient http = StubHttpClient.of(routes);
+            try (VPNDetection client = clientOn(http).build()) {
+                Result r = client.lookup(ip);
+                assertEquals(carries, r.ip(), ip + ": the answer names the address it carries");
+                assertEquals(expect, r.isBogon(), ip + ": answered locally exactly when a bogon");
+                if (expect) {
+                    assertEquals(0, http.calls.size(), ip + ": a bogon must not reach the network");
+                } else {
+                    assertEquals(1, http.calls.size(), ip + ": one request");
+                    assertTrue(http.calls.get(0).endsWith("/" + carries), ip + ": sent as " + carries);
+                    client.lookup(carries);
+                    assertEquals(1, http.calls.size(), ip + ": " + carries + " is then a cache hit");
+                }
+            }
+
+            // The mapped form alone: asked beside its plain form, a batch that sent the address as
+            // given would still have been answered for the plain one.
+            StubHttpClient batch = StubHttpClient.of(routes);
+            try (VPNDetection client = clientOn(batch).retries(0).build()) {
+                LinkedHashMap<String, BatchResult> got = client.lookupBatch(List.of(ip));
+                assertEquals(List.of(ip), new ArrayList<>(got.keySet()), ip + ": keyed as passed");
+                assertEquals(carries, got.get(ip).orElseThrow().ip(), ip + ": batch answer");
+                assertEquals(expect ? List.of() : List.of(carries), batch.batchIps,
+                        ip + ": the batch body");
+            }
+        }
+    }
+
     @Test
     void aBogonIsAnsweredLocallyInTheFullMaxShape() {
         StubHttpClient http = StubHttpClient.of(Map.of());

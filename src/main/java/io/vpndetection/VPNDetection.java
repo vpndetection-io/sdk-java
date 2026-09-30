@@ -123,17 +123,19 @@ public final class VPNDetection implements AutoCloseable {
     public Result lookup(String ip, LookupOptions options) {
         Objects.requireNonNull(ip, "ip");
         Objects.requireNonNull(options, "options");
-        if (Bogon.isBogon(ip)) {
-            return Result.bogon(ip);
+        // Judged, cached and sent as the IPv4 address it carries, if it is mapped.
+        String carried = Bogon.unmapped(ip);
+        if (Bogon.isBogon(carried)) {
+            return Result.bogon(carried);
         }
-        Result hit = cache == null ? null : cache.getIfPresent(ip);
+        Result hit = cache == null ? null : cache.getIfPresent(carried);
         if (hit != null) {
             return hit;
         }
         LookupWireApi wire = lookupApi(options);
-        Result result = Wire.execute(retries(options), () -> Result.of(wire.lookupIp(ip)));
+        Result result = Wire.execute(retries(options), () -> Result.of(wire.lookupIp(carried)));
         if (cache != null) {
-            cache.put(ip, result);
+            cache.put(carried, result);
         }
         return result;
     }
@@ -245,7 +247,13 @@ public final class VPNDetection implements AutoCloseable {
         // the override at the client's setting, which passes any test that does not measure peak.
         Semaphore limit = perCall == null ? gate : new Semaphore(perCall);
 
-        LinkedHashSet<String> unique = new LinkedHashSet<>(ips);
+        // An IPv4-mapped address is sent as the address it carries, once however many of its
+        // spellings were asked, and answered under each one asked.
+        LinkedHashSet<String> asked = new LinkedHashSet<>(ips);
+        LinkedHashSet<String> unique = new LinkedHashSet<>();
+        for (String ip : asked) {
+            unique.add(Bogon.unmapped(ip));
+        }
         Map<String, BatchResult> answers = new HashMap<>();
         List<String> pending = new ArrayList<>();
         for (String ip : unique) {
@@ -272,8 +280,8 @@ public final class VPNDetection implements AutoCloseable {
             answers.putAll(chunk.join());
         }
         LinkedHashMap<String, BatchResult> out = new LinkedHashMap<>();
-        for (String ip : unique) {
-            out.put(ip, answers.get(ip));
+        for (String ip : asked) {
+            out.put(ip, answers.get(Bogon.unmapped(ip)));
         }
         return out;
     }

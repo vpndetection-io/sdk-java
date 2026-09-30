@@ -26,12 +26,35 @@ public final class Bogon {
         if (ip == null) {
             return false;
         }
-        if (ip.indexOf(':') >= 0) {
-            BigInteger a = parseV6(ip);
+        String carried = unmapped(ip);
+        // What still has a colon is IPv6, the IPv4-compatible ::a.b.c.d included, which stays
+        // inside ::/96.
+        if (carried.indexOf(':') >= 0) {
+            BigInteger a = parseV6(carried);
             return a != null && contains(V6, a);
         }
-        BigInteger a = parseV4(ip);
+        BigInteger a = parseV4(carried);
         return a != null && contains(V4, a);
+    }
+
+    /**
+     * The IPv4 address an IPv4-mapped IPv6 address ({@code ::ffff:a.b.c.d}, in any spelling)
+     * carries, and any other string as given.
+     *
+     * <p>A server listening on {@code ::} sees every IPv4 visitor in that form, which read whole is
+     * inside {@code ::ffff:0:0/96}, so judging it whole would answer every such visitor locally as a
+     * bogon. {@code ::a.b.c.d} is IPv4-compatible rather than mapped, and stays IPv6.
+     */
+    static String unmapped(String ip) {
+        if (ip == null || ip.indexOf(':') < 0) {
+            return ip;
+        }
+        BigInteger a = parseV6(ip);
+        if (a == null || !a.shiftRight(32).equals(MAPPED_PREFIX)) {
+            return ip;
+        }
+        int v4 = a.intValue();
+        return (v4 >>> 24) + "." + ((v4 >>> 16) & 0xff) + "." + ((v4 >>> 8) & 0xff) + "." + (v4 & 0xff);
     }
 
     private static boolean contains(List<Range> ranges, BigInteger addr) {
@@ -42,6 +65,9 @@ public final class Bogon {
         }
         return false;
     }
+
+    // The 96 bits above an IPv4-mapped address's IPv4 half: 80 zeros, then ffff.
+    private static final BigInteger MAPPED_PREFIX = BigInteger.valueOf(0xffff);
 
     // The canonical CIDRs, parsed once when this class is first used rather than on every call.
     private static final List<Range> V4 = parseRanges(Bogons.V4, 32, false);

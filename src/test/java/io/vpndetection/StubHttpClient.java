@@ -70,6 +70,8 @@ final class StubHttpClient extends HttpClient {
     final List<String> authorizations = Collections.synchronizedList(new ArrayList<>());
     /** How many addresses each POST /batch carried, in the order the requests arrived. */
     final List<Integer> batchSizes = Collections.synchronizedList(new ArrayList<>());
+    /** Every address a POST /batch carried, as sent, in the order the requests arrived. */
+    final List<String> batchIps = Collections.synchronizedList(new ArrayList<>());
     final AtomicInteger inFlight = new AtomicInteger();
     final AtomicInteger peak = new AtomicInteger();
 
@@ -160,6 +162,9 @@ final class StubHttpClient extends HttpClient {
         ObjectNode failures = MAPPER.createObjectNode();
         JsonNode ips = ips(request);
         batchSizes.add(ips.size());
+        for (JsonNode ip : ips) {
+            batchIps.add(ip.asText());
+        }
         for (JsonNode ip : ips) {
             Route route = responder.apply(ip.asText());
             JsonNode body = parse(new String(route.body, StandardCharsets.UTF_8));
