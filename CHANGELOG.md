@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 6.2.2 are described by their release commits.
 
+## 6.3.3 - 2026-10-01
+
+### Fixes
+
+- Raise jackson to 2.22.3, past two denial-of-service advisories ([`ed2bf78`](https://github.com/vpndetection-io/sdk-java/commit/ed2bf78c83367e0292241c4b74e326d7b4d25020))
+
 ## 6.3.2 - 2026-09-30
 
 ### Fixes
