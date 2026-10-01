@@ -39,7 +39,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>17</maven.compiler.release>
-        <jackson.version>2.22.2</jackson.version>
+        <jackson.version>2.22.3</jackson.version>
         <caffeine.version>3.2.4</caffeine.version>
         <httpclient.version>4.5.14</httpclient.version>
         <junit.version>5.14.4</junit.version>
