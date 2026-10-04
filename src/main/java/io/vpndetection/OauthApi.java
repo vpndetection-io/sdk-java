@@ -64,7 +64,8 @@ public final class OauthApi {
 
         @Override
         public void sleep(Duration wait) throws InterruptedException {
-            Thread.sleep(wait.toMillis());
+            // The nanoseconds too, so a sleep cut to the deadline does not wake short of it.
+            Thread.sleep(wait.toMillis(), wait.toNanosPart() % 1_000_000);
         }
     };
 
@@ -206,11 +207,12 @@ public final class OauthApi {
      *
      * <p>Waits {@code device.interval} seconds (5 when that is below 1) before EVERY request, the
      * first included, and 5 more for the rest of the call each time the server answers
-     * {@code slow_down}. Ends at the first answer that is neither that nor
-     * {@code authorization_pending}: a denial throws {@link OauthAccessDeniedException}, a code that
-     * ran out {@link OauthExpiredTokenException} - as does outliving {@code device.expires_in},
-     * counted from this call, with no status - and any other failure throws as it came. Calling it
-     * again with the same device authorization is safe until the code expires.
+     * {@code slow_down}; a wait that would end past {@code device.expires_in} ends at it instead.
+     * Ends at the first answer that is neither that nor {@code authorization_pending}: a denial
+     * throws {@link OauthAccessDeniedException}, a code that ran out
+     * {@link OauthExpiredTokenException} - as does outliving {@code device.expires_in}, counted from
+     * this call, with no status - and any other failure throws as it came. Calling it again with the
+     * same device authorization is safe until the code expires.
      *
      * <p>Interrupting the calling thread stops the wait and any request in flight, and throws a
      * {@link ErrorKind#NETWORK} failure with the thread's interrupt flag restored.
@@ -228,7 +230,11 @@ public final class OauthApi {
         HttpRequest request = post("/oauth/token", deviceCodeForm(clientId, deviceCode), options);
         long started = ticker.nanoTime();
         while (true) {
-            pause(interval);
+            // No sleep runs past the deadline: an interval that would end after it sleeps only until
+            // it, and the local expiry follows with no request sent. Slept in full, an interval of
+            // 2147483647 held a call whose code expired in 2 s (6.3.3, the corpus case).
+            long left = lifetime - (ticker.nanoTime() - started);
+            pause(Math.min(TimeUnit.SECONDS.toNanos(interval), Math.max(left, 0)));
             if (ticker.nanoTime() - started >= lifetime) {
                 throw new OauthExpiredTokenException(null, null);
             }
@@ -296,9 +302,9 @@ public final class OauthApi {
         }
     }
 
-    private void pause(long seconds) {
+    private void pause(long nanos) {
         try {
-            ticker.sleep(Duration.ofSeconds(seconds));
+            ticker.sleep(Duration.ofNanos(nanos));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new VPNDetectionException(ErrorKind.NETWORK, "interrupted while waiting to poll", e);

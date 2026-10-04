@@ -318,6 +318,23 @@ class OauthTest {
         assertEquals(0, http.sent.size(), "a request went out after the interrupt");
     }
 
+    // On the real clock too: the corpus pins the cut on a fake one, and this pins that the system
+    // sleep wakes at the deadline rather than short of it, where a request would still go out.
+    @Test
+    void anIntervalPastTheDeadlineEndsThePollAtTheDeadline() {
+        // Pending however often it is asked, so a request sent short of the deadline fails the count.
+        OauthStub http = OauthStub.answering(
+                Collections.nCopies(OauthStub.CAP, Answer.of(400, "{\"error\": \"authorization_pending\"}")));
+        VPNDetection client = clientOn(http).build();
+
+        OauthExpiredTokenException ended = assertTimeoutPreemptively(Duration.ofSeconds(5), () -> assertThrows(
+                OauthExpiredTokenException.class,
+                () -> client.oauth().pollDeviceToken(CLIENT_ID, device(Integer.MAX_VALUE, 1))));
+
+        assertTrue(ended.statusCode().isEmpty(), "a local expiry carries no status");
+        assertEquals(0, http.sent.size(), "a request went out at the deadline");
+    }
+
     @Test
     void aPerCallTimeoutBelowTheClientsBoundsEveryOauthRequest() {
         OauthStub http = OauthStub.hanging();
