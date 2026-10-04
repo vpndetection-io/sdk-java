@@ -21,6 +21,10 @@ final class Wire {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Duration BACKOFF_BASE = Duration.ofMillis(200);
     private static final Duration BACKOFF_CAP = Duration.ofSeconds(8);
+    // The longest Retry-After waited as given, 2^31 - 1 ms (~24.8 days). Past it the backoff runs
+    // instead: as given, 2147484 held a call 24.8 days, and 9223372036854776 or more failed it with a
+    // raw ArithmeticException out of Duration.toMillis (measured 2026-10-04 on 6.3.3).
+    private static final Duration LONGEST_WAIT = Duration.ofMillis(Integer.MAX_VALUE);
 
     interface Call<T> {
         T invoke() throws ApiException;
@@ -46,7 +50,8 @@ final class Wire {
      * Retries a transient failure up to {@code retries} times.
      *
      * <p>A server-supplied {@code Retry-After} wins over the backoff schedule, and is also the only
-     * thing that makes a 429 retryable at all.
+     * thing that makes a 429 retryable at all. One past {@link #LONGEST_WAIT} is waited out on the
+     * backoff instead, and the failure still carries the server's value.
      */
     static <T> T retrying(int retries, Attempt<T> attempt) {
         for (int i = 0; ; i++) {
@@ -60,7 +65,7 @@ final class Wire {
                 throw failure;
             }
             Duration asked = failure.retryAfter().orElse(null);
-            sleep(asked != null ? asked : backoff(i));
+            sleep(asked != null && asked.compareTo(LONGEST_WAIT) <= 0 ? asked : backoff(i));
         }
     }
 

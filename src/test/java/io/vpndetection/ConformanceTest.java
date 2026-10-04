@@ -3,6 +3,7 @@ package io.vpndetection;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -221,6 +222,39 @@ class ConformanceTest {
             checked++;
         }
         assertTrue(checked > 0, "the corpus names no non-retryable refusal to check");
+    }
+
+    /**
+     * A {@code Retry-After} past 2^31 - 1 ms is waited out on the backoff, still a rate limit
+     * carrying the server's value, from a lookup's 429 and a database call's alike. Waited as given,
+     * 2147484 held a call 24.8 days, and 9223372036854775807 failed it with a raw
+     * {@code ArithmeticException}.
+     */
+    @Test
+    void aRetryAfterTooLongToWaitIsWaitedOnTheBackoff() {
+        for (String value : List.of("2147484", "9223372036854775807", "Fri, 31 Dec 9999 23:59:59 GMT")) {
+            for (String path : List.of("1.1.1.1", "api/v1/database/metadata")) {
+                StubHttpClient http = StubHttpClient.of(Map.of(path, new StubHttpClient.Route(
+                        429, "{\"error\": \"too many requests\", \"rc\": \"RATE_LIMITED\"}",
+                        Map.of("Retry-After", value))));
+                try (VPNDetection client = clientOn(http).retries(1).build()) {
+                    String what = value + " on " + path;
+                    VPNDetectionException err = assertTimeoutPreemptively(Duration.ofSeconds(5),
+                            () -> assertThrows(VPNDetectionException.class, () -> {
+                                if (path.equals("1.1.1.1")) {
+                                    client.lookup("1.1.1.1");
+                                } else {
+                                    client.database().metadata("vpn_ip_v1");
+                                }
+                            }), what);
+
+                    assertEquals(2, http.calls.size(), what + ": requests");
+                    assertEquals(ErrorKind.RATE_LIMITED, err.kind(), what);
+                    assertTrue(err.retryAfter().orElseThrow().compareTo(Duration.ofMillis(Integer.MAX_VALUE)) > 0,
+                            what + ": the server's value");
+                }
+            }
+        }
     }
 
     @Test
