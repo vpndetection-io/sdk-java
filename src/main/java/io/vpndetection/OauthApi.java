@@ -15,8 +15,15 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,12 +39,19 @@ import java.util.function.BiConsumer;
  * browser and pick one of their API keys, instead of asking them to paste one. Every call takes the
  * program's client ID, issued on request through support@vpndetection.io.
  *
+ * <p>The authorization code flow: an app that can take a browser redirect sends the person to
+ * {@link #authorizationUrl} with a {@link #createPkce()} pair, then trades the code that comes back
+ * with {@link #exchangeAuthorizationCode}.
+ *
  * <p>No request here carries the client's API key, and none needs one, so a client built without a
  * key works the same. A refusal from the authorization server is an {@link OauthException}; every
  * other failure is the ordinary {@link VPNDetectionException}.
  */
 public final class OauthApi {
     private static final String DEVICE_CODE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
+    private static final SecureRandom RANDOM = new SecureRandom();
+    private static final Base64.Encoder BASE64URL = Base64.getUrlEncoder().withoutPadding();
+    private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 
     private static final List<String> METADATA_REQUIRED =
             List.of("issuer", "authorization_endpoint", "token_endpoint");
@@ -175,6 +189,86 @@ public final class OauthApi {
         return decode(send(post("/oauth/token", form, options)), TokenResponse.class, TOKEN_REQUIRED);
     }
 
+    public TokenResponse exchangeAuthorizationCode(String clientId, String code, String codeVerifier,
+            String redirectUri) {
+        return exchangeAuthorizationCode(clientId, code, codeVerifier, redirectUri, new OauthOptions());
+    }
+
+    /**
+     * Trade the code a sign-in's redirect brought back for tokens. {@code codeVerifier} is the PKCE
+     * verifier whose challenge went into the authorization URL, and {@code redirectUri} that URL's,
+     * exactly.
+     *
+     * <p>Never retried: the server spends the code on first read, before it checks the verifier, so a
+     * retry could only be refused.
+     */
+    public TokenResponse exchangeAuthorizationCode(String clientId, String code, String codeVerifier,
+            String redirectUri, OauthOptions options) {
+        Objects.requireNonNull(clientId, "clientId");
+        Objects.requireNonNull(code, "code");
+        Objects.requireNonNull(codeVerifier, "codeVerifier");
+        Objects.requireNonNull(redirectUri, "redirectUri");
+        Objects.requireNonNull(options, "options");
+        Map<String, String> form = new LinkedHashMap<>();
+        form.put("grant_type", "authorization_code");
+        form.put("code", code);
+        form.put("redirect_uri", redirectUri);
+        form.put("client_id", clientId);
+        form.put("code_verifier", codeVerifier);
+        return decode(send(post("/oauth/token", form, options)), TokenResponse.class, TOKEN_REQUIRED);
+    }
+
+    public String authorizationUrl(String clientId, String redirectUri, String codeChallenge) {
+        return authorizationUrl(clientId, redirectUri, codeChallenge, new AuthorizationUrlOptions());
+    }
+
+    /**
+     * The URL to open in the person's browser for the authorization code flow. Makes no request. Once
+     * they decide, the server redirects to {@code redirectUri} with a {@code code} for
+     * {@link #exchangeAuthorizationCode} (and the {@code state}, when one was given), or with an
+     * {@code error}.
+     *
+     * <p>Every value is percent-encoded over UTF-8 with only A-Z a-z 0-9 - . _ ~ left literal, so a
+     * space is %20 and never +.
+     *
+     * @throws IllegalArgumentException for a required value that is empty, or not valid UTF-16
+     */
+    public String authorizationUrl(String clientId, String redirectUri, String codeChallenge,
+            AuthorizationUrlOptions options) {
+        Objects.requireNonNull(options, "options");
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("response_type", "code");
+        params.put("client_id", required("clientId", clientId));
+        params.put("redirect_uri", required("redirectUri", redirectUri));
+        params.put("code_challenge", required("codeChallenge", codeChallenge));
+        params.put("code_challenge_method", "S256");
+        putIfGiven(params, "scope", options.scopeOrNull());
+        putIfGiven(params, "state", options.stateOrNull());
+        putIfGiven(params, "resource", options.resourceOrNull());
+        StringJoiner query = new StringJoiner("&");
+        params.forEach((name, value) -> query.add(name + "=" + percentEncode(name, value)));
+        return baseUrl + "/oauth/authorize?" + query;
+    }
+
+    /** A fresh PKCE pair for one sign-in, from 32 bytes of {@link SecureRandom}. */
+    public Pkce createPkce() {
+        byte[] raw = new byte[32];
+        RANDOM.nextBytes(raw);
+        String verifier = BASE64URL.encodeToString(raw);
+        return new Pkce(verifier, pkceChallenge(verifier), "S256");
+    }
+
+    /** The {@code S256} challenge for a PKCE verifier: its SHA-256, as unpadded base64url. */
+    public String pkceChallenge(String verifier) {
+        Objects.requireNonNull(verifier, "verifier");
+        try {
+            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+            return BASE64URL.encodeToString(sha256.digest(verifier.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("this Java platform has no SHA-256", e);
+        }
+    }
+
     public void revoke(String clientId, String token) {
         revoke(clientId, token, new OauthOptions());
     }
@@ -262,6 +356,36 @@ public final class OauthApi {
         form.put("device_code", deviceCode);
         form.put("client_id", clientId);
         return form;
+    }
+
+    private static String required(String name, String value) {
+        Objects.requireNonNull(value, name);
+        if (value.isEmpty()) {
+            throw new IllegalArgumentException(name + " must not be empty");
+        }
+        return value;
+    }
+
+    // URLEncoder sends a space as + and leaves * literal, and a lone surrogate would go out as ?, so
+    // the encoding is spelled out: the encoder REPORTS malformed input rather than replacing it.
+    private static String percentEncode(String name, String value) {
+        ByteBuffer bytes;
+        try {
+            bytes = StandardCharsets.UTF_8.newEncoder().encode(CharBuffer.wrap(value));
+        } catch (CharacterCodingException e) {
+            throw new IllegalArgumentException(name + " is not valid UTF-16, so it has no UTF-8", e);
+        }
+        StringBuilder out = new StringBuilder();
+        while (bytes.hasRemaining()) {
+            int b = bytes.get() & 0xff;
+            if ((b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z') || (b >= '0' && b <= '9')
+                    || b == '-' || b == '.' || b == '_' || b == '~') {
+                out.append((char) b);
+            } else {
+                out.append('%').append(HEX[b >> 4]).append(HEX[b & 0xf]);
+            }
+        }
+        return out.toString();
     }
 
     private static void putIfGiven(Map<String, String> form, String name, String value) {

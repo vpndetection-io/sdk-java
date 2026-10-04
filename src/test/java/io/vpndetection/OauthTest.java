@@ -46,8 +46,8 @@ import java.util.function.Function;
 
 /**
  * The {@code oauth} accessor against the corpus's {@code oauth} vectors, plus what the corpus cannot
- * say: timeouts, interruption, and a 2xx that is not the documented shape. The deferred
- * authorization-code vectors are never read.
+ * say: timeouts, interruption, and a 2xx that is not the documented shape, and the authorization
+ * code flow's vectors under {@code oauth.deferred}.
  */
 class OauthTest {
     private static final ObjectMapper MAPPER = ApiClient.createDefaultObjectMapper();
@@ -77,7 +77,7 @@ class OauthTest {
         }
         assertEndpoint(endpoints.get("metadata"), only(http), "metadata");
 
-        for (JsonNode c : oauth.get("forms").get("cases")) {
+        for (JsonNode c : concat(oauth.get("forms").get("cases"), oauth.get("deferred").get("forms"))) {
             String name = c.get("name").asText();
             OauthStub each = OauthStub.answering(success(c.get("operation").asText()));
             try (VPNDetection client = clientOn(each).baseUrl("http://oauth.test/").build()) {
@@ -91,7 +91,7 @@ class OauthTest {
     @Test
     void everyFormCarriesExactlyItsFields() {
         JsonNode forms = oauth.get("forms");
-        for (JsonNode c : forms.get("cases")) {
+        for (JsonNode c : concat(forms.get("cases"), oauth.get("deferred").get("forms"))) {
             String name = c.get("name").asText();
             OauthStub http = OauthStub.answering(success(c.get("operation").asText()));
             try (VPNDetection client = clientOn(http).build()) {
@@ -121,7 +121,8 @@ class OauthTest {
         JsonNode rule = oauth.get("noCredential");
         String key = rule.get("apiKey").asText();
         OauthStub http = OauthStub.answering(success("metadata"), success("deviceAuthorization"),
-                success("exchangeDeviceCode"), success("exchangeRefreshToken"), success("revoke"),
+                success("exchangeDeviceCode"), success("exchangeRefreshToken"),
+                success("exchangeAuthorizationCode"), success("revoke"),
                 success("exchangeDeviceCode"), Answer.of(200, "{\"ip\": \"1.1.1.1\", \"is_vpn\": false}"));
         try (VPNDetection client = clientOn(http).apiKey(key).build()) {
             OauthApi api = client.oauth().ticking(new FakeTicker());
@@ -129,14 +130,17 @@ class OauthTest {
             api.deviceAuthorization(CLIENT_ID, new DeviceAuthorizationOptions().scope("account.read"));
             api.exchangeDeviceCode(CLIENT_ID, "mo_dc_nokey");
             api.exchangeRefreshToken(CLIENT_ID, "mo_rt_nokey");
+            api.exchangeAuthorizationCode(CLIENT_ID, "mo_ac_nokey", "v".repeat(43), "http://127.0.0.1/cb");
             api.revoke(CLIENT_ID, "mo_rt_nokey");
             assertTimeoutPreemptively(OUTSIDE, () -> api.pollDeviceToken(CLIENT_ID, device(1, 900)));
             // The same client does send the key where it belongs, so the checks below are not vacuous.
             client.lookup("1.1.1.1");
+            assertFalse(api.authorizationUrl(CLIENT_ID, "http://127.0.0.1/cb", "c".repeat(43)).contains(key),
+                    "the authorization URL carried the API key");
         }
 
-        assertEquals(7, http.sent.size());
-        List<Sent> oauthRequests = http.sent.subList(0, 6);
+        assertEquals(8, http.sent.size());
+        List<Sent> oauthRequests = http.sent.subList(0, 7);
         for (Sent sent : oauthRequests) {
             String where = sent.method() + " " + sent.uri();
             for (JsonNode header : rule.get("forbiddenHeaders")) {
@@ -152,7 +156,7 @@ class OauthTest {
                     value -> assertFalse(value.contains(key), where + ": the key is in " + name)));
             assertFalse(sent.body() != null && sent.body().contains(key), where + ": the key is in the body");
         }
-        assertEquals(Optional.of("Bearer " + key), http.sent.get(6).headers().firstValue("authorization"));
+        assertEquals(Optional.of("Bearer " + key), http.sent.get(7).headers().firstValue("authorization"));
     }
 
     @Test
@@ -222,7 +226,7 @@ class OauthTest {
 
     @Test
     void onlyTheOperationsThatSpendNothingAreRetried() {
-        for (JsonNode c : oauth.get("retries").get("cases")) {
+        for (JsonNode c : concat(oauth.get("retries").get("cases"), oauth.get("deferred").get("retries"))) {
             String name = c.get("name").asText();
             JsonNode expect = c.get("expect");
             OauthStub http = OauthStub.answering(answers(c.get("responses")));
@@ -434,6 +438,7 @@ class OauthTest {
                 return answer(responses.get("deviceAuthorization").get(0));
             case "exchangeDeviceCode":
             case "exchangeRefreshToken":
+            case "exchangeAuthorizationCode":
                 return answer(responses.get("token").get(0));
             case "revoke":
                 return answer(responses.get("revoke").get(0));
@@ -474,12 +479,71 @@ class OauthTest {
             case "exchangeRefreshToken":
                 return api.exchangeRefreshToken(args.get("clientId").asText(),
                         args.get("refreshToken").asText());
+            case "exchangeAuthorizationCode":
+                return api.exchangeAuthorizationCode(args.get("clientId").asText(), args.get("code").asText(),
+                        args.get("codeVerifier").asText(), args.get("redirectUri").asText());
             case "revoke":
                 api.revoke(args.get("clientId").asText(), args.get("token").asText());
                 return null;
             default:
                 throw new IllegalArgumentException("the corpus names an operation this SDK lacks: " + operation);
         }
+    }
+
+    @Test
+    void anAuthorizationUrlIsBuiltExactlyAsTheCorpusSpellsItWithNoRequest() {
+        for (JsonNode c : oauth.get("deferred").get("authorizationUrl")) {
+            String name = c.get("name").asText();
+            OauthStub http = OauthStub.answering(success("metadata"));
+            AuthorizationUrlOptions options = new AuthorizationUrlOptions();
+            if (c.has("scope")) {
+                options.scope(c.get("scope").asText());
+            }
+            if (c.has("state")) {
+                options.state(c.get("state").asText());
+            }
+            if (c.has("resource")) {
+                options.resource(c.get("resource").asText());
+            }
+            String url = clientOn(http).baseUrl(c.get("baseUrl").asText()).build().oauth().authorizationUrl(
+                    c.get("clientId").asText(), c.get("redirectUri").asText(), c.get("codeChallenge").asText(),
+                    options);
+            assertEquals(c.get("expect").asText(), url, name);
+            assertEquals(0, http.sent.size(), name + ": requests");
+        }
+    }
+
+    @Test
+    void anAuthorizationUrlLeavesOutAnEmptyOptionAndRefusesAnEmptyValue() {
+        JsonNode c = oauth.get("deferred").get("authorizationUrl").get(0);
+        OauthApi api = clientOn(OauthStub.answering()).baseUrl(c.get("baseUrl").asText()).build().oauth();
+        String clientId = c.get("clientId").asText();
+        String redirectUri = c.get("redirectUri").asText();
+        String challenge = c.get("codeChallenge").asText();
+        assertEquals(c.get("expect").asText(), api.authorizationUrl(clientId, redirectUri, challenge,
+                new AuthorizationUrlOptions().scope("").state("").resource("")));
+        assertThrows(IllegalArgumentException.class, () -> api.authorizationUrl("", redirectUri, challenge));
+        assertThrows(IllegalArgumentException.class, () -> api.authorizationUrl(clientId, redirectUri, "\ud800"));
+    }
+
+    @Test
+    void aPkcePairIsFreshAndItsChallengeIsTheS256One() {
+        JsonNode pkce = oauth.get("deferred").get("pkce");
+        OauthApi api = clientOn(OauthStub.answering()).build().oauth();
+        Pkce first = api.createPkce();
+        assertEquals(pkce.get("challenge").asText(), api.pkceChallenge(pkce.get("verifier").asText()));
+        assertTrue(first.verifier().matches(pkce.get("generatedVerifierPattern").asText()), first.verifier());
+        assertEquals(api.pkceChallenge(first.verifier()), first.challenge());
+        assertEquals(pkce.get("method").asText(), first.method());
+        assertFalse(first.verifier().equals(api.createPkce().verifier()), "two pairs share a verifier");
+        assertFalse(first.toString().contains(first.verifier()), "toString carried the verifier");
+    }
+
+    private static List<JsonNode> concat(JsonNode first, JsonNode second) {
+        List<JsonNode> all = new ArrayList<>();
+        first.forEach(all::add);
+        second.forEach(all::add);
+        return all;
     }
 
     private static Sent only(OauthStub http) {
