@@ -26,6 +26,17 @@ jobs:
           server-password: CENTRAL_TOKEN_PASSWORD
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      # Maven 3.10 stages maven-metadata-local.xml beside the version directory, which
+      # central-publishing 0.11.0 does not strip, and Central refuses that bundle as content
+      # without a .pom. The runner image moved to 3.10.0 in October 2026, so pin the 3.9 line.
+      - name: Maven 3.9.16
+        run: |
+          curl -fsSLO https://repo1.maven.org/maven2/org/apache/maven/apache-maven/3.9.16/apache-maven-3.9.16-bin.tar.gz
+          echo "831a8591fe20c8243b1dbe7d71e3244f31d1665b0804b2e825e38cbbe5ce0cafb8338851f90780735568773e0a6cd07bbec107cda0b896b008b861075358b6f6  apache-maven-3.9.16-bin.tar.gz" | sha512sum -c -
+          tar -xzf apache-maven-3.9.16-bin.tar.gz -C "$RUNNER_TEMP"
+          rm apache-maven-3.9.16-bin.tar.gz
+          echo "$RUNNER_TEMP/apache-maven-3.9.16/bin" >> "$GITHUB_PATH"
+      - run: mvn -v
       # The tag only TRIGGERS this; Maven Central publishes whatever pom.xml says.
       # Without this check, tagging v1.0.1 against a 1.0.0 pom silently republishes
       # 1.0.0, or fails as "already published" with a confusing message.

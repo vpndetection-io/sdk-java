@@ -28,7 +28,9 @@ cd "$(dirname "$0")/.."
 : "${GPG_PRIVATE_KEY:?set GPG_PRIVATE_KEY to an ASCII-armored private key}"
 : "${GPG_PASSPHRASE:?set GPG_PASSPHRASE to the key passphrase, or the empty string}"
 
-MAVEN_IMAGE="${MAVEN_IMAGE:-maven:3-eclipse-temurin-21}"
+# The 3.9 line: Maven 3.10 stages maven-metadata-local.xml, which the Central plugin
+# does not strip, and Central refuses the bundle.
+MAVEN_IMAGE="${MAVEN_IMAGE:-maven:3.9.16-eclipse-temurin-21}"
 M2_DIR="${M2_DIR:-${HOME}/.m2}"
 DRY_RUN="${DRY_RUN:-}"
 
@@ -40,7 +42,9 @@ fi
 mkdir -p "$M2_DIR"
 
 # settings.xml interpolates ${env.*} at read time, so the credentials stay in the
-# environment and never land in the mounted cache directory.
+# environment and never land in the mounted cache directory. Each secret reaches
+# docker by NAME: a value on its command line is visible to ps for the whole run.
+export MAVEN_GPG_PASSPHRASE="$GPG_PASSPHRASE"
 docker run --rm \
     -v "$PWD:/w" \
     -v "$M2_DIR:/root/.m2" \
@@ -48,7 +52,7 @@ docker run --rm \
     -e CENTRAL_TOKEN_USERNAME \
     -e CENTRAL_TOKEN_PASSWORD \
     -e GPG_PRIVATE_KEY \
-    -e MAVEN_GPG_PASSPHRASE="$GPG_PASSPHRASE" \
+    -e MAVEN_GPG_PASSPHRASE \
     "$MAVEN_IMAGE" bash -euc "
         cat > /tmp/settings.xml <<'XML'
 <settings>
