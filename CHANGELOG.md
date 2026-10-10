@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 6.2.2 are described by their release commits.
 
+## 6.4.1 - 2026-10-10
+
+### Fixes
+
+- Re-pin the spec to 2026.10.09: rotating a key needs apikeys.reveal ([`f2543a8`](https://github.com/vpndetection-io/sdk-java/commit/f2543a8675a17366040fc2985e6a7ef3a03a5d1b))
+
 ## 6.4.0 - 2026-10-04
 
 ### Features
