@@ -46,6 +46,34 @@ class ClientTest {
         data = MAPPER.readTree(Path.of("testdata", "testdata.json").toFile());
     }
 
+    /**
+     * The key is trimmed, blanks alone are no key, and a control character in it is refused where
+     * it is set. Through 6.4.2 an empty key or one of blanks went out as a bare {@code Bearer}, a
+     * padded one padded and a tab inside one as itself, while a CR, LF, NUL or DEL failed every
+     * call with the JDK's raw {@code IllegalArgumentException}.
+     */
+    @Test
+    void theKeyIsTrimmedAndAControlCharacterInItIsRefusedWhereItIsSet() {
+        StubHttpClient http = StubHttpClient.echoing(Duration.ZERO);
+
+        for (String key : java.util.List.of(" \tsecret-key\r\n", " \t \n", "")) {
+            try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey(key).cacheEnabled(false).build()) {
+                client.lookup("1.1.1.1");
+            }
+        }
+
+        assertEquals("Bearer secret-key", http.authorizations.get(0));
+        assertNull(http.authorizations.get(1), "a key of blanks still sent an Authorization header");
+        assertNull(http.authorizations.get(2), "an empty key still sent an Authorization header");
+        for (String key : java.util.List.of("se\tcret", "se\rcret", "se\ncret", "se\u0000cret", "se\u007fcret",
+                "secret\r\nX-Injected: 1", "se\u0085cret")) {
+            IllegalArgumentException err = assertThrows(IllegalArgumentException.class,
+                    () -> VPNDetection.builder().apiKey(key), "accepted " + key);
+            assertFalse(err.getMessage().contains("cret"), "the refusal quoted the key: " + err.getMessage());
+        }
+        assertEquals(3, http.calls.size());
+    }
+
     @Test
     void isBogonIsOnTheClientAndAgreesWithTheStandaloneForm() {
         try (VPNDetection client = VPNDetection.create()) {

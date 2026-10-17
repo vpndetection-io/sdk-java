@@ -76,6 +76,8 @@ public final class VPNDetection implements AutoCloseable {
         api.setReadTimeout(b.requestTimeout);
         if (b.apiKey != null) {
             // The `native` generator emits no auth plumbing at all, so the key goes on by hand.
+            // Skipped entirely without one: `Authorization: Bearer ` with nothing after it reads
+            // as a wrong key, not none.
             api.setRequestInterceptor(rb -> rb.header("Authorization", "Bearer " + b.apiKey));
         }
 
@@ -429,6 +431,21 @@ public final class VPNDetection implements AutoCloseable {
         }
     }
 
+    // Trimmed, so a key read from a file loses its newline, and blanks alone are no key: an empty
+    // key went out as `Authorization: Bearer ` through 6.4.2. A control character left inside
+    // failed every call with the JDK's raw IllegalArgumentException, or went out on the wire, so
+    // it is refused here, naming the cause and not the key.
+    static String apiKeyOf(String key) {
+        String trimmed = key == null ? "" : key.strip();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        if (trimmed.chars().anyMatch(Character::isISOControl)) {
+            throw new IllegalArgumentException("the API key holds a control character");
+        }
+        return trimmed;
+    }
+
     static Duration positive(Duration value, String name) {
         Objects.requireNonNull(value, name);
         if (value.isZero() || value.isNegative()) {
@@ -594,10 +611,14 @@ public final class VPNDetection implements AutoCloseable {
 
         /**
          * Your API key. Leave it unset to use the free tier, which answers {@code ip} and
-         * {@code is_vpn} and allows 1000 requests per day per source address.
+         * {@code is_vpn} and allows 1000 requests per day per source address. The key is trimmed,
+         * and one of blanks alone is no key.
+         *
+         * @throws IllegalArgumentException for a key holding a control character, which no call
+         *     could send.
          */
         public Builder apiKey(String apiKey) {
-            this.apiKey = apiKey;
+            this.apiKey = apiKeyOf(apiKey);
             return this;
         }
 
