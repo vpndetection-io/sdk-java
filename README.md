@@ -50,7 +50,7 @@ VPNDetection client = VPNDetection.builder()
 
 Result result = client.lookup("45.83.91.1");
 System.out.println(result.isVpn());                          // true
-System.out.println(result.vpn().get().getProvider());        // "mullvad"
+System.out.println(result.vpn().get().getProvider());        // "nordvpn"
 System.out.println(result.isHosting());                      // Optional[true]
 System.out.println(result.hosting().get().getProvider());
 ```
