@@ -5,11 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.vpndetection.internal.ApiException;
 
+import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
+import java.time.LocalDateTime;
+import java.time.Year;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The seam between the generated wire layer and this one: retries, and the generated
@@ -25,6 +29,23 @@ final class Wire {
     // instead: as given, 2147484 held a call 24.8 days, and 9223372036854776 or more failed it with a
     // raw ArithmeticException out of Duration.toMillis (measured 2026-10-04 on 6.3.3).
     private static final Duration LONGEST_WAIT = Duration.ofMillis(Integer.MAX_VALUE);
+
+    private static final Pattern SECONDS = Pattern.compile("[0-9]+");
+    private static final List<String> MONTHS =
+            List.of("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
+    private static final String MONTH = "(" + String.join("|", MONTHS) + ")";
+    private static final String TIME = "([0-9]{2}):([0-9]{2}):([0-9]{2})";
+    private static final String DAY = "(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)";
+    // Sun, 06 Nov 1994 08:49:37 GMT
+    private static final Pattern IMF_FIXDATE =
+            Pattern.compile(DAY + ", ([0-9]{2}) " + MONTH + " ([0-9]{4}) " + TIME + " GMT");
+    // Sunday, 06-Nov-94 08:49:37 GMT
+    private static final Pattern RFC_850 = Pattern.compile(
+            "(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), ([0-9]{2})-" + MONTH
+                    + "-([0-9]{2}) " + TIME + " GMT");
+    // Sun Nov  6 08:49:37 1994
+    private static final Pattern ASCTIME =
+            Pattern.compile(DAY + " " + MONTH + " ([ 0-9][0-9]) " + TIME + " ([0-9]{4})");
 
     interface Call<T> {
         T invoke() throws ApiException;
@@ -136,6 +157,8 @@ final class Wire {
         return cause != null && cause.getMessage() != null ? cause.getMessage() : "request failed";
     }
 
+    // A count of seconds past what a long holds, or a value in no form at all, is no Retry-After:
+    // on a 429 that reads as a spent allowance.
     private static Duration retryAfterOf(ApiException e) {
         if (e.getResponseHeaders() == null) {
             return null;
@@ -144,19 +167,57 @@ final class Wire {
         if (value == null || value.isBlank()) {
             return null;
         }
-        try {
-            long seconds = Long.parseLong(value.trim());
-            return seconds >= 0 ? Duration.ofSeconds(seconds) : null;
-        } catch (NumberFormatException notSeconds) {
-            // The header also permits an HTTP date.
+        value = value.trim();
+        if (SECONDS.matcher(value).matches()) {
+            try {
+                return Duration.ofSeconds(Long.parseLong(value));
+            } catch (NumberFormatException pastALong) {
+                return null;
+            }
         }
-        try {
-            ZonedDateTime when = ZonedDateTime.parse(value.trim(), DateTimeFormatter.RFC_1123_DATE_TIME);
-            Duration wait = Duration.between(Instant.now(), when.toInstant());
-            return wait.isNegative() ? Duration.ZERO : wait;
-        } catch (DateTimeParseException notADate) {
+        Instant when = httpDate(value);
+        if (when == null) {
             return null;
         }
+        Duration wait = Duration.between(Instant.now(), when);
+        return wait.isNegative() ? Duration.ZERO : wait;
+    }
+
+    // The instant an HTTP date names, or null when it is in none of the three forms or names no
+    // real time, such as 31 November. The day of the week is read but not checked against the date.
+    private static Instant httpDate(String value) {
+        try {
+            Matcher m = IMF_FIXDATE.matcher(value);
+            if (m.matches()) {
+                return at(Integer.parseInt(m.group(3)), m.group(2), m.group(1), m, 4);
+            }
+            m = RFC_850.matcher(value);
+            if (m.matches()) {
+                return at(fullYear(Integer.parseInt(m.group(3))), m.group(2), m.group(1), m, 4);
+            }
+            m = ASCTIME.matcher(value);
+            if (m.matches()) {
+                return at(Integer.parseInt(m.group(6)), m.group(1), m.group(2), m, 3);
+            }
+        } catch (DateTimeException noSuchTime) {
+            return null;
+        }
+        return null;
+    }
+
+    // The hour, minute and second are the matcher's groups from `time` on.
+    private static Instant at(int year, String month, String day, Matcher m, int time) {
+        return LocalDateTime.of(year, MONTHS.indexOf(month) + 1, Integer.parseInt(day.trim()),
+                Integer.parseInt(m.group(time)), Integer.parseInt(m.group(time + 1)),
+                Integer.parseInt(m.group(time + 2))).toInstant(ZoneOffset.UTC);
+    }
+
+    // RFC 850's two-digit year, read as RFC 9110 says: one that would land more than 50 years ahead
+    // is the most recent past year ending in those digits.
+    private static int fullYear(int twoDigits) {
+        int now = Year.now(ZoneOffset.UTC).getValue();
+        int year = now - Math.floorMod(now, 100) + twoDigits;
+        return year > now + 50 ? year - 100 : year;
     }
 
     private static Duration backoff(int attempt) {

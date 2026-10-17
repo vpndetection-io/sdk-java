@@ -257,6 +257,57 @@ class ConformanceTest {
         }
     }
 
+    /**
+     * A {@code Retry-After} is digits, or one of RFC 9110's three date forms in GMT, and nothing
+     * else, from a lookup's 429 and a database call's alike. {@code Long.parseLong} took a sign, so
+     * {@code +1} was a one-second throttle, and only the IMF-fixdate was read, so an RFC 850 or
+     * asctime date made the 429 a spent allowance, through 6.4.2.
+     */
+    @Test
+    void aRetryAfterIsDigitsOrAnHttpDateAndNothingElse() {
+        java.time.ZonedDateTime at = java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC).plusSeconds(60);
+        java.util.function.Function<String, String> format = pattern -> at.format(
+                java.time.format.DateTimeFormatter.ofPattern(pattern, Locale.US));
+        String imf = format.apply("EEE, dd MMM yyyy HH:mm:ss");
+        String asctime = format.apply("EEE MMM ppd HH:mm:ss yyyy");
+        int next = at.getYear() + 1;
+        Map<String, ErrorKind> cases = new LinkedHashMap<>();
+        for (String value : List.of("0", "120", " 7 ", imf + " GMT",
+                format.apply("EEEE, dd-MMM-yy HH:mm:ss 'GMT'"), asctime)) {
+            cases.put(value, ErrorKind.RATE_LIMITED);
+        }
+        for (String value : List.of(imf + " +0000", imf + " +0500", imf + " PST", imf + " gmt",
+                "Xyz, 01 Jan " + next + " 08:49:37 GMT", "Tue, 31 Nov " + next + " 08:49:37 GMT",
+                "Fri, 01 Jan " + next + " 25:00:00 GMT", next + "-01-01T08:49:37Z", "1.5", "+1", "-1",
+                "0x10", "1_0", "1e3", "x", "tomorrow")) {
+            cases.put(value, ErrorKind.QUOTA_EXCEEDED);
+        }
+        for (String path : List.of("1.1.1.1", "api/v1/database/metadata")) {
+            cases.forEach((value, kind) -> {
+                StubHttpClient http = StubHttpClient.of(Map.of(path, new StubHttpClient.Route(
+                        429, "{\"rc\": \"RATE_LIMITED\"}", Map.of("Retry-After", value))));
+                try (VPNDetection client = clientOn(http).retries(0).build()) {
+                    VPNDetectionException err = assertThrows(VPNDetectionException.class, () -> {
+                        if (path.equals("1.1.1.1")) {
+                            client.lookup("1.1.1.1");
+                        } else {
+                            client.database().metadata("vpn_ip_v1");
+                        }
+                    }, value);
+                    assertEquals(kind, err.kind(), "'" + value + "' on " + path);
+                }
+            });
+        }
+
+        StubHttpClient http = StubHttpClient.of(Map.of("1.1.1.1", new StubHttpClient.Route(
+                429, "{\"rc\": \"RATE_LIMITED\"}", Map.of("Retry-After", imf + " GMT"))));
+        try (VPNDetection client = clientOn(http).retries(0).build()) {
+            VPNDetectionException err = assertThrows(VPNDetectionException.class, () -> client.lookup("1.1.1.1"));
+            long wait = err.retryAfter().orElseThrow().toSeconds();
+            assertTrue(wait >= 55 && wait <= 60, "a date is the seconds until it, in GMT: " + wait);
+        }
+    }
+
     @Test
     void batchDedupesShortCircuitsBogonsAndKeysByAddress() {
         JsonNode c = batchCase("dedup-bogon-and-order-free-keying");
