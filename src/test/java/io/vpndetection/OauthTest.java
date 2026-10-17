@@ -667,6 +667,8 @@ class OauthTest {
                 return m.getAuthorizationResponseIssParameterSupported();
             case "client_id_metadata_document_supported":
                 return m.getClientIdMetadataDocumentSupported();
+            case "registration_endpoint":
+                return m.getRegistrationEndpoint();
             case "service_documentation":
                 return m.getServiceDocumentation();
             default:
