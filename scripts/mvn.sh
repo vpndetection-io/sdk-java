@@ -25,4 +25,5 @@ docker run --rm \
     -v "$M2_DIR:/root/.m2" \
     -w /w \
     -e MAVEN_CONFIG=/root/.m2 \
+    -e VPNDETECTION_LIVE \
     "$MAVEN_IMAGE" mvn -B -Duser.home=/root "$@"
