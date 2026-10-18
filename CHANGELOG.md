@@ -2,6 +2,16 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 6.2.2 are described by their release commits.
 
+## 6.6.0 - 2026-10-18
+
+### Features
+
+- Re-pin the spec to 2026.10.18: isPubproxy and the pubproxy detail ([`ec176e8`](https://github.com/vpndetection-io/sdk-java/commit/ec176e82d3925e90c66dfa00dd2591b22ae2ea77))
+
+### Fixes
+
+- Retry an answer a call cannot read, as a server error with its status ([`94a2128`](https://github.com/vpndetection-io/sdk-java/commit/94a21281a0762a753fe4052914f04f4a64a3d571))
+
 ## 6.5.0 - 2026-10-17
 
 ### Features
