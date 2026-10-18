@@ -3,6 +3,7 @@ package io.vpndetection;
 import io.vpndetection.model.ClassDetail;
 import io.vpndetection.model.LookupResponse;
 import io.vpndetection.model.ProxyDetail;
+import io.vpndetection.model.PubproxyDetail;
 import io.vpndetection.model.VpnDetail;
 
 import java.util.Objects;
@@ -51,6 +52,7 @@ public final class Result {
                 .isResproxy(false)
                 .isDcproxy(false)
                 .isMobproxy(false)
+                .isPubproxy(false)
                 .vpn(new VpnDetail())
                 .hosting(new ClassDetail())
                 .relay(new ClassDetail())
@@ -58,7 +60,8 @@ public final class Result {
                 .cdn(new ClassDetail())
                 .resproxy(new ProxyDetail())
                 .dcproxy(new ProxyDetail())
-                .mobproxy(new ProxyDetail());
+                .mobproxy(new ProxyDetail())
+                .pubproxy(new PubproxyDetail());
         return new Result(r, true);
     }
 
@@ -105,6 +108,14 @@ public final class Result {
         return Optional.ofNullable(raw.getIsMobproxy());
     }
 
+    /**
+     * Whether a public proxy, one anyone can connect through, listens on the address or sends its
+     * traffic out from it. Scale and above.
+     */
+    public Optional<Boolean> isPubproxy() {
+        return Optional.ofNullable(raw.getIsPubproxy());
+    }
+
     public Optional<VpnDetail> vpn() {
         return Optional.ofNullable(raw.getVpn());
     }
@@ -135,6 +146,14 @@ public final class Result {
 
     public Optional<ProxyDetail> mobproxy() {
         return Optional.ofNullable(raw.getMobproxy());
+    }
+
+    /**
+     * Detail for {@link #isPubproxy()}: which end of a proxy the address is, and its protocols. Max
+     * only.
+     */
+    public Optional<PubproxyDetail> pubproxy() {
+        return Optional.ofNullable(raw.getPubproxy());
     }
 
     /**

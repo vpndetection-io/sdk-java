@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vpndetection.internal.ApiClient;
 import io.vpndetection.model.ClassDetail;
 import io.vpndetection.model.ProxyDetail;
+import io.vpndetection.model.PubproxyDetail;
 import io.vpndetection.model.VpnDetail;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -153,7 +154,7 @@ class ConformanceTest {
                     assertEquals(emptyDetail(field), member(r, field).orElse(null),
                             name + ": " + field + " must be present and empty");
                 }
-                for (String detail : List.of("vpn", "hosting", "dcproxy")) {
+                for (String detail : List.of("vpn", "hosting", "dcproxy", "pubproxy")) {
                     if (expect.get(detail) != null) {
                         assertEquals(MAPPER.treeToValue(expect.get(detail), detailType(detail)),
                                 member(r, detail).orElse(null), name + ": " + detail);
@@ -504,6 +505,8 @@ class ConformanceTest {
                 return r.isDcproxy();
             case "is_mobproxy":
                 return r.isMobproxy();
+            case "is_pubproxy":
+                return r.isPubproxy();
             case "vpn":
                 return r.vpn();
             case "hosting":
@@ -520,6 +523,8 @@ class ConformanceTest {
                 return r.dcproxy();
             case "mobproxy":
                 return r.mobproxy();
+            case "pubproxy":
+                return r.pubproxy();
             default:
                 throw new IllegalArgumentException("the corpus names a member this SDK lacks: " + wire);
         }
@@ -529,6 +534,9 @@ class ConformanceTest {
         Class<?> type = detailType(wire);
         if (type == VpnDetail.class) {
             return new VpnDetail();
+        }
+        if (type == PubproxyDetail.class) {
+            return new PubproxyDetail();
         }
         return type == ClassDetail.class ? new ClassDetail() : new ProxyDetail();
     }
@@ -546,6 +554,8 @@ class ConformanceTest {
             case "dcproxy":
             case "mobproxy":
                 return ProxyDetail.class;
+            case "pubproxy":
+                return PubproxyDetail.class;
             default:
                 throw new IllegalArgumentException("not a detail object: " + wire);
         }

@@ -36,6 +36,7 @@ final class Served {
         put(out, "is_resproxy", result.isResproxy());
         put(out, "is_dcproxy", result.isDcproxy());
         put(out, "is_mobproxy", result.isMobproxy());
+        put(out, "is_pubproxy", result.isPubproxy());
         putDetail(out, "vpn", result.vpn());
         putDetail(out, "hosting", result.hosting());
         putDetail(out, "relay", result.relay());
@@ -44,6 +45,7 @@ final class Served {
         putDetail(out, "resproxy", result.resproxy());
         putDetail(out, "dcproxy", result.dcproxy());
         putDetail(out, "mobproxy", result.mobproxy());
+        putDetail(out, "pubproxy", result.pubproxy());
         return out;
     }
 
@@ -52,8 +54,9 @@ final class Served {
     }
 
     // The detail objects carry their wire names on @JsonProperty, so Jackson is what turns one
-    // into the shape a condition is written against. Their fields are flat scalars, so nothing
-    // here depends on how nulls are included: a null simply matches nothing.
+    // into the shape a condition is written against. Their fields are scalars, bar pubproxy's
+    // list of protocols, so nothing here depends on how nulls are included: a null simply
+    // matches nothing.
     private static void putDetail(Map<String, Object> out, String key, Optional<?> value) {
         value.ifPresent(v -> out.put(key, MAPPER.convertValue(v, Map.class)));
     }
