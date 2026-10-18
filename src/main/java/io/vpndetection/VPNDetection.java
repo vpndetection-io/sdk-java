@@ -72,7 +72,7 @@ public final class VPNDetection implements AutoCloseable {
     private VPNDetection(Builder b) {
         HttpClient http = new DeadlineHttpClient(b.httpClient != null ? b.httpClient : defaultHttpClient());
         this.api = new ApiClient(new FixedHttpClientBuilder(http),
-                ApiClient.createDefaultObjectMapper(), b.baseUrl);
+                RequiredMembers.configure(ApiClient.createDefaultObjectMapper()), b.baseUrl);
         api.setReadTimeout(b.requestTimeout);
         if (b.apiKey != null) {
             // The `native` generator emits no auth plumbing at all, so the key goes on by hand.
@@ -175,7 +175,8 @@ public final class VPNDetection implements AutoCloseable {
     // One GET for one address, cached once it answers.
     private Result fetch(String ip, LookupOptions options) {
         LookupWireApi wire = lookupApi(options);
-        Result result = Wire.execute(retries(options), () -> Result.of(wire.lookupIp(ip)));
+        Result result = Wire.execute(retries(options),
+                () -> Result.of(Wire.answer(wire.lookupIpWithHttpInfo(ip), "lookup answer")));
         if (cache != null) {
             cache.put(ip, result);
         }
@@ -240,7 +241,8 @@ public final class VPNDetection implements AutoCloseable {
     public Result myIp(LookupOptions options) {
         Objects.requireNonNull(options, "options");
         LookupWireApi wire = lookupApi(options);
-        return Wire.execute(retries(options), () -> Result.of(wire.lookupMyIp()));
+        return Wire.execute(retries(options),
+                () -> Result.of(Wire.answer(wire.lookupMyIpWithHttpInfo(), "lookup answer")));
     }
 
     public CompletableFuture<Result> myIpAsync() {
@@ -277,7 +279,8 @@ public final class VPNDetection implements AutoCloseable {
         Objects.requireNonNull(options, "options");
         ApiClient scoped = scoped(options);
         EntitlementWireApi wire = scoped == api ? entitlementApi : new EntitlementWireApi(scoped);
-        return Wire.execute(retries(options), wire::myEntitlement);
+        return Wire.execute(retries(options),
+                () -> Wire.answer(wire.myEntitlementWithHttpInfo(), "entitlement"));
     }
 
     public CompletableFuture<Entitlement> myEntitlementAsync() {
@@ -540,7 +543,9 @@ public final class VPNDetection implements AutoCloseable {
     private Map<String, BatchResult> lookupChunk(List<String> chunk, LookupWireApi wire, int callRetries) {
         BatchLookupResponse body;
         try {
-            body = Wire.execute(callRetries, () -> wire.lookupBatch(new BatchLookupRequest().ips(chunk)));
+            body = Wire.execute(callRetries,
+                    () -> Wire.answer(wire.lookupBatchWithHttpInfo(new BatchLookupRequest().ips(chunk)),
+                            "batch answer"));
         } catch (VPNDetectionException e) {
             return failedChunk(chunk, e);
         }

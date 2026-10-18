@@ -3,9 +3,12 @@ package io.vpndetection;
 import io.vpndetection.api.DatabaseWireApi;
 import io.vpndetection.internal.ApiClient;
 import io.vpndetection.internal.ApiException;
+import io.vpndetection.model.DatabaseChecksumsResponse;
+import io.vpndetection.model.DatabaseList;
 import io.vpndetection.model.DbChecksums;
 import io.vpndetection.model.DatabaseMetadata;
 import io.vpndetection.model.Download;
+import io.vpndetection.model.DownloadList;
 import io.vpndetection.model.Database;
 
 import java.io.IOException;
@@ -53,7 +56,8 @@ public final class DatabaseApi {
      * family itself.
      */
     public List<Database> list() {
-        return Wire.execute(retries, () -> api.listDatabases().getDatabases());
+        return Wire.execute(retries,
+                () -> Wire.member(api.listDatabasesWithHttpInfo(), DatabaseList::getDatabases, "databases"));
     }
 
     /**
@@ -64,7 +68,7 @@ public final class DatabaseApi {
      */
     public DatabaseMetadata metadata(String id) {
         Objects.requireNonNull(id, "id");
-        return Wire.execute(retries, () -> api.databaseMetadata(id));
+        return Wire.execute(retries, () -> Wire.answer(api.databaseMetadataWithHttpInfo(id), "metadata"));
     }
 
     /**
@@ -77,16 +81,20 @@ public final class DatabaseApi {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(format, "format");
         return Wire.execute(retries,
-                () -> api.databaseChecksum(id, io.vpndetection.model.DatabaseFormat.fromValue(format.wireValue())).getChecksums());
+                () -> Wire.member(api.databaseChecksumWithHttpInfo(id,
+                        io.vpndetection.model.DatabaseFormat.fromValue(format.wireValue())),
+                        DatabaseChecksumsResponse::getChecksums, "checksums"));
     }
 
     /** Your organization's recent download attempts, newest first. */
     public List<Download> downloads() {
-        return Wire.execute(retries, () -> api.listDownloads(null).getDownloads());
+        return Wire.execute(retries,
+                () -> Wire.member(api.listDownloadsWithHttpInfo(null), DownloadList::getDownloads, "downloads"));
     }
 
     public List<Download> downloads(int limit) {
-        return Wire.execute(retries, () -> api.listDownloads(limit).getDownloads());
+        return Wire.execute(retries,
+                () -> Wire.member(api.listDownloadsWithHttpInfo(limit), DownloadList::getDownloads, "downloads"));
     }
 
     /**
@@ -100,8 +108,10 @@ public final class DatabaseApi {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(format, "format");
         return Wire.execute(retries, () -> {
+            int status;
             try {
-                api.downloadDatabaseWithHttpInfo(id, io.vpndetection.model.DatabaseFormat.fromValue(format.wireValue()));
+                status = api.downloadDatabaseWithHttpInfo(id,
+                        io.vpndetection.model.DatabaseFormat.fromValue(format.wireValue())).getStatusCode();
             } catch (ApiException e) {
                 // The generated method treats any non-2xx as a failure, so the SUCCESS case for
                 // this endpoint arrives as an exception carrying the Location header.
@@ -114,7 +124,8 @@ public final class DatabaseApi {
                 return location;
             }
             throw new VPNDetectionException(ErrorKind.SERVER_ERROR,
-                    "expected a redirect to object storage; the HttpClient must not follow redirects");
+                    "expected a redirect to object storage; the HttpClient must not follow redirects",
+                    status, null, null);
         });
     }
 

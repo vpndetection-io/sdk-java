@@ -90,6 +90,8 @@ final class StubHttpClient extends HttpClient {
 
     private final Function<String, Route> responder;
     private final Duration delay;
+    // Set by answeringBatchWith(): every POST /batch gets this route as it is, unbuilt.
+    private Route batchRoute;
     // Set by gated(): every request waits for release(), and each arrival is counted first.
     private CountDownLatch gate;
     private final Semaphore arrived = new Semaphore(0);
@@ -147,6 +149,12 @@ final class StubHttpClient extends HttpClient {
      * test sets - and then with a failure no timeout produces, so a bound that did not hold fails
      * an assertion rather than hanging the suite.
      */
+    /** Answers every POST /batch with {@code route} as given, for a chunk the API never builds. */
+    StubHttpClient answeringBatchWith(Route route) {
+        this.batchRoute = route;
+        return this;
+    }
+
     static StubHttpClient hanging() {
         return new StubHttpClient(
                 ip -> new Route(503, "{\"error\": \"the stub stopped waiting\"}", Map.of()),
@@ -182,7 +190,7 @@ final class StubHttpClient extends HttpClient {
 
         String path = uri.getPath();
         Route route = "POST".equals(request.method()) && "/batch".equals(path)
-                ? batch(request)
+                ? (batchRoute != null ? batchRoute : batch(request))
                 : responder.apply(URLDecoder.decode(
                         path.startsWith("/") ? path.substring(1) : path, StandardCharsets.UTF_8));
         Map<String, List<String>> headers = new HashMap<>();

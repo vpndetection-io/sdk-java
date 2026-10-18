@@ -44,9 +44,12 @@ class DatabaseTest {
                                 + " \"vpn_ip_extended_v1\", \"version\": 1, \"formats\":"
                                 + " [{\"format\": \"mmdb\", \"bytes\": 1234}]}]}]}"),
                 "api/v1/database/downloads", StubHttpClient.Route.ok(
-                        "{\"downloads\": [{\"dataset_id\": \"vpn_ip_extended_v1\"}]}"),
+                        "{\"downloads\": [{\"dataset_id\": \"vpn_ip_extended_v1\", \"format\": \"mmdb\","
+                                + " \"outcome\": \"ok\", \"sample\": false, \"bytes\": 1234,"
+                                + " \"created\": \"2026-10-01T10:00:00Z\"}]}"),
                 "api/v1/database/metadata", StubHttpClient.Route.ok(
-                        "{\"id\": \"vpn_ip_extended_v1\", \"entries\": 42}")));
+                        "{\"id\": \"vpn_ip_extended_v1\", \"updated\": \"2026-10-01\", \"entries\": 42,"
+                                + " \"schema\": {\"mmdb\": [{\"name\": \"ip\", \"type\": \"string\"}]}}")));
 
         try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey("k").build()) {
             DbChecksums sums = client.database().checksums("vpn_ip_extended_v1", DatabaseFormat.MMDB);
