@@ -149,8 +149,8 @@ public final class Result {
     }
 
     /**
-     * Detail for {@link #isPubproxy()}: which end of a proxy the address is, and its protocols. Max
-     * only.
+     * Detail for {@link #isPubproxy()}: which end of a proxy the address is, its protocols, and how
+     * many ports and proxies it counts at each end. Max only.
      */
     public Optional<PubproxyDetail> pubproxy() {
         return Optional.ofNullable(raw.getPubproxy());

@@ -33,12 +33,14 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import io.vpndetection.internal.ApiClient;
 /**
- * The address in Public Proxy IP, open proxies anyone can connect through, over a rolling 90 day window. It covers both ends of a proxy: the address it listens on and the address its traffic leaves from. Every key is present when the object is populated; the object is &#x60;{}&#x60; when &#x60;is_pubproxy&#x60; is false. 
+ * The address in Public Proxy IP, open proxies anyone can connect through, measured over a rolling 90 day window. An address is either end of a proxy, or both: where it listens, and where its traffic leaves from. Every key is present when the object is populated; the object is &#x60;{}&#x60; when &#x60;is_pubproxy&#x60; is false. 
  */
 @JsonPropertyOrder({
   PubproxyDetail.JSON_PROPERTY_ENTRY,
   PubproxyDetail.JSON_PROPERTY_EXIT,
   PubproxyDetail.JSON_PROPERTY_PROTOCOLS,
+  PubproxyDetail.JSON_PROPERTY_NUM_PORTS,
+  PubproxyDetail.JSON_PROPERTY_NUM_PROXIES,
   PubproxyDetail.JSON_PROPERTY_LAST_SEEN,
   PubproxyDetail.JSON_PROPERTY_LAST_USABLE
 })
@@ -55,6 +57,14 @@ public class PubproxyDetail {
   public static final String JSON_PROPERTY_PROTOCOLS = "protocols";
   @javax.annotation.Nullable
   private List<String> protocols = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_NUM_PORTS = "num_ports";
+  @javax.annotation.Nullable
+  private Integer numPorts;
+
+  public static final String JSON_PROPERTY_NUM_PROXIES = "num_proxies";
+  @javax.annotation.Nullable
+  private Integer numProxies;
 
   public static final String JSON_PROPERTY_LAST_SEEN = "last_seen";
   @javax.annotation.Nullable
@@ -147,6 +157,54 @@ public class PubproxyDetail {
   }
 
 
+  public PubproxyDetail numPorts(@javax.annotation.Nullable Integer numPorts) {
+    this.numPorts = numPorts;
+    return this;
+  }
+
+  /**
+   * How many distinct ports a public proxy listens on at this address; 0 when it is only an exit, or its port is not known. 
+   * @return numPorts
+   */
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_NUM_PORTS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public Integer getNumPorts() {
+    return numPorts;
+  }
+
+
+  @JsonProperty(value = JSON_PROPERTY_NUM_PORTS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setNumPorts(@javax.annotation.Nullable Integer numPorts) {
+    this.numPorts = numPorts;
+  }
+
+
+  public PubproxyDetail numProxies(@javax.annotation.Nullable Integer numProxies) {
+    this.numProxies = numProxies;
+    return this;
+  }
+
+  /**
+   * How many distinct public proxies&#39; traffic left from this address; 0 when it is only an entry. 
+   * @return numProxies
+   */
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_NUM_PROXIES, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public Integer getNumProxies() {
+    return numProxies;
+  }
+
+
+  @JsonProperty(value = JSON_PROPERTY_NUM_PROXIES, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setNumProxies(@javax.annotation.Nullable Integer numProxies) {
+    this.numProxies = numProxies;
+  }
+
+
   public PubproxyDetail lastSeen(@javax.annotation.Nullable LocalDate lastSeen) {
     this.lastSeen = lastSeen;
     return this;
@@ -210,13 +268,15 @@ public class PubproxyDetail {
     return Objects.equals(this.entry, pubproxyDetail.entry) &&
         Objects.equals(this.exit, pubproxyDetail.exit) &&
         Objects.equals(this.protocols, pubproxyDetail.protocols) &&
+        Objects.equals(this.numPorts, pubproxyDetail.numPorts) &&
+        Objects.equals(this.numProxies, pubproxyDetail.numProxies) &&
         Objects.equals(this.lastSeen, pubproxyDetail.lastSeen) &&
         Objects.equals(this.lastUsable, pubproxyDetail.lastUsable);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entry, exit, protocols, lastSeen, lastUsable);
+    return Objects.hash(entry, exit, protocols, numPorts, numProxies, lastSeen, lastUsable);
   }
 
   @Override
@@ -226,6 +286,8 @@ public class PubproxyDetail {
     sb.append("    entry: ").append(toIndentedString(entry)).append("\n");
     sb.append("    exit: ").append(toIndentedString(exit)).append("\n");
     sb.append("    protocols: ").append(toIndentedString(protocols)).append("\n");
+    sb.append("    numPorts: ").append(toIndentedString(numPorts)).append("\n");
+    sb.append("    numProxies: ").append(toIndentedString(numProxies)).append("\n");
     sb.append("    lastSeen: ").append(toIndentedString(lastSeen)).append("\n");
     sb.append("    lastUsable: ").append(toIndentedString(lastUsable)).append("\n");
     sb.append("}");
@@ -289,6 +351,16 @@ public class PubproxyDetail {
             "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix),
             ApiClient.urlEncode(ApiClient.valueToString(getProtocols().get(i)))));
       }
+    }
+
+    // add `num_ports` to the URL query string
+    if (getNumPorts() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%snum_ports%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getNumPorts()))));
+    }
+
+    // add `num_proxies` to the URL query string
+    if (getNumProxies() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%snum_proxies%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getNumProxies()))));
     }
 
     // add `last_seen` to the URL query string
