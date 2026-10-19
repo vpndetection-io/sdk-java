@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 6.2.2 are described by their release commits.
 
+## 6.7.0 - 2026-10-19
+
+### Features
+
+- Re-pin the spec to 2026.10.18: num_ports and num_proxies in the pubproxy detail ([`9da744c`](https://github.com/vpndetection-io/sdk-java/commit/9da744c535a263bfa24a9c2b11b61a7330826992))
+
 ## 6.6.0 - 2026-10-18
 
 ### Features
