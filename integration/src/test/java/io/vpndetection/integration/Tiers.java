@@ -18,8 +18,9 @@ final class Tiers {
      * One rung per plan tier, ascending.
      *
      * <p>{@code widens} is what the rung promises against whichever observable rung sits below it:
-     * a paid tier serves strictly more than the tier under it, while a free key and no key at all
-     * are the same entitlement reached two ways.
+     * the first paid tier serves strictly more than a free key; every paid plan answers the same
+     * fields, so a higher paid tier only keeps what the one under it serves, and a free key keeps
+     * what no key does.
      *
      * <p>Field COUNTS are deliberately absent. Pinning "starter answers seven fields" turns a
      * pricing change into a red SDK build; the relation between the tiers is what the client
@@ -31,8 +32,8 @@ final class Tiers {
             new Rung("unauth", null, false),
             new Rung("free", "VPNDETECTION_STAGING_KEY_FREE", false),
             new Rung("starter", "VPNDETECTION_STAGING_KEY_STARTER", true),
-            new Rung("scale", "VPNDETECTION_STAGING_KEY_SCALE", true),
-            new Rung("max", "VPNDETECTION_STAGING_KEY_MAX", true));
+            new Rung("scale", "VPNDETECTION_STAGING_KEY_SCALE", false),
+            new Rung("max", "VPNDETECTION_STAGING_KEY_MAX", false));
 
     static Rung unauth() {
         return RUNGS.get(0);
