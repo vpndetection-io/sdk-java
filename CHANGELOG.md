@@ -2,6 +2,13 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 6.2.2 are described by their release commits.
 
+## 6.9.0 - 2026-10-20
+
+### Features
+
+- Add location() and asn() to lookup results, a bogon's included ([`2e6643f`](https://github.com/vpndetection-io/sdk-java/commit/2e6643fd2c68d30e03fa02d8bee4b2a2453f35f2))
+- Read open on databases and downloads, and mark vpn.method deprecated ([`66b5f85`](https://github.com/vpndetection-io/sdk-java/commit/66b5f85ae62c6bbb2005274dc045baf766ae7123))
+
 ## 6.8.0 - 2026-10-20
 
 ### Fixes
