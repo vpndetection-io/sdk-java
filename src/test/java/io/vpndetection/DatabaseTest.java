@@ -37,7 +37,7 @@ class DatabaseTest {
                 "api/v1/database/list", StubHttpClient.Route.ok(
                         "{\"databases\": [{\"base\": \"vpn_ip\", \"name\": \"VPN IP\","
                                 + " \"summary\": \"vpn_ip rows\","
-                                + " \"license_type\": \"standard\", \"in_term\": true,"
+                                + " \"license_type\": \"standard\", \"in_term\": true, \"open\": false,"
                                 + " \"starts\": \"2026-01-01T00:00:00.000Z\", \"expires\": null,"
                                 + " \"renews_at\": null, \"notice_due_at\": null,"
                                 + " \"standing\": \"licensed\", \"versions\": [{\"id\":"
@@ -45,7 +45,7 @@ class DatabaseTest {
                                 + " [{\"format\": \"mmdb\", \"bytes\": 1234}]}]}]}"),
                 "api/v1/database/downloads", StubHttpClient.Route.ok(
                         "{\"downloads\": [{\"dataset_id\": \"vpn_ip_extended_v1\", \"format\": \"mmdb\","
-                                + " \"outcome\": \"ok\", \"sample\": false, \"bytes\": 1234,"
+                                + " \"outcome\": \"ok\", \"sample\": false, \"open\": false, \"bytes\": 1234,"
                                 + " \"created\": \"2026-10-01T10:00:00Z\"}]}"),
                 "api/v1/database/metadata", StubHttpClient.Route.ok(
                         "{\"id\": \"vpn_ip_extended_v1\", \"updated\": \"2026-10-01\", \"entries\": 42,"

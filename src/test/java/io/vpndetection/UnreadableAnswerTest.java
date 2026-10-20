@@ -43,7 +43,7 @@ final class UnreadableAnswerTest {
                 + " \"usage\": {\"requests\": 12, \"quota\": 100000, \"hard_limit\": null,"
                 + " \"window_start\": \"2026-10-01T00:00:00Z\", \"window_end\": \"2026-11-01T00:00:00Z\"}}");
         WHOLE.put("api/v1/database/list", "{\"databases\": [{\"base\": \"vpn_ip\", \"name\": \"VPN IP\","
-                + " \"summary\": \"rows\", \"license_type\": \"standard\", \"in_term\": true,"
+                + " \"summary\": \"rows\", \"license_type\": \"standard\", \"in_term\": true, \"open\": false,"
                 + " \"starts\": null, \"expires\": null, \"renews_at\": null, \"notice_due_at\": null,"
                 + " \"standing\": \"licensed\", \"versions\": [{\"id\": \"vpn_ip_extended_v1\", \"version\": 1,"
                 + " \"formats\": [{\"format\": \"mmdb\", \"bytes\": 1234}]}]}]}");
@@ -53,7 +53,7 @@ final class UnreadableAnswerTest {
         WHOLE.put("api/v1/database/checksum", "{\"id\": \"vpn_ip_extended_v1\", \"format\": \"mmdb\","
                 + " \"checksums\": {\"md5\": \"m\", \"sha1\": \"s1\", \"sha256\": \"s256\", \"sha512\": \"s512\"}}");
         WHOLE.put("api/v1/database/downloads", "{\"downloads\": [{\"dataset_id\": \"vpn_ip_extended_v1\","
-                + " \"format\": \"mmdb\", \"outcome\": \"ok\", \"sample\": false, \"bytes\": 1234,"
+                + " \"format\": \"mmdb\", \"outcome\": \"ok\", \"sample\": false, \"open\": false, \"bytes\": 1234,"
                 + " \"http_status\": 302, \"apikey_id\": null, \"client_ip\": null, \"user_agent\": null,"
                 + " \"created\": \"2026-10-01T10:00:00Z\"}]}");
     }
@@ -103,14 +103,14 @@ final class UnreadableAnswerTest {
                 List.of("api/v1/entitlement", "/plan", "key", "tier"),
                 List.of("api/v1/entitlement", "/usage", "requests", "quota", "window_start", "window_end"),
                 List.of("api/v1/database/list", "/databases/0", "base", "name", "summary", "in_term", "standing",
-                        "versions"),
+                        "open", "versions"),
                 List.of("api/v1/database/list", "/databases/0/versions/0", "id", "version", "formats"),
                 List.of("api/v1/database/list", "/databases/0/versions/0/formats/0", "format"),
                 List.of("api/v1/database/metadata", "", "id", "updated", "entries", "schema"),
                 List.of("api/v1/database/metadata", "/schema/mmdb/0", "name", "type"),
                 List.of("api/v1/database/checksum", "/checksums", "md5", "sha1", "sha256", "sha512"),
                 List.of("api/v1/database/downloads", "/downloads/0", "dataset_id", "format", "outcome", "sample",
-                        "created"));
+                        "open", "created"));
         for (List<String> each : cases) {
             String path = each.get(0);
             for (String member : each.subList(2, each.size())) {

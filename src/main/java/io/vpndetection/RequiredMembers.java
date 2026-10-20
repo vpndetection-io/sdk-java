@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.LogicalType;
 
+import io.vpndetection.model.Asn;
 import io.vpndetection.model.BatchLookupError;
 import io.vpndetection.model.BatchLookupResponse;
 import io.vpndetection.model.Database;
@@ -32,6 +33,7 @@ import io.vpndetection.model.Entitlement;
 import io.vpndetection.model.EntitlementApikey;
 import io.vpndetection.model.EntitlementPlan;
 import io.vpndetection.model.EntitlementUsage;
+import io.vpndetection.model.Location;
 import io.vpndetection.model.LookupResponse;
 
 import java.io.IOException;
@@ -64,6 +66,9 @@ final class RequiredMembers extends BeanDeserializerModifier {
      */
     static final Map<Class<?>, List<String>> MEMBERS = Map.ofEntries(
             Map.entry(LookupResponse.class, List.of("ip", "is_vpn")),
+            Map.entry(Location.class, List.of("continent", "continent_name", "country", "country_name", "timezone",
+                    "currency_code", "currency_name", "currency_symbol", "flag_emoji", "flag_unicode")),
+            Map.entry(Asn.class, List.of("asn", "name", "domain", "type", "prefix")),
             Map.entry(Entitlement.class, List.of("org_id", "apikey", "plan", "usage")),
             Map.entry(EntitlementApikey.class, List.of("id", "allowed_cidrs")),
             Map.entry(EntitlementPlan.class, List.of("key", "tier")),
@@ -71,13 +76,13 @@ final class RequiredMembers extends BeanDeserializerModifier {
             Map.entry(DatabaseList.class, List.of("databases")),
             Map.entry(DownloadList.class, List.of("downloads")),
             Map.entry(DatabaseChecksumsResponse.class, List.of("checksums")),
-            Map.entry(Database.class, List.of("base", "name", "summary", "in_term", "standing", "versions")),
+            Map.entry(Database.class, List.of("base", "name", "summary", "in_term", "standing", "open", "versions")),
             Map.entry(DatabaseVersion.class, List.of("id", "version", "formats")),
             Map.entry(DatabaseFormatSize.class, List.of("format")),
             Map.entry(DatabaseMetadata.class, List.of("id", "updated", "entries", "schema")),
             Map.entry(DatabaseMetadataColumn.class, List.of("name", "type")),
             Map.entry(DbChecksums.class, List.of("md5", "sha1", "sha256", "sha512")),
-            Map.entry(Download.class, List.of("dataset_id", "format", "outcome", "sample", "created")));
+            Map.entry(Download.class, List.of("dataset_id", "format", "outcome", "sample", "open", "created")));
 
     /** The generated client's mapper, made to refuse what the generated models cannot tell apart. */
     static ObjectMapper configure(ObjectMapper mapper) {

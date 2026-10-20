@@ -267,7 +267,7 @@ class ClientTest {
             case "api/v1/database/list" -> StubHttpClient.Route.ok(
                     "{\"databases\": [{\"base\": \"vpn_ip\", \"name\": \"VPN IP\","
                             + " \"summary\": \"vpn_ip rows\","
-                            + " \"license_type\": \"standard\", \"in_term\": true,"
+                            + " \"license_type\": \"standard\", \"in_term\": true, \"open\": false,"
                             + " \"starts\": \"2026-01-01T00:00:00.000Z\", \"expires\": null,"
                             + " \"renews_at\": null, \"notice_due_at\": null,"
                             + " \"standing\": \"licensed\", \"versions\": [{\"id\":"
