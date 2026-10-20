@@ -25,7 +25,7 @@ Requires Java 17 or newer. HTTP is the JDK's own `java.net.http.HttpClient`, so 
 
 ## Usage
 
-**No API key needed to start.** The free tier answers `ip` and `is_vpn`, and allows 1000 requests per day per source address.
+**No API key needed to start.** Without a key, a lookup answers `ip` and `is_vpn`, up to 1000 a day per source address.
 
 ```java
 import io.vpndetection.Result;
@@ -41,7 +41,7 @@ Build the client once and keep it. It owns a connection pool, a cache and a thre
 
 ### With an API key
 
-An API key raises your quota, and raises your features on a paid plan. Create one in the [console](https://app.vpndetection.io), then pass it in:
+A free key adds Tor and relay detection, where the address is and the AS that announces it. Every paid plan answers every field, the same on each, and the plans differ only in how many lookups they include. Create a key in the [console](https://app.vpndetection.io), then pass it in:
 
 ```java
 VPNDetection client = VPNDetection.builder()
@@ -50,9 +50,10 @@ VPNDetection client = VPNDetection.builder()
 
 Result result = client.lookup("45.83.91.1");
 System.out.println(result.isVpn());                          // true
-System.out.println(result.vpn().get().getProvider());        // "nordvpn"
-System.out.println(result.isHosting());                      // Optional[true]
-System.out.println(result.hosting().get().getProvider());
+System.out.println(result.location().get().getCountry());    // the ISO 3166 country code
+System.out.println(result.asn().get().getName());            // who runs the announcing network
+System.out.println(result.vpn().get().getProvider());        // "nordvpn", on a paid plan
+System.out.println(result.isHosting());                      // Optional[true], on a paid plan
 ```
 
 ### Your own address
@@ -244,7 +245,7 @@ Check that `state` came back as you sent it before you exchange `code`, which wo
 
 ### Absent is not false
 
-Only `ip` and `isVpn` come back on every plan. The rest are `Optional`, where empty means "not in your plan" rather than "checked, and no".
+Without a key only `ip` and `isVpn` come back, and a free key adds Tor, relay, `location()` and `asn()`. The rest are `Optional`, where empty means "not in your plan" rather than "checked, and no".
 
 ```java
 result.isHosting().orElse(false);   // when you only want the flag

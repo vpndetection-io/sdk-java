@@ -10,7 +10,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.vpndetection.internal.ApiClient;
+import io.vpndetection.model.Asn;
 import io.vpndetection.model.ClassDetail;
+import io.vpndetection.model.Location;
 import io.vpndetection.model.ProxyDetail;
 import io.vpndetection.model.PubproxyDetail;
 import io.vpndetection.model.VpnDetail;
@@ -97,7 +99,7 @@ class ConformanceTest {
     }
 
     @Test
-    void aBogonIsAnsweredLocallyInTheFullMaxShape() {
+    void aBogonIsAnsweredLocallyInTheFullMaxShape() throws IOException {
         StubHttpClient http = StubHttpClient.of(Map.of());
         try (VPNDetection client = clientOn(http).build()) {
             Result r = client.lookup("10.0.0.1");
@@ -115,6 +117,10 @@ class ConformanceTest {
                 Optional<?> value = member(r, name);
                 assertTrue(value.isPresent(), name + " must be present");
                 assertEquals(emptyDetail(name), value.get(), name + " must be present and empty");
+            }
+            for (String object : List.of("location", "asn")) {
+                assertEquals(MAPPER.treeToValue(data.get("bogonResponse").get(object), detailType(object)),
+                        member(r, object).orElse(null), object + " must carry every field, empty");
             }
             assertEquals(0, http.calls.size(), "a bogon must not reach the network");
         }
@@ -154,7 +160,7 @@ class ConformanceTest {
                     assertEquals(emptyDetail(field), member(r, field).orElse(null),
                             name + ": " + field + " must be present and empty");
                 }
-                for (String detail : List.of("vpn", "hosting", "dcproxy", "pubproxy")) {
+                for (String detail : List.of("vpn", "hosting", "dcproxy", "pubproxy", "location", "asn")) {
                     if (expect.get(detail) != null) {
                         assertEquals(MAPPER.treeToValue(expect.get(detail), detailType(detail)),
                                 member(r, detail).orElse(null), name + ": " + detail);
@@ -525,6 +531,10 @@ class ConformanceTest {
                 return r.mobproxy();
             case "pubproxy":
                 return r.pubproxy();
+            case "location":
+                return r.location();
+            case "asn":
+                return r.asn();
             default:
                 throw new IllegalArgumentException("the corpus names a member this SDK lacks: " + wire);
         }
@@ -556,6 +566,10 @@ class ConformanceTest {
                 return ProxyDetail.class;
             case "pubproxy":
                 return PubproxyDetail.class;
+            case "location":
+                return Location.class;
+            case "asn":
+                return Asn.class;
             default:
                 throw new IllegalArgumentException("not a detail object: " + wire);
         }

@@ -1,6 +1,8 @@
 package io.vpndetection;
 
+import io.vpndetection.model.Asn;
 import io.vpndetection.model.ClassDetail;
+import io.vpndetection.model.Location;
 import io.vpndetection.model.LookupResponse;
 import io.vpndetection.model.ProxyDetail;
 import io.vpndetection.model.PubproxyDetail;
@@ -35,7 +37,8 @@ public final class Result {
 
     /**
      * The answer a bogon gets, in the full shape the API serves at its widest plan: every flag
-     * present and false, every detail object present and empty.
+     * present and false, every detail object present and empty, and the location and AS with every
+     * field empty, as the API answers a bogon.
      *
      * <p>Note this is deliberately the WIDEST shape regardless of your plan, so do not infer which
      * fields your plan includes from a bogon answer. {@link #isBogon()} is how you tell a locally
@@ -61,7 +64,19 @@ public final class Result {
                 .resproxy(new ProxyDetail())
                 .dcproxy(new ProxyDetail())
                 .mobproxy(new ProxyDetail())
-                .pubproxy(new PubproxyDetail());
+                .pubproxy(new PubproxyDetail())
+                .location(new Location()
+                        .continent("")
+                        .continentName("")
+                        .country("")
+                        .countryName("")
+                        .timezone("")
+                        .currencyCode("")
+                        .currencyName("")
+                        .currencySymbol("")
+                        .flagEmoji("")
+                        .flagUnicode(""))
+                .asn(new Asn().asn(0).name("").domain("").type("").prefix(""));
         return new Result(r, true);
     }
 
@@ -150,10 +165,23 @@ public final class Result {
 
     /**
      * Detail for {@link #isPubproxy()}: which end of a proxy the address is, its protocols, and how
-     * many ports and proxies it counts at each end. Max only.
+     * many ports and proxies it counts at each end. On every paid plan.
      */
     public Optional<PubproxyDetail> pubproxy() {
         return Optional.ofNullable(raw.getPubproxy());
+    }
+
+    /**
+     * Where the address is, on every keyed answer: every field set, an empty string where it is
+     * not known.
+     */
+    public Optional<Location> location() {
+        return Optional.ofNullable(raw.getLocation());
+    }
+
+    /** The AS announcing the address, on every keyed answer: its number is 0 where none does. */
+    public Optional<Asn> asn() {
+        return Optional.ofNullable(raw.getAsn());
     }
 
     /**
