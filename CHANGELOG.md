@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 6.2.2 are described by their release commits.
 
+## 6.8.0 - 2026-10-20
+
+### Fixes
+
+- Re-pin the spec to 2026.10.19: client_id_issued_at is 64-bit ([`f93be4e`](https://github.com/vpndetection-io/sdk-java/commit/f93be4e147ef133b76f3671f4d88b91900e7022d))
+
 ## 6.7.0 - 2026-10-19
 
 ### Features
