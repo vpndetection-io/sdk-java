@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 6.2.2 are described by their release commits.
 
+## 6.9.1 - 2026-10-24
+
+### Fixes
+
+- Match a block condition on location and asn ([`51806d6`](https://github.com/vpndetection-io/sdk-java/commit/51806d6cc688cbad5fabe5d993c063e1a5fa955e))
+
 ## 6.9.0 - 2026-10-20
 
 ### Features
