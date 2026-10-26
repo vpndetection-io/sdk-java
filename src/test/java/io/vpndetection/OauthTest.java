@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.vpndetection.OauthStub.Answer;
 import io.vpndetection.OauthStub.Sent;
 import io.vpndetection.internal.ApiClient;
+import io.vpndetection.model.ClientRegistration;
 import io.vpndetection.model.DeviceAuthorization;
 import io.vpndetection.model.OauthMetadata;
 import io.vpndetection.model.TokenResponse;
@@ -746,6 +747,147 @@ class OauthTest {
             }
             waits.add(wait.toSeconds());
             now.addAndGet(wait.toNanos());
+        }
+    }
+
+    @Test
+    void registerPostsExactlyItsJsonBodyWithNoCredential() throws IOException {
+        JsonNode register = oauth.get("register");
+        for (JsonNode c : register.get("bodies").get("cases")) {
+            String name = c.get("name").asText();
+            OauthStub http = OauthStub.answering(answer(register.get("responses").get("cases").get(0)));
+            register(clientOn(http).apiKey("idk_register_key").build().oauth(), c.get("args"));
+            Sent sent = only(http);
+            assertEndpoint(register.get("endpoint"), sent, name);
+            assertEquals(register.get("contentType").asText(),
+                    sent.headers().firstValue("Content-Type").orElse(null), name + ": content type");
+            assertFalse(sent.headers().firstValue("Authorization").isPresent(), name + ": no credential");
+            assertNull(sent.uri().getRawQuery(), name + ": no query");
+            assertEquals(c.get("body"), MAPPER.readTree(sent.body()), name + ": body");
+        }
+    }
+
+    @Test
+    void registerRefusesAnEmptyValueBeforeSending() {
+        List<JsonNode> args = new ArrayList<>();
+        oauth.get("register").get("refusals").get("cases").forEach(c -> args.add(c.get("args")));
+        args.add(MAPPER.createObjectNode().set("redirectUris",
+                MAPPER.createArrayNode().add("http://127.0.0.1/cb\ud800")));
+        args.add(MAPPER.createObjectNode().put("clientName", "Example \ud800")
+                .set("redirectUris", MAPPER.createArrayNode().add("http://127.0.0.1/cb")));
+        for (JsonNode each : args) {
+            OauthStub http = OauthStub.answering();
+            OauthApi api = clientOn(http).build().oauth();
+            assertThrows(IllegalArgumentException.class, () -> register(api, each), each.toString());
+            assertEquals(0, http.sent.size(), each + ": nothing sent");
+        }
+    }
+
+    @Test
+    void registerReadsEveryServedMember() throws IOException {
+        for (JsonNode c : oauth.get("register").get("responses").get("cases")) {
+            String name = c.get("name").asText();
+            ClientRegistration got = clientOn(OauthStub.answering(answer(c))).build().oauth()
+                    .register(List.of("http://127.0.0.1:8765/callback"));
+            JsonNode expect = c.get("expect");
+            for (var member : expect.get("present").properties()) {
+                Object value = registrationMember(got, member.getKey());
+                assertEquals(member.getValue(), MAPPER.readTree(MAPPER.writeValueAsString(value)),
+                        name + ": " + member.getKey());
+            }
+            for (JsonNode member : expect.get("absent")) {
+                assertNull(registrationMember(got, member.asText()), name + ": " + member.asText() + " is absent");
+            }
+        }
+        JsonNode late = oauth.get("register").get("responses").get("cases").get(2);
+        assertEquals(4102444800L, clientOn(OauthStub.answering(answer(late))).build().oauth()
+                .register(List.of("http://127.0.0.1:8765/callback")).getClientIdIssuedAt());
+    }
+
+    @Test
+    void registerReadsAnUnreadable2xxAsAServerErrorWithItsStatus() {
+        for (JsonNode c : oauth.get("register").get("unreadable").get("cases")) {
+            String name = c.get("name").asText();
+            OauthStub http = OauthStub.answering(answer(c));
+            OauthApi api = clientOn(http).retries(0).build().oauth();
+            VPNDetectionException e = assertThrows(VPNDetectionException.class,
+                    () -> api.register(List.of("http://127.0.0.1:8765/callback")), name);
+            assertEquals(VPNDetectionException.class, e.getClass(), name + ": " + e);
+            assertEquals(ErrorKind.SERVER_ERROR, e.kind(), name);
+            assertEquals(Optional.of(c.get("status").asInt()), e.statusCode(), name);
+            assertEquals(1, http.sent.size(), name + ": requests");
+        }
+    }
+
+    @Test
+    void registerTakesTheClientsRetriesButNeverRetriesARefusal() {
+        for (JsonNode c : oauth.get("register").get("retries")) {
+            String name = c.get("name").asText();
+            JsonNode expect = c.get("expect");
+            OauthStub http = OauthStub.answering(answers(c.get("responses")));
+            VPNDetectionException failure = null;
+            try {
+                register(clientOn(http).build().oauth(), c.get("args"));
+            } catch (VPNDetectionException e) {
+                failure = e;
+            }
+            assertEquals(expect.get("requests").asInt(), http.sent.size(), name + ": requests");
+            String outcome = expect.get("outcome").asText();
+            if (outcome.equals("ok")) {
+                assertNull(failure, name + ": " + failure);
+            } else {
+                assertError(name, outcome, expect, assertInstanceOf(VPNDetectionException.class, failure, name));
+            }
+        }
+        for (JsonNode c : oauth.get("register").get("errors")) {
+            String name = c.get("name").asText();
+            OauthStub http = OauthStub.answering(answer(c));
+            VPNDetectionException e = assertThrows(VPNDetectionException.class,
+                    () -> clientOn(http).build().oauth().register(List.of("http://127.0.0.1:8765/callback")), name);
+            assertError(name, c.get("expect").get("type").asText(), c.get("expect"), e);
+            assertEquals(1, http.sent.size(), name + ": requests");
+        }
+    }
+
+    @Test
+    void registerTakesAPerCallTimeout() {
+        OauthStub http = OauthStub.hanging();
+        OauthApi api = clientOn(http).requestTimeout(Duration.ofSeconds(30)).build().oauth();
+        assertTimesOut(() -> api.register(List.of("http://127.0.0.1/cb"),
+                new RegisterOptions().requestTimeout(Duration.ofMillis(200))));
+        assertThrows(IllegalArgumentException.class, () -> new RegisterOptions().requestTimeout(Duration.ZERO));
+    }
+
+    private static ClientRegistration register(OauthApi api, JsonNode args) {
+        List<String> uris = new ArrayList<>();
+        args.get("redirectUris").forEach(uri -> uris.add(uri.asText()));
+        RegisterOptions options = new RegisterOptions();
+        if (args.has("clientName")) {
+            options.clientName(args.get("clientName").asText());
+        }
+        return api.register(uris, options);
+    }
+
+    private static Object registrationMember(ClientRegistration got, String wire) {
+        switch (wire) {
+            case "client_id":
+                return got.getClientId();
+            case "client_id_issued_at":
+                return got.getClientIdIssuedAt();
+            case "client_name":
+                return got.getClientName();
+            case "redirect_uris":
+                return got.getRedirectUris();
+            case "grant_types":
+                return got.getGrantTypes();
+            case "response_types":
+                return got.getResponseTypes();
+            case "token_endpoint_auth_method":
+                return got.getTokenEndpointAuthMethod();
+            case "scope":
+                return got.getScope();
+            default:
+                throw new IllegalArgumentException("the corpus names a member this SDK lacks: " + wire);
         }
     }
 }

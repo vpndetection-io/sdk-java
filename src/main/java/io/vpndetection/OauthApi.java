@@ -3,8 +3,11 @@ package io.vpndetection;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.vpndetection.internal.ApiException;
+import io.vpndetection.model.ClientRegistration;
 import io.vpndetection.model.DeviceAuthorization;
 import io.vpndetection.model.OauthMetadata;
 import io.vpndetection.model.TokenResponse;
@@ -41,7 +44,8 @@ import java.util.function.BiConsumer;
  *
  * <p>The authorization code flow: an app that can take a browser redirect sends the person to
  * {@link #authorizationUrl} with a {@link #createPkce()} pair, then trades the code that comes back
- * with {@link #exchangeAuthorizationCode}.
+ * with {@link #exchangeAuthorizationCode}. An app that cannot serve a Client ID Metadata Document gets its
+ * client ID from {@link #register}.
  *
  * <p>No request here carries the client's API key, and none needs one, so a client built without a
  * key works the same. A refusal from the authorization server is an {@link OauthException}; every
@@ -58,6 +62,8 @@ public final class OauthApi {
     private static final List<String> DEVICE_REQUIRED =
             List.of("device_code", "user_code", "verification_uri", "expires_in", "interval");
     private static final List<String> TOKEN_REQUIRED = List.of("access_token", "token_type", "expires_in");
+    private static final List<String> REGISTER_REQUIRED = List.of("client_id", "client_id_issued_at", "client_name",
+            "redirect_uris", "token_endpoint_auth_method");
 
     // The generated model starts every list empty, which would read a member the server left out
     // as present.
@@ -69,6 +75,9 @@ public final class OauthApi {
             OauthMetadata::setCodeChallengeMethodsSupported,
             OauthMetadata.JSON_PROPERTY_TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED,
             OauthMetadata::setTokenEndpointAuthMethodsSupported);
+    private static final Map<String, BiConsumer<ClientRegistration, List<String>>> REGISTER_LISTS = Map.of(
+            ClientRegistration.JSON_PROPERTY_GRANT_TYPES, ClientRegistration::setGrantTypes,
+            ClientRegistration.JSON_PROPERTY_RESPONSE_TYPES, ClientRegistration::setResponseTypes);
 
     static final Ticker SYSTEM = new Ticker() {
         @Override
@@ -269,6 +278,54 @@ public final class OauthApi {
         }
     }
 
+    public ClientRegistration register(List<String> redirectUris) {
+        return register(redirectUris, new RegisterOptions());
+    }
+
+    /**
+     * Register a client for the authorization code flow, for an app that cannot serve a Client ID
+     * Metadata Document, and get its {@code client_id}.
+     *
+     * <p>Each redirect URI must be https on a public host name, or http on a loopback address, which
+     * then matches on any port; the server refuses any other with an {@link OauthException} coded
+     * {@code invalid_redirect_uri}. Nothing is kept until a person approves the client, so
+     * registering again costs nothing, and this is retried like a lookup.
+     *
+     * @throws IllegalArgumentException for no redirect URI, or one that is empty or not valid UTF-16
+     */
+    public ClientRegistration register(List<String> redirectUris, RegisterOptions options) {
+        Objects.requireNonNull(redirectUris, "redirectUris");
+        Objects.requireNonNull(options, "options");
+        if (redirectUris.isEmpty()) {
+            throw new IllegalArgumentException("redirectUris must list at least one URI");
+        }
+        ObjectNode body = mapper.createObjectNode();
+        ArrayNode uris = body.putArray("redirect_uris");
+        for (int i = 0; i < redirectUris.size(); i++) {
+            String name = "redirectUris[" + i + "]";
+            uris.add(utf8(name, required(name, redirectUris.get(i))));
+        }
+        String clientName = options.clientNameOrNull();
+        if (clientName != null && !clientName.isEmpty()) {
+            body.put("client_name", utf8("clientName", clientName));
+        }
+        HttpRequest request = request("/oauth/register", options)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8))
+                .build();
+        return Wire.retrying(retries, () -> {
+            HttpResponse<byte[]> response = send(request);
+            JsonNode wire = answer(response, REGISTER_REQUIRED);
+            ClientRegistration registration = read(wire, ClientRegistration.class, response.statusCode());
+            REGISTER_LISTS.forEach((member, set) -> {
+                if (!wire.hasNonNull(member)) {
+                    set.accept(registration, null);
+                }
+            });
+            return registration;
+        });
+    }
+
     public void revoke(String clientId, String token) {
         revoke(clientId, token, new OauthOptions());
     }
@@ -367,14 +424,9 @@ public final class OauthApi {
     }
 
     // URLEncoder sends a space as + and leaves * literal, and a lone surrogate would go out as ?, so
-    // the encoding is spelled out: the encoder REPORTS malformed input rather than replacing it.
+    // the encoding is spelled out.
     private static String percentEncode(String name, String value) {
-        ByteBuffer bytes;
-        try {
-            bytes = StandardCharsets.UTF_8.newEncoder().encode(CharBuffer.wrap(value));
-        } catch (CharacterCodingException e) {
-            throw new IllegalArgumentException(name + " is not valid UTF-16, so it has no UTF-8", e);
-        }
+        ByteBuffer bytes = utf8Bytes(name, value);
         StringBuilder out = new StringBuilder();
         while (bytes.hasRemaining()) {
             int b = bytes.get() & 0xff;
@@ -386,6 +438,20 @@ public final class OauthApi {
             }
         }
         return out.toString();
+    }
+
+    private static String utf8(String name, String value) {
+        utf8Bytes(name, value);
+        return value;
+    }
+
+    // The encoder REPORTS malformed input, where String.getBytes would send a lone surrogate as ?.
+    private static ByteBuffer utf8Bytes(String name, String value) {
+        try {
+            return StandardCharsets.UTF_8.newEncoder().encode(CharBuffer.wrap(value));
+        } catch (CharacterCodingException e) {
+            throw new IllegalArgumentException(name + " is not valid UTF-16, so it has no UTF-8", e);
+        }
     }
 
     private static void putIfGiven(Map<String, String> form, String name, String value) {
