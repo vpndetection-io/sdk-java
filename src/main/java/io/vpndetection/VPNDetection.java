@@ -437,7 +437,9 @@ public final class VPNDetection implements AutoCloseable {
     // Trimmed, so a key read from a file loses its newline, and blanks alone are no key: an empty
     // key went out as `Authorization: Bearer ` through 6.4.2. A control character left inside
     // failed every call with the JDK's raw IllegalArgumentException, or went out on the wire, so
-    // it is refused here, naming the cause and not the key.
+    // it is refused here, naming the cause and not the key. The JDK sends a header as ASCII, so `é`
+    // went out as `?` and `中` failed every call the same raw way (6.9.1, measured 2026-10-26): any
+    // character past ASCII is refused too.
     static String apiKeyOf(String key) {
         String trimmed = key == null ? "" : key.strip();
         if (trimmed.isEmpty()) {
@@ -445,6 +447,9 @@ public final class VPNDetection implements AutoCloseable {
         }
         if (trimmed.chars().anyMatch(Character::isISOControl)) {
             throw new IllegalArgumentException("the API key holds a control character");
+        }
+        if (trimmed.chars().anyMatch(c -> c > 0x7f)) {
+            throw new IllegalArgumentException("the API key holds a character outside ASCII");
         }
         return trimmed;
     }
@@ -619,8 +624,8 @@ public final class VPNDetection implements AutoCloseable {
          * {@code is_vpn} and allows 1000 requests per day per source address. The key is trimmed,
          * and one of blanks alone is no key.
          *
-         * @throws IllegalArgumentException for a key holding a control character, which no call
-         *     could send.
+         * @throws IllegalArgumentException for a key holding a control character or a character
+         *     outside ASCII, which no call could send.
          */
         public Builder apiKey(String apiKey) {
             this.apiKey = apiKeyOf(apiKey);

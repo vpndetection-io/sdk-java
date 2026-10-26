@@ -74,6 +74,21 @@ class ClientTest {
         assertEquals(3, http.calls.size());
     }
 
+    /**
+     * The JDK sends a header as ASCII: through 6.9.1 a key holding {@code é} went out with a
+     * {@code ?} in its place, and one holding a character past U+00FF failed every call with the
+     * JDK's raw {@code IllegalArgumentException}, whose message quoted the key.
+     */
+    @Test
+    void aKeyHoldingACharacterOutsideAsciiIsRefusedWhereItIsSet() {
+        for (String key : List.of("sécret", "sÿcret", "sĀcret", "s中cret", "s😀cret")) {
+            IllegalArgumentException err = assertThrows(IllegalArgumentException.class,
+                    () -> VPNDetection.builder().apiKey(key), "accepted " + key);
+            assertFalse(err.getMessage().contains("cret"), "the refusal quoted the key: " + err.getMessage());
+        }
+        assertDoesNotThrow(() -> VPNDetection.builder().apiKey("vd_k~!#$%&'*+-.^_`|0123456789"));
+    }
+
     @Test
     void isBogonIsOnTheClientAndAgreesWithTheStandaloneForm() {
         try (VPNDetection client = VPNDetection.create()) {
