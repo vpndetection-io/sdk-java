@@ -819,6 +819,33 @@ class OauthTest {
         }
     }
 
+    // Through 6.9.1 a list holding a null came back as an answer with a null in it.
+    @Test
+    void aListHoldingANullIsTheOrdinaryError() {
+        String registration = "{\"client_id\": \"https://app.example/cimd.json\", \"client_id_issued_at\": 1,"
+                + " \"client_name\": \"n\", \"redirect_uris\": %s, \"token_endpoint_auth_method\": \"none\"%s}";
+        Map<String, String> bodies = new java.util.LinkedHashMap<>();
+        bodies.put("redirect_uris [null]", String.format(registration, "[null]", ""));
+        bodies.put("grant_types [null]", String.format(registration, "[\"http://127.0.0.1:8765/callback\"]",
+                ", \"grant_types\": [null]"));
+        bodies.put("scopes_supported [null]", "{\"issuer\": \"https://vpndetection.io\", \"authorization_endpoint\": \"a\","
+                + " \"token_endpoint\": \"t\", \"scopes_supported\": [null]}");
+        bodies.forEach((name, body) -> {
+            OauthStub http = OauthStub.answering(Answer.of(200, body));
+            OauthApi api = clientOn(http).retries(0).build().oauth();
+            VPNDetectionException e = assertThrows(VPNDetectionException.class, () -> {
+                if (name.startsWith("scopes")) {
+                    api.metadata();
+                } else {
+                    api.register(List.of("http://127.0.0.1:8765/callback"));
+                }
+            }, name);
+            assertEquals(VPNDetectionException.class, e.getClass(), name);
+            assertEquals(ErrorKind.SERVER_ERROR, e.kind(), name);
+            assertEquals(Optional.of(200), e.statusCode(), name);
+        });
+    }
+
     @Test
     void registerTakesTheClientsRetriesButNeverRetriesARefusal() {
         for (JsonNode c : oauth.get("register").get("retries")) {

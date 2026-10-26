@@ -10,7 +10,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -108,6 +113,7 @@ final class UnreadableAnswerTest {
                 List.of("api/v1/database/list", "/databases/0/versions/0/formats/0", "format"),
                 List.of("api/v1/database/metadata", "", "id", "updated", "entries", "schema"),
                 List.of("api/v1/database/metadata", "/schema/mmdb/0", "name", "type"),
+                List.of("api/v1/database/checksum", "", "id", "format", "checksums"),
                 List.of("api/v1/database/checksum", "/checksums", "md5", "sha1", "sha256", "sha512"),
                 List.of("api/v1/database/downloads", "/downloads/0", "dataset_id", "format", "outcome", "sample",
                         "open", "created"));
@@ -158,6 +164,106 @@ final class UnreadableAnswerTest {
             ((ObjectNode) body.at(each.get(1))).set(each.get(2), MAPPER.readTree(each.get(3)));
             assertRetriedServerError(each.get(0), MAPPER.writeValueAsString(body),
                     each.get(0) + " " + each.get(1) + " " + each.get(2) + " = " + each.get(3));
+        }
+    }
+
+    /**
+     * A null inside a list or map, a value outside an enum and a sample row that is no object, each
+     * in an otherwise whole answer. Through 6.9.1 each came back as an answer, a {@code license_type}
+     * outside its enum as null, which reads as no license at all.
+     */
+    @Test
+    void aNullEntryAValueOutsideItsEnumOrARowThatIsNoObjectIsARetriedServerError() throws IOException {
+        List<List<Object>> cases = List.of(
+                List.of("8.8.8.8", "", "pubproxy", Map.of("protocols", Arrays.asList((Object) null))),
+                List.of("api/v1/database/list", "/databases/0/versions/0", "sample_formats", Arrays.asList((Object) null)),
+                List.of("api/v1/database/list", "/databases/0", "license_type", "perpetual"),
+                List.of("api/v1/database/list", "/databases/0", "license_type", 1),
+                List.of("api/v1/database/metadata", "", "sample", Map.of("mmdb", Arrays.asList((Object) null))),
+                List.of("api/v1/database/metadata", "", "sample", Map.of("mmdb", List.of(List.of("10.0.0.0/8")))),
+                List.of("api/v1/database/metadata", "", "sample", Map.of("mmdb", List.of("10.0.0.0/8"))),
+                List.of("api/v1/database/metadata", "", "sample", Map.of("mmdb", List.of(5))),
+                List.of("api/v1/database/metadata", "", "sample", Collections.singletonMap("mmdb", null)),
+                List.of("api/v1/database/metadata", "", "sample_size", Collections.singletonMap("mmdb", null)));
+        for (List<Object> each : cases) {
+            String path = (String) each.get(0);
+            JsonNode body = MAPPER.readTree(WHOLE.get(path));
+            JsonNode value = MAPPER.valueToTree(each.get(3));
+            ((ObjectNode) body.at((String) each.get(1))).set((String) each.get(2), value);
+            assertRetriedServerError(path, MAPPER.writeValueAsString(body),
+                    path + " " + each.get(1) + " " + each.get(2) + " = " + value);
+        }
+
+        JsonNode metadata = MAPPER.readTree(WHOLE.get("api/v1/database/metadata"));
+        ((ObjectNode) metadata).set("sample", MAPPER.readTree("{\"mmdb\": [{\"ip\": \"10.0.0.0/8\", \"note\": null}]}"));
+        try (VPNDetection client = clientOn(StubHttpClient.of(Map.of("api/v1/database/metadata",
+                StubHttpClient.Route.ok(MAPPER.writeValueAsString(metadata))))).build()) {
+            assertEquals(1, client.database().metadata("vpn_ip_extended_v1").getSample().get("mmdb").size(),
+                    "a null inside a row is the row's own");
+        }
+    }
+
+    /**
+     * The spec's {@code date} and {@code date-time} are RFC 3339's, and only those are read. Through
+     * 6.9.1 Jackson's readers took a Unix time as a number or a numeric string, a date sent as a
+     * date-time, an epoch day or an array, a padded value, an offset without its colon or minutes or
+     * with seconds, no seconds, a year past four digits, and {@code ""} as no date at all.
+     */
+    @Test
+    void aDateIsReadAsRfc3339AndNothingElse() throws IOException {
+        List<Object> dateTimes = List.of("2026-10-05T10:00:00", " 2026-10-05T10:00:00Z", "2026-10-05T10:00:00Z ",
+                "2026-10-05T10:00:00+0500", "2026-10-05T10:00:00+05", "2026-10-05T10:00:00+05:00:30",
+                "2026-10-05T10:00Z", "2026-10-05 10:00:00Z", "2026-10-05T10:00:00+24:00", "2026-10-05T10:00:00+05:60",
+                "+12026-10-05T10:00:00Z", "2026-10-05T10:00:00.Z", "2026-10-05T10:00:00,5Z", "2026-10-05T10:00:60Z",
+                "2026-10-05T24:00:00Z", "2026-02-30T10:00:00Z", "2026-10-5T10:00:00Z", "2026-W41-1T10:00:00Z",
+                "20261005T100000Z", "2026-10-05", "1700000000", "1.5", 1700000000, 1.5, "x", "tomorrow", "");
+        List<Object> dates = List.of(" 2026-10-05", "2026-10-05 ", "2026-10-05T10:00:00", "2026-10-05T10:00:00Z",
+                "+12026-10-05", "-2026-10-05", "2026-10-05Z", "20261005", "2026-W41-1", "2026-278", "2026-02-30",
+                "2026-10-5", 20000, List.of(2026, 10, 5), "x", "monday", "");
+        List<List<Object>> cases = new ArrayList<>();
+        for (Object value : dateTimes) {
+            cases.add(List.of("api/v1/database/list", "/databases/0", "starts", value));
+            cases.add(List.of("api/v1/database/downloads", "/downloads/0", "created", value));
+            cases.add(List.of("api/v1/entitlement", "/usage", "window_start", value));
+            cases.add(List.of("api/v1/entitlement", "/apikey", "expires", value));
+        }
+        for (Object value : dates) {
+            cases.add(List.of("api/v1/database/metadata", "", "updated", value));
+            cases.add(List.of("8.8.8.8", "/hosting", "last_seen", value));
+            cases.add(List.of("8.8.8.8", "/dcproxy", "first_seen", value));
+        }
+        for (List<Object> each : cases) {
+            String path = (String) each.get(0);
+            JsonNode body = MAPPER.readTree(WHOLE.get(path));
+            JsonNode value = MAPPER.valueToTree(each.get(3));
+            ((ObjectNode) body.at((String) each.get(1))).set((String) each.get(2), value);
+            assertRetriedServerError(path, MAPPER.writeValueAsString(body), path + " " + each.get(2) + " = " + value);
+        }
+
+        Map<String, OffsetDateTime> readable = Map.of(
+                "2026-10-05T10:00:00Z", OffsetDateTime.of(2026, 10, 5, 10, 0, 0, 0, ZoneOffset.UTC),
+                "2026-10-05t10:00:00.5z", OffsetDateTime.of(2026, 10, 5, 10, 0, 0, 500_000_000, ZoneOffset.UTC),
+                "2026-10-05T10:00:00-00:00", OffsetDateTime.of(2026, 10, 5, 10, 0, 0, 0, ZoneOffset.UTC),
+                "2026-10-05T10:00:00.1234567891-05:30",
+                OffsetDateTime.of(2026, 10, 5, 10, 0, 0, 123_456_789, ZoneOffset.ofHoursMinutes(-5, -30)),
+                "2026-10-05T23:59:59+18:00", OffsetDateTime.of(2026, 10, 5, 23, 59, 59, 0, ZoneOffset.ofHours(18)));
+        for (var each : readable.entrySet()) {
+            JsonNode list = MAPPER.readTree(WHOLE.get("api/v1/database/list"));
+            ((ObjectNode) list.at("/databases/0")).put("starts", each.getKey());
+            JsonNode entitlement = MAPPER.readTree(WHOLE.get("api/v1/entitlement"));
+            ((ObjectNode) entitlement.at("/usage")).put("window_start", each.getKey());
+            try (VPNDetection client = clientOn(StubHttpClient.of(Map.of(
+                    "api/v1/database/list", StubHttpClient.Route.ok(MAPPER.writeValueAsString(list)),
+                    "api/v1/entitlement", StubHttpClient.Route.ok(MAPPER.writeValueAsString(entitlement))))).build()) {
+                assertEquals(each.getValue(), client.database().list().get(0).getStarts(), each.getKey());
+                assertEquals(each.getValue(), client.myEntitlement().getUsage().getWindowStart(), each.getKey());
+            }
+        }
+        try (VPNDetection client = clientOn(StubHttpClient.of(Map.of(
+                "api/v1/database/metadata", StubHttpClient.Route.ok(WHOLE.get("api/v1/database/metadata")),
+                "8.8.8.8", StubHttpClient.Route.ok(WHOLE.get("8.8.8.8"))))).build()) {
+            assertEquals(LocalDate.of(2026, 10, 1), client.database().metadata("vpn_ip_extended_v1").getUpdated());
+            assertEquals(LocalDate.of(2026, 6, 14), client.lookup("8.8.8.8").raw().getDcproxy().getFirstSeen());
         }
     }
 
@@ -257,11 +363,7 @@ final class UnreadableAnswerTest {
             }
             List<String> table = RequiredMembers.MEMBERS.get(model);
             assertTrue(table != null, model.getSimpleName() + " is not in the table");
-            if (envelopes.contains(model)) {
-                assertTrue(nonnull.containsAll(table), model.getSimpleName());
-            } else {
-                assertEquals(nonnull, new TreeSet<>(table), model.getSimpleName());
-            }
+            assertEquals(nonnull, new TreeSet<>(table), model.getSimpleName());
         }
         reached.removeAll(unchecked);
         assertEquals(RequiredMembers.MEMBERS.keySet(), reached);
