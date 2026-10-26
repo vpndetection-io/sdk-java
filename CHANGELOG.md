@@ -2,6 +2,18 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 6.2.2 are described by their release commits.
 
+## 6.10.0 - 2026-10-26
+
+### Features
+
+- Add oauth().register, dynamic client registration ([`0b36e08`](https://github.com/vpndetection-io/sdk-java/commit/0b36e08149e00dc7dd12698ae84256db4bc8face))
+
+### Fixes
+
+- Re-pin the spec to 2026.10.25: Retry-After on myip's 429 ([`5aa8e2f`](https://github.com/vpndetection-io/sdk-java/commit/5aa8e2fa71779e889bc9c0e2fee07422cdf3bd6f))
+- Refuse an API key holding a character outside ASCII ([`0fb5c7f`](https://github.com/vpndetection-io/sdk-java/commit/0fb5c7f6fe6a83066144fa07509918809f77ef36))
+- Read dates as RFC 3339 alone, and refuse a null or an unknown license type ([`c150e0a`](https://github.com/vpndetection-io/sdk-java/commit/c150e0aa6799cebcf0f4bbcaec33c5d0b6cdd77d))
+
 ## 6.9.1 - 2026-10-24
 
 ### Fixes
