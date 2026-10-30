@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 6.2.2 are described by their release commits.
 
+## 6.10.1 - 2026-10-30
+
+### Fixes
+
+- Refuse a negative retry count per call ([`009a53c`](https://github.com/vpndetection-io/sdk-java/commit/009a53cde0ad1133163a331a13263db8e3bf54e6))
+
 ## 6.10.0 - 2026-10-26
 
 ### Features
