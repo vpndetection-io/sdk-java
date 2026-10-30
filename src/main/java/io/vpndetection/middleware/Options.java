@@ -69,8 +69,15 @@ public final class Options<R> {
         return this;
     }
 
-    /** Retry attempts for a transient failure. Defaults to 0, unlike the client's 2. */
+    /**
+     * Retry attempts for a transient failure. Defaults to 0, unlike the client's 2.
+     *
+     * @throws IllegalArgumentException for a negative count, which through 6.10.0 was read as none.
+     */
     public Options<R> retries(int retries) {
+        if (retries < 0) {
+            throw new IllegalArgumentException("retries cannot be negative");
+        }
         this.retries = retries;
         return this;
     }

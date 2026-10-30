@@ -157,6 +157,19 @@ class ClientTest {
         }
     }
 
+    // Through 6.10.0 a negative per-call count was read as none, so a failing lookup, myIp,
+    // myEntitlement or batch was sent once, and a bogon or a cached address answered it.
+    @Test
+    void aNegativeRetryCountIsRefusedWhereItIsSet() {
+        for (int retries : new int[] {-1, Integer.MIN_VALUE}) {
+            assertThrows(IllegalArgumentException.class, () -> new LookupOptions().retries(retries));
+            assertThrows(IllegalArgumentException.class, () -> new BatchOptions().retries(retries));
+            assertThrows(IllegalArgumentException.class,
+                    () -> new io.vpndetection.middleware.Options<String>().retries(retries));
+        }
+        assertEquals(0, new LookupOptions().retries(0).retriesOrNull());
+    }
+
     // The transport here ignores the request's own timeout and outlasts every bound, so only a race
     // the client owns ends the call in time, and only the per-call bound names 200ms.
     @Test

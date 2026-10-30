@@ -10,8 +10,16 @@ public class LookupOptions {
     private Integer retries;
     private Duration requestTimeout;
 
-    /** Retry attempts for a transient failure, for this call only. */
+    /**
+     * Retry attempts for a transient failure, for this call only.
+     *
+     * @throws IllegalArgumentException for a negative count, as the builder's {@code retries}
+     *     does. Through 6.10.0 one was read as none, and a bogon or a cached address answered it.
+     */
     public LookupOptions retries(int retries) {
+        if (retries < 0) {
+            throw new IllegalArgumentException("retries cannot be negative");
+        }
         this.retries = retries;
         return this;
     }
