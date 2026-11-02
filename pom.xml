@@ -86,18 +86,22 @@
              those and nothing else. The OAuth token and revoke endpoints are
              form-encoded, so this is what makes the generated client compile at
              all. httpclient pulls httpcore; httpmime is the multipart half.
-             Compile-only: nothing we hand-write calls it, and the endpoints it
-             serves are not on this SDK's idiomatic surface. Revisit if the
-             generator ever emits JDK-native form encoding. -->
+             Optional, so no consumer inherits them: nothing we hand-write calls
+             them, and only a generated *WireApi form method, which the README
+             never names, needs them at runtime. An app calling one declares
+             httpclient itself. Revisit if the generator ever emits JDK-native
+             form encoding. -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>${httpclient.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpmime</artifactId>
             <version>${httpclient.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <!-- The generated sources carry javax.annotation.Nullable and
