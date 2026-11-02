@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 6.2.2 are described by their release commits.
 
+## 6.11.0 - 2026-11-02
+
+### Features
+
+- Stop passing httpclient and httpmime to consumers ([`2807b5a`](https://github.com/vpndetection-io/sdk-java/commit/2807b5a4106adeb5a065e68d9412b20d7e8b293d))
+
 ## 6.10.1 - 2026-10-30
 
 ### Fixes
