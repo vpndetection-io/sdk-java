@@ -158,7 +158,7 @@ final class Wire {
                 return retryAfter == null ? ErrorKind.QUOTA_EXCEEDED : ErrorKind.RATE_LIMITED;
             default:
                 // Any other 4xx is a CLIENT error. Falling through to SERVER_ERROR would make it
-                // retryable, so a bad dataset id would be retried twice before failing. Only 5xx
+                // retryable, so a bad dataset ID would be retried twice before failing. Only 5xx
                 // and transport failures are worth a retry.
                 return status < 500 ? ErrorKind.BAD_REQUEST : ErrorKind.SERVER_ERROR;
         }

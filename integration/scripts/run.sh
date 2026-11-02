@@ -126,13 +126,13 @@ function assertNoLocalSource() {
 
 # What actually distinguishes a downloaded artifact from an installed one: maven
 # records the repository each file came from beside it, and an artifact put there
-# by `mvn install` carries an EMPTY repository id. A jar with no such record at
+# by `mvn install` carries an EMPTY repository ID. A jar with no such record at
 # all is the same problem wearing a different hat.
 #
-# The empty id is checked for rather than a named one being looked up, because a
+# The empty ID is checked for rather than a named one being looked up, because a
 # jar that was BOTH installed and downloaded carries a line of each, and "some
 # line names a repository" is then true of a tree that also holds a hand-built
-# copy. Any empty id at all disqualifies the artifact.
+# copy. Any empty ID at all disqualifies the artifact.
 function assertFromTheRegistry() {
     local want="$1" dir jar marker origin
     dir="${M2_DIR}/repository/${GROUP//.//}/${ARTIFACT}/${want}"

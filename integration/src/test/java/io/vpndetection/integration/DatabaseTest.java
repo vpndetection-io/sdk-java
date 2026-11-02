@@ -36,7 +36,7 @@ import java.util.List;
  * licenses, and {@code db.download} is a scope the other three keys do not carry.
  *
  * <p>The transfer is budgeted before it starts. {@code metadata} publishes a size per format, and
- * that size is checked against the ceiling below FIRST, so a mistaken dataset id can never quietly
+ * that size is checked against the ceiling below FIRST, so a mistaken dataset ID can never quietly
  * pull one of the gigabyte datasets through CI.
  */
 class DatabaseTest {
@@ -47,7 +47,7 @@ class DatabaseTest {
     // 8 MiB against a ~10 KB dataset. Three orders of magnitude of headroom, so tripping it means
     // the suite is pointed somewhere unintended, which is exactly when a transfer must not start.
     private static final long CEILING = 8L * 1024 * 1024;
-    // A real catalog id the max organization holds no license for.
+    // A real catalog ID the max organization holds no license for.
     private static final String UNLICENSED_ID = "hosting_ip_v1";
 
     @TempDir
@@ -65,7 +65,7 @@ class DatabaseTest {
     }
 
     /**
-     * A license covers a dataset FAMILY, and the ids a download takes hang off {@code versions}.
+     * A license covers a dataset FAMILY, and the IDs a download takes hang off {@code versions}.
      * This is the endpoint that did not match its own published schema until 2026-09-04.
      */
     @Test

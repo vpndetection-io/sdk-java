@@ -31,8 +31,8 @@ class DatabaseTest {
                 "api/v1/database/checksum", StubHttpClient.Route.ok("{\"id\": \"vpn_ip_extended_v1\","
                         + " \"format\": \"mmdb\", \"checksums\": {\"md5\": \"m\", \"sha1\": \"s1\","
                         + " \"sha256\": \"s256\", \"sha512\": \"s512\"}}"),
-                // A license is held against the FAMILY, and the ids a download takes hang off
-                // `versions`. Reading an id from the top level is how this endpoint came to
+                // A license is held against the FAMILY, and the IDs a download takes hang off
+                // `versions`. Reading an ID from the top level is how this endpoint came to
                 // answer objects whose every field was empty.
                 "api/v1/database/list", StubHttpClient.Route.ok(
                         "{\"databases\": [{\"base\": \"vpn_ip\", \"name\": \"VPN IP\","
