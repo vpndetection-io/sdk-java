@@ -192,7 +192,7 @@ The bound is per attempt, so a call that is retried can take longer in total. Da
 
 ### Database downloads
 
-If your key carries the `db.download` scope, the licensed databases are available through `client.database()`. A license covers a database family, and the ids the transfers take come from its `getVersions()`. There are three ways to take one: to a file, as a time-limited link you transfer yourself, or as bytes.
+If your key carries the `db.download` scope, the licensed databases are available through `client.database()`. A license covers a database family, and the IDs the transfers take come from its `getVersions()`. There are three ways to take one: to a file, as a time-limited link you transfer yourself, or as bytes.
 
 ```java
 var databases = client.database().list();

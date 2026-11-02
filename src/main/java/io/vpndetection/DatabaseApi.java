@@ -51,7 +51,7 @@ public final class DatabaseApi {
     /**
      * The dataset families your organization is licensed to download.
      *
-     * <p>A license covers a family, while a download names one of its versions, so the ids the
+     * <p>A license covers a family, while a download names one of its versions, so the IDs the
      * other methods here take come from {@link Database#getVersions()} rather than from the
      * family itself.
      */
