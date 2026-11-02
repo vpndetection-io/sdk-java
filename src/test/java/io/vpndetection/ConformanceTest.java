@@ -417,7 +417,7 @@ class ConformanceTest {
         StubHttpClient http = StubHttpClient.of(Map.of(
                 "1.1.1.1", StubHttpClient.Route.ok("{\"ip\": \"1.1.1.1\", \"is_vpn\": false}"),
                 "8.8.8.8", new StubHttpClient.Route(429,
-                        "{\"error\": \"request allowance exceeded; raise or remove your overage limit\"}",
+                        "{\"error\": \"monthly request allowance spent; upgrade your plan for more lookups\"}",
                         Map.of()),
                 "9.9.9.9", new StubHttpClient.Route(500, "{\"error\": \"lookup failed\"}", Map.of())));
 
