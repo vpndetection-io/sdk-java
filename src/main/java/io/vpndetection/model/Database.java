@@ -35,7 +35,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import io.vpndetection.internal.ApiClient;
 /**
- * One database FAMILY, with your organization&#39;s license beside it. A license covers the family, while a download names a specific version, so the ids you pass to the download and checksum endpoints come from &#x60;versions&#x60;. 
+ * One database FAMILY, with your organization&#39;s license beside it. A license covers the family, while a download names a specific version, so the IDs you pass to the download and checksum endpoints come from &#x60;versions&#x60;. 
  */
 @JsonPropertyOrder({
   Database.JSON_PROPERTY_BASE,

@@ -34,7 +34,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import io.vpndetection.internal.ApiClient;
 /**
- * The credential itself. The key is never echoed - only its id, which is what the console shows and what you can act on. 
+ * The credential itself. The key is never echoed - only its ID, which is what the console shows and what you can act on. 
  */
 @JsonPropertyOrder({
   EntitlementApikey.JSON_PROPERTY_ID,

@@ -74,7 +74,7 @@ public class DatabaseVersion {
   }
 
   /**
-   * The versioned database id, e.g. &#x60;vpn_ip_v1&#x60;. Pass this to download.
+   * The versioned database ID, e.g. &#x60;vpn_ip_v1&#x60;. Pass this to download.
    * @return id
    */
   @javax.annotation.Nonnull

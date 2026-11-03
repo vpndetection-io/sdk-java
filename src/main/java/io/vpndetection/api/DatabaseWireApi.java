@@ -450,8 +450,8 @@ public class DatabaseWireApi {
   /**
    * Download
    * Answers &#x60;302&#x60; with a time-limited URL pointing straight at object storage. Follow the redirect; the link authorizes the START of a transfer, so one already running is not interrupted when it lapses. 
-   * @param id Dataset id, e.g. vpn_ip_extended_v1 (required)
-   * @param format Not every database is built in every format. The &#x60;_provider&#x60; catalogs are keyed by provider id rather than by IP range, so no MMDB exists for them.  (required)
+   * @param id Dataset ID, e.g. vpn_ip_extended_v1 (required)
+   * @param format Not every database is built in every format. The &#x60;_provider&#x60; catalogs are keyed by provider ID rather than by IP range, so no MMDB exists for them.  (required)
    * @throws ApiException if fails to make API call
    */
   public void downloadDatabase(@javax.annotation.Nonnull String id, @javax.annotation.Nonnull DatabaseFormat format) throws ApiException {
@@ -461,8 +461,8 @@ public class DatabaseWireApi {
   /**
    * Download
    * Answers &#x60;302&#x60; with a time-limited URL pointing straight at object storage. Follow the redirect; the link authorizes the START of a transfer, so one already running is not interrupted when it lapses. 
-   * @param id Dataset id, e.g. vpn_ip_extended_v1 (required)
-   * @param format Not every database is built in every format. The &#x60;_provider&#x60; catalogs are keyed by provider id rather than by IP range, so no MMDB exists for them.  (required)
+   * @param id Dataset ID, e.g. vpn_ip_extended_v1 (required)
+   * @param format Not every database is built in every format. The &#x60;_provider&#x60; catalogs are keyed by provider ID rather than by IP range, so no MMDB exists for them.  (required)
    * @param headers Optional headers to include in the request
    * @throws ApiException if fails to make API call
    */
@@ -473,8 +473,8 @@ public class DatabaseWireApi {
   /**
    * Download
    * Answers &#x60;302&#x60; with a time-limited URL pointing straight at object storage. Follow the redirect; the link authorizes the START of a transfer, so one already running is not interrupted when it lapses. 
-   * @param id Dataset id, e.g. vpn_ip_extended_v1 (required)
-   * @param format Not every database is built in every format. The &#x60;_provider&#x60; catalogs are keyed by provider id rather than by IP range, so no MMDB exists for them.  (required)
+   * @param id Dataset ID, e.g. vpn_ip_extended_v1 (required)
+   * @param format Not every database is built in every format. The &#x60;_provider&#x60; catalogs are keyed by provider ID rather than by IP range, so no MMDB exists for them.  (required)
    * @return ApiResponse&lt;Void&gt;
    * @throws ApiException if fails to make API call
    */
@@ -485,8 +485,8 @@ public class DatabaseWireApi {
   /**
    * Download
    * Answers &#x60;302&#x60; with a time-limited URL pointing straight at object storage. Follow the redirect; the link authorizes the START of a transfer, so one already running is not interrupted when it lapses. 
-   * @param id Dataset id, e.g. vpn_ip_extended_v1 (required)
-   * @param format Not every database is built in every format. The &#x60;_provider&#x60; catalogs are keyed by provider id rather than by IP range, so no MMDB exists for them.  (required)
+   * @param id Dataset ID, e.g. vpn_ip_extended_v1 (required)
+   * @param format Not every database is built in every format. The &#x60;_provider&#x60; catalogs are keyed by provider ID rather than by IP range, so no MMDB exists for them.  (required)
    * @param headers Optional headers to include in the request
    * @return ApiResponse&lt;Void&gt;
    * @throws ApiException if fails to make API call

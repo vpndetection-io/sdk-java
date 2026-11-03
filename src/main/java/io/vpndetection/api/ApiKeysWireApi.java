@@ -402,7 +402,7 @@ public class ApiKeysWireApi {
   /**
    * Reveal
    * Returns an existing key&#39;s secret.  Its own scope rather than part of &#x60;apikeys.manage&#x60;, because the two are different acts: rotating replaces a secret you never see, while this hands one over.  Refused with &#x60;NOT_RETRIEVABLE&#x60; for a key issued before this product stored secrets recoverably - that secret was never kept, so no retry will ever produce it. Rotate the key instead. 
-   * @param id The key&#39;s id, as returned by the list endpoint. Never the key itself. (required)
+   * @param id The key&#39;s ID, as returned by the list endpoint. Never the key itself. (required)
    * @return AccountRevealedApikey
    * @throws ApiException if fails to make API call
    */
@@ -413,7 +413,7 @@ public class ApiKeysWireApi {
   /**
    * Reveal
    * Returns an existing key&#39;s secret.  Its own scope rather than part of &#x60;apikeys.manage&#x60;, because the two are different acts: rotating replaces a secret you never see, while this hands one over.  Refused with &#x60;NOT_RETRIEVABLE&#x60; for a key issued before this product stored secrets recoverably - that secret was never kept, so no retry will ever produce it. Rotate the key instead. 
-   * @param id The key&#39;s id, as returned by the list endpoint. Never the key itself. (required)
+   * @param id The key&#39;s ID, as returned by the list endpoint. Never the key itself. (required)
    * @param headers Optional headers to include in the request
    * @return AccountRevealedApikey
    * @throws ApiException if fails to make API call
@@ -426,7 +426,7 @@ public class ApiKeysWireApi {
   /**
    * Reveal
    * Returns an existing key&#39;s secret.  Its own scope rather than part of &#x60;apikeys.manage&#x60;, because the two are different acts: rotating replaces a secret you never see, while this hands one over.  Refused with &#x60;NOT_RETRIEVABLE&#x60; for a key issued before this product stored secrets recoverably - that secret was never kept, so no retry will ever produce it. Rotate the key instead. 
-   * @param id The key&#39;s id, as returned by the list endpoint. Never the key itself. (required)
+   * @param id The key&#39;s ID, as returned by the list endpoint. Never the key itself. (required)
    * @return ApiResponse&lt;AccountRevealedApikey&gt;
    * @throws ApiException if fails to make API call
    */
@@ -437,7 +437,7 @@ public class ApiKeysWireApi {
   /**
    * Reveal
    * Returns an existing key&#39;s secret.  Its own scope rather than part of &#x60;apikeys.manage&#x60;, because the two are different acts: rotating replaces a secret you never see, while this hands one over.  Refused with &#x60;NOT_RETRIEVABLE&#x60; for a key issued before this product stored secrets recoverably - that secret was never kept, so no retry will ever produce it. Rotate the key instead. 
-   * @param id The key&#39;s id, as returned by the list endpoint. Never the key itself. (required)
+   * @param id The key&#39;s ID, as returned by the list endpoint. Never the key itself. (required)
    * @param headers Optional headers to include in the request
    * @return ApiResponse&lt;AccountRevealedApikey&gt;
    * @throws ApiException if fails to make API call
@@ -520,7 +520,7 @@ public class ApiKeysWireApi {
   /**
    * Revoke
    * Stops the key working. Revocation is soft: the key stays listed with a &#x60;revoked_at&#x60;, because the organization still owns whatever it did while it was alive. 
-   * @param id The key&#39;s id, as returned by the list endpoint. Never the key itself. (required)
+   * @param id The key&#39;s ID, as returned by the list endpoint. Never the key itself. (required)
    * @return AccountRc
    * @throws ApiException if fails to make API call
    */
@@ -531,7 +531,7 @@ public class ApiKeysWireApi {
   /**
    * Revoke
    * Stops the key working. Revocation is soft: the key stays listed with a &#x60;revoked_at&#x60;, because the organization still owns whatever it did while it was alive. 
-   * @param id The key&#39;s id, as returned by the list endpoint. Never the key itself. (required)
+   * @param id The key&#39;s ID, as returned by the list endpoint. Never the key itself. (required)
    * @param headers Optional headers to include in the request
    * @return AccountRc
    * @throws ApiException if fails to make API call
@@ -544,7 +544,7 @@ public class ApiKeysWireApi {
   /**
    * Revoke
    * Stops the key working. Revocation is soft: the key stays listed with a &#x60;revoked_at&#x60;, because the organization still owns whatever it did while it was alive. 
-   * @param id The key&#39;s id, as returned by the list endpoint. Never the key itself. (required)
+   * @param id The key&#39;s ID, as returned by the list endpoint. Never the key itself. (required)
    * @return ApiResponse&lt;AccountRc&gt;
    * @throws ApiException if fails to make API call
    */
@@ -555,7 +555,7 @@ public class ApiKeysWireApi {
   /**
    * Revoke
    * Stops the key working. Revocation is soft: the key stays listed with a &#x60;revoked_at&#x60;, because the organization still owns whatever it did while it was alive. 
-   * @param id The key&#39;s id, as returned by the list endpoint. Never the key itself. (required)
+   * @param id The key&#39;s ID, as returned by the list endpoint. Never the key itself. (required)
    * @param headers Optional headers to include in the request
    * @return ApiResponse&lt;AccountRc&gt;
    * @throws ApiException if fails to make API call
@@ -637,8 +637,8 @@ public class ApiKeysWireApi {
 
   /**
    * Rotate
-   * Replaces the secret behind a key, keeping its id, name and settings. The previous secret stops working immediately. The new secret comes back in the answer, so this needs &#x60;apikeys.reveal&#x60; as well as &#x60;apikeys.manage&#x60;. 
-   * @param id The key&#39;s id, as returned by the list endpoint. Never the key itself. (required)
+   * Replaces the secret behind a key, keeping its ID, name and settings. The previous secret stops working immediately. The new secret comes back in the answer, so this needs &#x60;apikeys.reveal&#x60; as well as &#x60;apikeys.manage&#x60;. 
+   * @param id The key&#39;s ID, as returned by the list endpoint. Never the key itself. (required)
    * @return AccountCreatedApikey
    * @throws ApiException if fails to make API call
    */
@@ -648,8 +648,8 @@ public class ApiKeysWireApi {
 
   /**
    * Rotate
-   * Replaces the secret behind a key, keeping its id, name and settings. The previous secret stops working immediately. The new secret comes back in the answer, so this needs &#x60;apikeys.reveal&#x60; as well as &#x60;apikeys.manage&#x60;. 
-   * @param id The key&#39;s id, as returned by the list endpoint. Never the key itself. (required)
+   * Replaces the secret behind a key, keeping its ID, name and settings. The previous secret stops working immediately. The new secret comes back in the answer, so this needs &#x60;apikeys.reveal&#x60; as well as &#x60;apikeys.manage&#x60;. 
+   * @param id The key&#39;s ID, as returned by the list endpoint. Never the key itself. (required)
    * @param headers Optional headers to include in the request
    * @return AccountCreatedApikey
    * @throws ApiException if fails to make API call
@@ -661,8 +661,8 @@ public class ApiKeysWireApi {
 
   /**
    * Rotate
-   * Replaces the secret behind a key, keeping its id, name and settings. The previous secret stops working immediately. The new secret comes back in the answer, so this needs &#x60;apikeys.reveal&#x60; as well as &#x60;apikeys.manage&#x60;. 
-   * @param id The key&#39;s id, as returned by the list endpoint. Never the key itself. (required)
+   * Replaces the secret behind a key, keeping its ID, name and settings. The previous secret stops working immediately. The new secret comes back in the answer, so this needs &#x60;apikeys.reveal&#x60; as well as &#x60;apikeys.manage&#x60;. 
+   * @param id The key&#39;s ID, as returned by the list endpoint. Never the key itself. (required)
    * @return ApiResponse&lt;AccountCreatedApikey&gt;
    * @throws ApiException if fails to make API call
    */
@@ -672,8 +672,8 @@ public class ApiKeysWireApi {
 
   /**
    * Rotate
-   * Replaces the secret behind a key, keeping its id, name and settings. The previous secret stops working immediately. The new secret comes back in the answer, so this needs &#x60;apikeys.reveal&#x60; as well as &#x60;apikeys.manage&#x60;. 
-   * @param id The key&#39;s id, as returned by the list endpoint. Never the key itself. (required)
+   * Replaces the secret behind a key, keeping its ID, name and settings. The previous secret stops working immediately. The new secret comes back in the answer, so this needs &#x60;apikeys.reveal&#x60; as well as &#x60;apikeys.manage&#x60;. 
+   * @param id The key&#39;s ID, as returned by the list endpoint. Never the key itself. (required)
    * @param headers Optional headers to include in the request
    * @return ApiResponse&lt;AccountCreatedApikey&gt;
    * @throws ApiException if fails to make API call
