@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** The licensed dataset endpoints, which no shared corpus covers. */
@@ -120,6 +121,45 @@ class DatabaseTest {
             assertArrayEquals(PAYLOAD, client.database().downloadBytes("cdn_ip_v1", DatabaseFormat.CSVGZ),
                     "the in-memory copy is not the file");
         }
+    }
+
+    @Test
+    void eachDownloadAsksForTheBuildItIsGiven(@TempDir Path dir) {
+        StubHttpClient http = transferring(PAYLOAD.length);
+        DownloadOptions build = new DownloadOptions().build("20261105.0t53s5");
+
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey("k").build()) {
+            client.database().downloadUrl("cdn_ip_v1", DatabaseFormat.CSVGZ);
+            client.database().downloadUrl("cdn_ip_v1", DatabaseFormat.CSVGZ, build);
+            client.database().download("cdn_ip_v1", DatabaseFormat.CSVGZ, dir.resolve("out.gz"), build);
+            client.database().downloadBytes("cdn_ip_v1", DatabaseFormat.CSVGZ, build);
+        }
+
+        var minted = http.calls.stream().filter(c -> c.contains("api/v1/database/download")).toList();
+        assertEquals(4, minted.size());
+        assertFalse(minted.get(0).contains("build="), minted.get(0));
+        for (String call : minted.subList(1, 4)) {
+            assertTrue(call.endsWith("&build=20261105.0t53s5"), call);
+        }
+    }
+
+    // A pruned build is gone for good, so asking again cannot help.
+    @Test
+    void aBuildNoLongerKeptIsABadRequestWithIts410SentOnce() {
+        StubHttpClient http = StubHttpClient.of(Map.of(
+                "api/v1/database/download", new StubHttpClient.Route(410,
+                        "{\"rc\": \"BUILD_GONE\"}", Map.of())));
+
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).apiKey("k").retries(3).build()) {
+            VPNDetectionException err = assertThrows(VPNDetectionException.class,
+                    () -> client.database().downloadBytes("cdn_ip_v1", DatabaseFormat.CSVGZ,
+                            new DownloadOptions().build("20261029.abc123")));
+
+            assertEquals(ErrorKind.BAD_REQUEST, err.kind());
+            assertEquals(Optional.of(410), err.statusCode());
+        }
+
+        assertEquals(1, http.calls.size(), "a 410 was retried");
     }
 
     // The presigned URL authorizes itself, so handing object storage the API key would give a host
