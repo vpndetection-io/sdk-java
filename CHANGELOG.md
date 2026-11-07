@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 6.2.2 are described by their release commits.
 
+## 6.11.1 - 2026-11-07
+
+### Fixes
+
+- End the device poll at its deadline without asking again ([`50e834e`](https://github.com/vpndetection-io/sdk-java/commit/50e834e371de0d65f1d9ddb79cb393ec3e29aaaa))
+
 ## 6.11.0 - 2026-11-02
 
 ### Features
