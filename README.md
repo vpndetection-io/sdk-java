@@ -13,12 +13,12 @@ It tells you whether an IP address is a VPN, residential proxy, Tor node, relay 
 <dependency>
     <groupId>io.vpndetection</groupId>
     <artifactId>vpndetection</artifactId>
-    <version>6.11.1</version>
+    <version>6.12.0</version>
 </dependency>
 ```
 
 ```groovy
-implementation 'io.vpndetection:vpndetection:6.11.1'
+implementation 'io.vpndetection:vpndetection:6.12.0'
 ```
 
 Requires Java 17 or newer. HTTP is the JDK's own `java.net.http.HttpClient`, so there is no third-party HTTP stack to reconcile with yours.

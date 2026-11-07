@@ -2,6 +2,16 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 6.2.2 are described by their release commits.
 
+## 6.12.0 - 2026-11-07
+
+### Features
+
+- Download the build a database.updated webhook names ([`8e5cbc4`](https://github.com/vpndetection-io/sdk-java/commit/8e5cbc48918f2bf917d4ddb0f1505941e1c29fcc))
+
+### Fixes
+
+- Re-pin the spec to 2026.11.05: the download's build parameter ([`219db9b`](https://github.com/vpndetection-io/sdk-java/commit/219db9b430cd9139fe6b5fc2f9cd992409927165))
+
 ## 6.11.1 - 2026-11-07
 
 ### Fixes
