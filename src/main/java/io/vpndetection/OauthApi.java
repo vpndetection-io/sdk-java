@@ -385,8 +385,12 @@ public final class OauthApi {
             // it, and the local expiry follows with no request sent. Slept in full, an interval of
             // 2147483647 held a call whose code expired in 2 s (6.3.3, the corpus case).
             long left = lifetime - (ticker.nanoTime() - started);
-            pause(Math.min(TimeUnit.SECONDS.toNanos(interval), Math.max(left, 0)));
-            if (ticker.nanoTime() - started >= lifetime) {
+            long wait = TimeUnit.SECONDS.toNanos(interval);
+            boolean toDeadline = left <= wait;
+            pause(toDeadline ? Math.max(left, 0) : wait);
+            // A wait that ran to the deadline ends the poll without reading the clock again: a timer
+            // that wakes before the clock has moved its delay would otherwise ask once more at it.
+            if (toDeadline || ticker.nanoTime() - started >= lifetime) {
                 throw new OauthExpiredTokenException(null, null);
             }
             try {
