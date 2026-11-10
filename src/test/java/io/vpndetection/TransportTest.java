@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import io.vpndetection.middleware.Core;
+import io.vpndetection.middleware.Lookup;
+import io.vpndetection.middleware.Options;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +20,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 class TransportTest {
     private final CountDownLatch release = new CountDownLatch(1);
     private final ExecutorService handlers = Executors.newCachedThreadPool();
+    private final List<String> authorizations = new CopyOnWriteArrayList<>();
     private HttpServer server;
 
     @BeforeEach
@@ -44,6 +50,18 @@ class TransportTest {
         release.countDown();
         server.stop(0);
         handlers.shutdownNow();
+    }
+
+    // Every adapter's README builds its core from a key alone; the stubs elsewhere never see a header.
+    @Test
+    void theMiddlewareSendsTheKeyItIsGiven() {
+        Core<String> core = new Core<>(new Options<String>().apiKey("k")
+                .baseUrl("http://127.0.0.1:" + server.getAddress().getPort()), request -> request);
+
+        Lookup answer = core.evaluate("1.1.1.1");
+
+        assertTrue(answer.result().orElseThrow().isVpn());
+        assertEquals(List.of("Bearer k"), authorizations);
     }
 
     @Test
@@ -127,6 +145,7 @@ class TransportTest {
         try {
             switch (path) {
                 case "/1.1.1.1":
+                    authorizations.add(String.valueOf(exchange.getRequestHeaders().getFirst("Authorization")));
                     write(exchange, out, 200, "{\"ip\": \"1.1.1.1\", \"is_vpn\": true}");
                     break;
                 case "/notanip":
