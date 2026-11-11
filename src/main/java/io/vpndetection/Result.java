@@ -185,6 +185,14 @@ public final class Result {
     }
 
     /**
+     * On a Trial key's answers only: {@code false} while the organization's 100 full answers for
+     * the UTC day last, {@code true} once the answer is Unlimited's.
+     */
+    public Optional<Boolean> trialExpired() {
+        return Optional.ofNullable(raw.getTrialExpired());
+    }
+
+    /**
      * The response exactly as it came off the wire, with its original names.
      *
      * <p>For a bogon this is synthesized locally rather than served; {@link #isBogon()} is how you

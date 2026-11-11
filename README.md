@@ -25,7 +25,7 @@ Requires Java 17 or newer. HTTP is the JDK's own `java.net.http.HttpClient`, so 
 
 ## Usage
 
-**No API key needed to start.** The Unlimited tier answers `ip`, `is_vpn`, Tor and relay detection, `location` and `asn`, with no daily or monthly cap, for [non-commercial use](https://vpndetection.io/terms#no-key). Commercial use, or a batch lookup, needs a key, a free one included.
+**No API key needed to start.** The Unlimited tier answers `ip`, `is_vpn`, Tor and relay detection, `location` and `asn`, with no daily or monthly cap, with a key or without one.
 
 ```java
 import io.vpndetection.Result;
@@ -43,7 +43,7 @@ Build the client once and keep it. It owns a connection pool, a cache and a thre
 
 ### With an API key
 
-A free key adds every other flag, `is_hosting`, `is_cdn` and the four proxy flags, at 50,000 lookups a month, and every paid plan answers every field, the provider, confidence and last-seen detail behind each flag included. The paid plans differ only in how many lookups they include. Create a key in the [console](https://app.vpndetection.io), then pass it in:
+Every paid plan answers every field: `is_hosting`, `is_cdn` and the four proxy flags as well, and the provider, confidence and last-seen detail behind each flag. The plans differ only in how many lookups they include, and a new account can try every field, 100 lookups a day. Create a key in the [console](https://app.vpndetection.io), then pass it in:
 
 ```java
 VPNDetection client = VPNDetection.builder()
@@ -52,7 +52,7 @@ VPNDetection client = VPNDetection.builder()
 
 Result result = client.lookup("45.83.91.1");
 System.out.println(result.isVpn());                          // true
-System.out.println(result.isHosting());                      // Optional[true], with any key, a free one included
+System.out.println(result.isHosting());                      // Optional[true], on a paid plan
 System.out.println(result.vpn().get().getProvider());        // "nordvpn", on a paid plan
 ```
 
@@ -74,13 +74,13 @@ System.out.println(acct.getUsage().getRequests());  // 580
 System.out.println(acct.getUsage().getWindowEnd()); // when the allowance resets
 ```
 
-Usage counts against the anniversary of your subscription, not the calendar month and not the billing period, and it is the same number a lookup is gated on. `getHardLimit()` is `null` on an uncapped plan, which is not the same as zero.
+Usage counts against the anniversary of your subscription on a paid plan, not the calendar month and not the billing period, and against the UTC day on a trial key; it is the same number a lookup is gated on. `getHardLimit()` is `null` on an uncapped plan, which is not the same as zero.
 
 `myIpAsync()` and `myEntitlementAsync()` return a `CompletableFuture` of the same thing.
 
 ### Batch lookup
 
-Look up as many addresses as you like in one call. Bogons and cached answers are handled locally, and everything else goes to the batch endpoint in chunks of up to 1000 addresses, in parallel. The batch endpoint needs an API key, a free one included:
+Look up as many addresses as you like in one call. Bogons and cached answers are handled locally, and everything else goes to the batch endpoint in chunks of up to 1000 addresses, in parallel. The batch endpoint needs a paid plan:
 
 ```java
 var results = client.lookupBatch(List.of("45.83.91.1", "8.8.8.8", "1.1.1.1"));
@@ -265,12 +265,12 @@ Each redirect URI must be https on a public host name, or http on a loopback add
 
 ### Absent is not false
 
-Without a key a lookup leaves out `isHosting()`, `isCdn()` and the four proxy flags, and a free key leaves out `vpn()` and the detail behind each flag. Every member but `ip` and `isVpn` is an `Optional`, where empty means "not in your plan" rather than "checked, and no".
+The Unlimited tier leaves out `isHosting()`, `isCdn()` and the four proxy flags, and of the detail behind each flag it answers only Tor's and relay's; a trial key's answer carries `trialExpired()`, true once its day of full answers is spent. Every member but `ip` and `isVpn` is an `Optional`, where empty means "not in your plan" rather than "checked, and no".
 
 ```java
 result.isHosting().orElse(false);   // when you only want the flag
-result.isHosting().isEmpty();       // without a key: not in your plan
-result.vpn().isEmpty();             // on a free key: not in your plan
+result.isHosting().isEmpty();       // on the Unlimited tier: not in your plan
+result.trialExpired().orElse(false); // a trial key's day of full answers is spent
 ```
 
 ## Other Libraries

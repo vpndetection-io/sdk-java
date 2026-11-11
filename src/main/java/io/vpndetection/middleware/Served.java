@@ -49,6 +49,7 @@ final class Served {
         // Not detail objects, but mapped the same way: every field set whenever the member is present.
         putDetail(out, "location", result.location());
         putDetail(out, "asn", result.asn());
+        put(out, "trial_expired", result.trialExpired());
         return out;
     }
 

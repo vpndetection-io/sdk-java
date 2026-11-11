@@ -268,9 +268,10 @@ public final class VPNDetection implements AutoCloseable {
      * <p>Unlike a lookup there is no useful unauthenticated answer, so a client built without an API
      * key gets an unauthorized error rather than a partial one.
      *
-     * <p>Usage counts against the ALLOWANCE WINDOW - the anniversary of the subscription, not the
-     * calendar month and not the billing period - and it is the same number a lookup is gated on. It
-     * can lag by a few seconds, because requests are counted in memory and flushed in aggregate.
+     * <p>Usage counts against the ALLOWANCE WINDOW - on a paid plan the anniversary of the
+     * subscription, not the calendar month and not the billing period, and on a trial key the UTC
+     * day - and it is the same number a lookup is gated on. It can lag by a few seconds, because
+     * requests are counted in memory and flushed in aggregate.
      *
      * <p>Deliberately NOT cached: the whole point is what has been spent, and a cached answer is a
      * wrong one within seconds of the next request.
@@ -317,8 +318,9 @@ public final class VPNDetection implements AutoCloseable {
      * error as its value, so one bad entry cannot lose the rest of the answers: the API reports a
      * per-entry failure with the status the single lookup would have answered, and a chunk that
      * fails as a whole marks every address in it. Iteration order is the order the addresses were
-     * first seen in the input. The batch endpoint needs an API key, a free one included: without
-     * one, every address sent to it carries an {@link ErrorKind#UNAUTHORIZED} error.
+     * first seen in the input. The batch endpoint needs a paid plan: without a key every address
+     * sent to it carries an {@link ErrorKind#UNAUTHORIZED} error, and a trial key's batch of two or
+     * more a {@link ErrorKind#BAD_REQUEST} (HTTP 402).
      */
     public LinkedHashMap<String, BatchResult> lookupBatch(Collection<String> ips, BatchOptions options) {
         Objects.requireNonNull(ips, "ips");
@@ -621,10 +623,10 @@ public final class VPNDetection implements AutoCloseable {
         private Builder() {}
 
         /**
-         * Your API key. Leave it unset to look up without one: a lookup then answers {@code ip},
-         * {@code is_vpn}, the Tor and relay members, {@code location} and {@code asn}, with no
-         * daily or monthly cap, and a batch is refused as unauthorized. The key is trimmed, and
-         * one of blanks alone is no key.
+         * Your API key. Without one a lookup is on the Unlimited tier: {@code ip}, {@code is_vpn},
+         * the Tor and relay members, {@code location} and {@code asn}, with no daily or monthly
+         * cap. A batch needs a key on a paid plan. The key is trimmed, and one of blanks alone is no
+         * key.
          *
          * @throws IllegalArgumentException for a key holding a control character or a character
          *     outside ASCII, which no call could send.

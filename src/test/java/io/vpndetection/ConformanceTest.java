@@ -417,7 +417,7 @@ class ConformanceTest {
         StubHttpClient http = StubHttpClient.of(Map.of(
                 "1.1.1.1", StubHttpClient.Route.ok("{\"ip\": \"1.1.1.1\", \"is_vpn\": false}"),
                 "8.8.8.8", new StubHttpClient.Route(429,
-                        "{\"error\": \"monthly request allowance spent; upgrade your plan for more lookups\"}",
+                        "{\"error\": \"overage cap reached; raise or remove it in Billing\"}",
                         Map.of()),
                 "9.9.9.9", new StubHttpClient.Route(500, "{\"error\": \"lookup failed\"}", Map.of())));
 
@@ -513,6 +513,8 @@ class ConformanceTest {
                 return r.isMobproxy();
             case "is_pubproxy":
                 return r.isPubproxy();
+            case "trial_expired":
+                return r.trialExpired();
             case "vpn":
                 return r.vpn();
             case "hosting":

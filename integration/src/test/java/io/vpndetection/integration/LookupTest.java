@@ -64,7 +64,10 @@ class LookupTest {
         String belowTier = null;
         Set<String> below = null;
         for (Rung rung : Tiers.observable()) {
-            Set<String> fields = Staging.answerFor(rung).raw().keySet();
+            // trial_expired marks a trial key's answers, and no other: it is not a field a tier
+            // serves.
+            Set<String> fields = new LinkedHashSet<>(Staging.answerFor(rung).raw().keySet());
+            fields.remove("trial_expired");
             System.out.println(rung.tier() + ": " + fields.size() + " fields");
             if (below != null) {
                 for (String field : below) {
@@ -78,9 +81,57 @@ class LookupTest {
                             rung.tier() + " answers no more fields than " + belowTier);
                 }
             }
-            belowTier = rung.tier();
-            below = fields;
+            if (!rung.tier().equals("trial")) {
+                belowTier = rung.tier();
+                below = fields;
+            }
         }
+    }
+
+    @Test
+    void aTrialKeysAnswerIsAPaidOneOrUnlimitedsAndSaysWhich() {
+        skipUnlessObservable(Tiers.trial());
+        Map<String, Object> raw = Staging.answerFor(Tiers.trial()).raw();
+
+        Boolean expired = assertInstanceOf(Boolean.class, raw.get("trial_expired"),
+                "a trial key answers trial_expired");
+        // The organization's first 100 lookups of the UTC day are answered in full, and the rest
+        // as Unlimited's: which half a run sees depends on the day.
+        assertEquals(!expired, raw.containsKey("is_hosting"), "is_hosting is served exactly while the day lasts");
+    }
+
+    @Test
+    void aTrialKeysBatchOfTwoIsRefusedAsABadRequestOnce() {
+        skipUnlessObservable(Tiers.trial());
+        Probe probe = Staging.clientFor(Tiers.trial());
+
+        LinkedHashMap<String, BatchResult> got = probe.client().lookupBatch(List.of(Staging.PROBE, "8.8.8.8"));
+
+        for (String ip : List.of(Staging.PROBE, "8.8.8.8")) {
+            VPNDetectionException refused = got.get(ip).error()
+                    .orElseThrow(() -> new AssertionError(ip + ": a trial key's batch of two must fail"));
+            assertEquals(ErrorKind.BAD_REQUEST, refused.kind());
+            assertEquals(Optional.of(402), refused.statusCode());
+            assertFalse(refused.retryable());
+        }
+        assertEquals(List.of("/batch"),
+                probe.recorder().facts().stream().map(fact -> fact.path()).toList(),
+                "one request, never retried");
+    }
+
+    @Test
+    void aTrialKeysBatchOfOneIsAnswered() {
+        skipUnlessObservable(Tiers.trial());
+        Probe probe = Staging.clientFor(Tiers.trial());
+
+        LinkedHashMap<String, BatchResult> got = probe.client().lookupBatch(List.of(Staging.PROBE));
+
+        assertTrue(got.get(Staging.PROBE).isSuccess(), "a trial key's batch of one failed: " + got.get(Staging.PROBE));
+        // Read off the wire, since the client this suite resolves may predate the member.
+        Map<String, Object> served = Staging.jsonBody(probe.recorder(), "/batch");
+        Object answer = served.get("results") instanceof Map<?, ?> results ? results.get(Staging.PROBE) : null;
+        assertTrue(answer instanceof Map<?, ?> fields && fields.get("trial_expired") instanceof Boolean,
+                "the answer carries trial_expired");
     }
 
     @Test
@@ -151,9 +202,9 @@ class LookupTest {
 
     @Test
     void aBatchCollapsesDuplicatesAndKeepsBogonsOffTheWire() {
-        // A batch needs a key, and the free one is the cheapest that has it.
-        skipUnlessObservable(Tiers.free());
-        Probe probe = Staging.clientFor(Tiers.free());
+        // A batch needs a paid plan, and starter is the cheapest.
+        skipUnlessObservable(Tiers.paid());
+        Probe probe = Staging.clientFor(Tiers.paid());
 
         LinkedHashMap<String, BatchResult> got = probe.client().lookupBatch(
                 List.of(Staging.PROBE, "8.8.8.8", Staging.PROBE, "10.0.0.1", "8.8.8.8"));
@@ -164,7 +215,7 @@ class LookupTest {
         Set<String> asked = new TreeSet<>();
         probe.recorder().facts().forEach(fact -> asked.add(fact.path()));
         assertEquals(Set.of("/batch"), asked, "the batch went somewhere other than POST /batch");
-        assertTrue(probe.recorder().carriedKey(), "the free key never reached the wire");
+        assertTrue(probe.recorder().carriedKey(), "the paid key never reached the wire");
         // The endpoint keys its answer by exactly the strings it was sent, so this is what went out.
         Map<String, Object> served = Staging.jsonBody(probe.recorder(), "/batch");
         Set<String> sent = new TreeSet<>();

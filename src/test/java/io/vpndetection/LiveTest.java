@@ -32,7 +32,7 @@ class LiveTest {
 
             assertTrue(vpn.isVpn(), "45.83.91.1 is VPN infrastructure");
             assertFalse(notVpn.isVpn(), "1.1.1.1 is not");
-            // Absent, not false: the hosting flag needs a key and this call carries none.
+            // Absent, not false: the hosting flag needs a paid plan and this call carries no key.
             assertTrue(notVpn.isHosting().isEmpty(), "an answer without a key must withhold is_hosting");
             assertFalse(notVpn.isHosting().orElse(false));
 

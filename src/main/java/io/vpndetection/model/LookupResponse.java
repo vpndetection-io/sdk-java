@@ -1,6 +1,6 @@
 /*
  * VPNDetection API
- * The VPNDetection API: classify any IP address, and download the databases behind the answers.  Lookups need no API key: the Unlimited tier answers any address with no daily or monthly cap, for non-commercial use, and a service built on it must credit VPNDetection (https://vpndetection.io/terms#no-key). Commercial use needs a key, a free one included, which also adds every remaining flag.  See https://docs.vpndetection.io for guides and https://github.com/vpndetection-io for the official client libraries. 
+ * The VPNDetection API: classify any IP address, and download the databases behind the answers.  Lookups need no API key: the Unlimited tier answers any address with no daily or monthly cap, with a key or without one. Every paid plan answers every field, and an organization on no paid plan can try them, 100 lookups a day. Unlimited's answers may be used commercially, but not redistributed or used in a competing service (https://vpndetection.io/terms#no-key).  See https://docs.vpndetection.io for guides and https://github.com/vpndetection-io for the official client libraries. 
  *
  * The version of the OpenAPI document: 2026.11.11
  * Contact: support@vpndetection.io
@@ -36,7 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import io.vpndetection.internal.ApiClient;
 /**
- * The union of every plan&#39;s answer. Every answer carries &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;, with or without a key; each remaining field is present when your key includes it, and absent otherwise. A client that must work across plans should treat an absent flag as unknown rather than as &#x60;false&#x60;. 
+ * The union of every tier&#39;s answer. Every answer carries &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;, with or without a key; each remaining field is present when your tier includes it, and absent otherwise. A client that must work across plans should treat an absent flag as unknown rather than as &#x60;false&#x60;. 
  */
 @JsonPropertyOrder({
   LookupResponse.JSON_PROPERTY_IP,
@@ -59,7 +59,8 @@ import io.vpndetection.internal.ApiClient;
   LookupResponse.JSON_PROPERTY_MOBPROXY,
   LookupResponse.JSON_PROPERTY_PUBPROXY,
   LookupResponse.JSON_PROPERTY_LOCATION,
-  LookupResponse.JSON_PROPERTY_ASN
+  LookupResponse.JSON_PROPERTY_ASN,
+  LookupResponse.JSON_PROPERTY_TRIAL_EXPIRED
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.25.0")
 public class LookupResponse {
@@ -147,6 +148,10 @@ public class LookupResponse {
   @javax.annotation.Nullable
   private Asn asn;
 
+  public static final String JSON_PROPERTY_TRIAL_EXPIRED = "trial_expired";
+  @javax.annotation.Nullable
+  private Boolean trialExpired;
+
   public LookupResponse() { 
   }
 
@@ -204,7 +209,7 @@ public class LookupResponse {
   }
 
   /**
-   * Whether the address belongs to a hosting or cloud provider. Free and paid plans.
+   * Whether the address belongs to a hosting or cloud provider. Paid plans.
    * @return isHosting
    */
   @javax.annotation.Nullable
@@ -276,7 +281,7 @@ public class LookupResponse {
   }
 
   /**
-   * Whether the address belongs to a CDN. Free and paid plans.
+   * Whether the address belongs to a CDN. Paid plans.
    * @return isCdn
    */
   @javax.annotation.Nullable
@@ -300,7 +305,7 @@ public class LookupResponse {
   }
 
   /**
-   * Whether the address was seen in a residential proxy pool. Free and paid plans.
+   * Whether the address was seen in a residential proxy pool. Paid plans.
    * @return isResproxy
    */
   @javax.annotation.Nullable
@@ -324,7 +329,7 @@ public class LookupResponse {
   }
 
   /**
-   * Whether the address is one a datacenter proxy service sells or runs on, a proxy company&#39;s own ranges included. Free and paid plans.
+   * Whether the address is one a datacenter proxy service sells or runs on, a proxy company&#39;s own ranges included. Paid plans.
    * @return isDcproxy
    */
   @javax.annotation.Nullable
@@ -348,7 +353,7 @@ public class LookupResponse {
   }
 
   /**
-   * Whether the address was seen in a mobile proxy pool. Free and paid plans.
+   * Whether the address was seen in a mobile proxy pool. Paid plans.
    * @return isMobproxy
    */
   @javax.annotation.Nullable
@@ -372,7 +377,7 @@ public class LookupResponse {
   }
 
   /**
-   * Whether a public proxy, one anyone can connect through, listens on the address or sends its traffic out from it. Free and paid plans.
+   * Whether a public proxy, one anyone can connect through, listens on the address or sends its traffic out from it. Paid plans.
    * @return isPubproxy
    */
   @javax.annotation.Nullable
@@ -654,6 +659,30 @@ public class LookupResponse {
   }
 
 
+  public LookupResponse trialExpired(@javax.annotation.Nullable Boolean trialExpired) {
+    this.trialExpired = trialExpired;
+    return this;
+  }
+
+  /**
+   * On every answer to a trial key, an organization on no paid plan, and on no other: &#x60;false&#x60; while the organization&#39;s 100 full answers for the UTC day last, &#x60;true&#x60; once the answer is Unlimited&#39;s. 
+   * @return trialExpired
+   */
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_TRIAL_EXPIRED, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public Boolean getTrialExpired() {
+    return trialExpired;
+  }
+
+
+  @JsonProperty(value = JSON_PROPERTY_TRIAL_EXPIRED, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTrialExpired(@javax.annotation.Nullable Boolean trialExpired) {
+    this.trialExpired = trialExpired;
+  }
+
+
   /**
    * Return true if this LookupResponse object is equal to o.
    */
@@ -686,12 +715,13 @@ public class LookupResponse {
         Objects.equals(this.mobproxy, lookupResponse.mobproxy) &&
         Objects.equals(this.pubproxy, lookupResponse.pubproxy) &&
         Objects.equals(this.location, lookupResponse.location) &&
-        Objects.equals(this.asn, lookupResponse.asn);
+        Objects.equals(this.asn, lookupResponse.asn) &&
+        Objects.equals(this.trialExpired, lookupResponse.trialExpired);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ip, isVpn, isHosting, isRelay, isTor, isCdn, isResproxy, isDcproxy, isMobproxy, isPubproxy, vpn, hosting, relay, tor, cdn, resproxy, dcproxy, mobproxy, pubproxy, location, asn);
+    return Objects.hash(ip, isVpn, isHosting, isRelay, isTor, isCdn, isResproxy, isDcproxy, isMobproxy, isPubproxy, vpn, hosting, relay, tor, cdn, resproxy, dcproxy, mobproxy, pubproxy, location, asn, trialExpired);
   }
 
   @Override
@@ -719,6 +749,7 @@ public class LookupResponse {
     sb.append("    pubproxy: ").append(toIndentedString(pubproxy)).append("\n");
     sb.append("    location: ").append(toIndentedString(location)).append("\n");
     sb.append("    asn: ").append(toIndentedString(asn)).append("\n");
+    sb.append("    trialExpired: ").append(toIndentedString(trialExpired)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -866,6 +897,11 @@ public class LookupResponse {
     // add `asn` to the URL query string
     if (getAsn() != null) {
       joiner.add(getAsn().toUrlQueryString(prefix + "asn" + suffix));
+    }
+
+    // add `trial_expired` to the URL query string
+    if (getTrialExpired() != null) {
+      joiner.add(String.format(java.util.Locale.ROOT, "%strial_expired%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getTrialExpired()))));
     }
 
     return joiner.toString();
