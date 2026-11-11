@@ -622,9 +622,9 @@ public final class VPNDetection implements AutoCloseable {
 
         /**
          * Your API key. Leave it unset to look up without one: a lookup then answers {@code ip},
-         * {@code is_vpn}, the Tor and relay members, {@code location} and {@code asn}, up to 60 a
-         * minute from each address, and a batch is refused as unauthorized. The key is trimmed,
-         * and one of blanks alone is no key.
+         * {@code is_vpn}, the Tor and relay members, {@code location} and {@code asn}, with no
+         * daily or monthly cap, and a batch is refused as unauthorized. The key is trimmed, and
+         * one of blanks alone is no key.
          *
          * @throws IllegalArgumentException for a key holding a control character or a character
          *     outside ASCII, which no call could send.
