@@ -269,8 +269,8 @@ public final class VPNDetection implements AutoCloseable {
      * key gets an unauthorized error rather than a partial one.
      *
      * <p>Usage counts against the ALLOWANCE WINDOW - on a paid plan the anniversary of the
-     * subscription, not the calendar month and not the billing period, and on a trial key the UTC
-     * day - and it is the same number a lookup is gated on. It can lag by a few seconds, because
+     * subscription, not the calendar month and not the billing period, and on the free plan the
+     * UTC day - and it is the same number a lookup is gated on. It can lag by a few seconds, because
      * requests are counted in memory and flushed in aggregate.
      *
      * <p>Deliberately NOT cached: the whole point is what has been spent, and a cached answer is a
@@ -319,8 +319,8 @@ public final class VPNDetection implements AutoCloseable {
      * per-entry failure with the status the single lookup would have answered, and a chunk that
      * fails as a whole marks every address in it. Iteration order is the order the addresses were
      * first seen in the input. The batch endpoint needs a paid plan: without a key every address
-     * sent to it carries an {@link ErrorKind#UNAUTHORIZED} error, and a trial key's batch of two or
-     * more a {@link ErrorKind#BAD_REQUEST} (HTTP 402).
+     * sent to it carries an {@link ErrorKind#UNAUTHORIZED} error, and a free-plan key's batch of two
+     * or more a {@link ErrorKind#BAD_REQUEST} (HTTP 402).
      */
     public LinkedHashMap<String, BatchResult> lookupBatch(Collection<String> ips, BatchOptions options) {
         Objects.requireNonNull(ips, "ips");

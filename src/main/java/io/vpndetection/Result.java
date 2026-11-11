@@ -185,8 +185,9 @@ public final class Result {
     }
 
     /**
-     * On a Trial key's answers only: {@code false} while the organization's 100 full answers for
-     * the UTC day last, {@code true} once the answer is Unlimited's.
+     * On answers to a key on the free plan only: {@code false} while its organization's daily
+     * trial lasts (every field for the first 100 lookups each UTC day), {@code true} once the
+     * answer has Unlimited's.
      */
     public Optional<Boolean> trialExpired() {
         return Optional.ofNullable(raw.getTrialExpired());

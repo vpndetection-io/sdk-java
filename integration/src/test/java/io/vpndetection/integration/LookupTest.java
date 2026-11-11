@@ -89,19 +89,19 @@ class LookupTest {
     }
 
     @Test
-    void aTrialKeysAnswerIsAPaidOneOrUnlimitedsAndSaysWhich() {
+    void aFreePlanKeysAnswerIsAPaidOneOrUnlimitedsAndSaysWhich() {
         skipUnlessObservable(Tiers.trial());
         Map<String, Object> raw = Staging.answerFor(Tiers.trial()).raw();
 
         Boolean expired = assertInstanceOf(Boolean.class, raw.get("trial_expired"),
-                "a trial key answers trial_expired");
+                "a free-plan key answers trial_expired");
         // The organization's first 100 lookups of the UTC day are answered in full, and the rest
         // as Unlimited's: which half a run sees depends on the day.
         assertEquals(!expired, raw.containsKey("is_hosting"), "is_hosting is served exactly while the day lasts");
     }
 
     @Test
-    void aTrialKeysBatchOfTwoIsRefusedAsABadRequestOnce() {
+    void aFreePlanKeysBatchOfTwoIsRefusedAsABadRequestOnce() {
         skipUnlessObservable(Tiers.trial());
         Probe probe = Staging.clientFor(Tiers.trial());
 
@@ -109,7 +109,7 @@ class LookupTest {
 
         for (String ip : List.of(Staging.PROBE, "8.8.8.8")) {
             VPNDetectionException refused = got.get(ip).error()
-                    .orElseThrow(() -> new AssertionError(ip + ": a trial key's batch of two must fail"));
+                    .orElseThrow(() -> new AssertionError(ip + ": a free-plan key's batch of two must fail"));
             assertEquals(ErrorKind.BAD_REQUEST, refused.kind());
             assertEquals(Optional.of(402), refused.statusCode());
             assertFalse(refused.retryable());
@@ -120,13 +120,13 @@ class LookupTest {
     }
 
     @Test
-    void aTrialKeysBatchOfOneIsAnswered() {
+    void aFreePlanKeysBatchOfOneIsAnswered() {
         skipUnlessObservable(Tiers.trial());
         Probe probe = Staging.clientFor(Tiers.trial());
 
         LinkedHashMap<String, BatchResult> got = probe.client().lookupBatch(List.of(Staging.PROBE));
 
-        assertTrue(got.get(Staging.PROBE).isSuccess(), "a trial key's batch of one failed: " + got.get(Staging.PROBE));
+        assertTrue(got.get(Staging.PROBE).isSuccess(), "a free-plan key's batch of one failed: " + got.get(Staging.PROBE));
         // Read off the wire, since the client this suite resolves may predate the member.
         Map<String, Object> served = Staging.jsonBody(probe.recorder(), "/batch");
         Object answer = served.get("results") instanceof Map<?, ?> results ? results.get(Staging.PROBE) : null;
