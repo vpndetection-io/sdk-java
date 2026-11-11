@@ -623,9 +623,9 @@ public final class VPNDetection implements AutoCloseable {
         private Builder() {}
 
         /**
-         * Your API key. Without one a lookup is on the Unlimited tier: {@code ip}, {@code is_vpn},
-         * the Tor and relay members, {@code location} and {@code asn}, with no daily or monthly
-         * cap. A batch needs a key on a paid plan. The key is trimmed, and one of blanks alone is no
+         * Your API key. Without one a lookup is on Unlimited, the free plan: {@code ip},
+         * {@code is_vpn}, the Tor and relay members, {@code location} and {@code asn}, with no
+         * daily or monthly cap. A batch needs a key on a paid plan. The key is trimmed, and one of blanks alone is no
          * key.
          *
          * @throws IllegalArgumentException for a key holding a control character or a character

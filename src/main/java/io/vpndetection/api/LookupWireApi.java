@@ -296,7 +296,7 @@ public class LookupWireApi {
 
   /**
    * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key, the Unlimited tier, the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
+   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key, on Unlimited, the free plan, the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
    * @param ip The IPv4 or IPv6 address to classify. (required)
    * @return LookupResponse
    * @throws ApiException if fails to make API call
@@ -307,7 +307,7 @@ public class LookupWireApi {
 
   /**
    * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key, the Unlimited tier, the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
+   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key, on Unlimited, the free plan, the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
    * @param ip The IPv4 or IPv6 address to classify. (required)
    * @param headers Optional headers to include in the request
    * @return LookupResponse
@@ -320,7 +320,7 @@ public class LookupWireApi {
 
   /**
    * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key, the Unlimited tier, the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
+   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key, on Unlimited, the free plan, the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
    * @param ip The IPv4 or IPv6 address to classify. (required)
    * @return ApiResponse&lt;LookupResponse&gt;
    * @throws ApiException if fails to make API call
@@ -331,7 +331,7 @@ public class LookupWireApi {
 
   /**
    * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key, the Unlimited tier, the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
+   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key, on Unlimited, the free plan, the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
    * @param ip The IPv4 or IPv6 address to classify. (required)
    * @param headers Optional headers to include in the request
    * @return ApiResponse&lt;LookupResponse&gt;

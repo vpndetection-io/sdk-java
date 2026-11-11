@@ -265,11 +265,11 @@ Each redirect URI must be https on a public host name, or http on a loopback add
 
 ### Absent is not false
 
-The Unlimited tier leaves out `isHosting()`, `isCdn()` and the four proxy flags, and of the detail behind each flag it answers only Tor's and relay's; a free-plan key's answer carries `trialExpired()`, true once its daily trial is spent. Every member but `ip` and `isVpn` is an `Optional`, where empty means "not in your plan" rather than "checked, and no".
+Unlimited leaves out `isHosting()`, `isCdn()` and the four proxy flags, and of the detail behind each flag it answers only Tor's and relay's; a free-plan key's answer carries `trialExpired()`, true once its daily trial is spent. Every member but `ip` and `isVpn` is an `Optional`, where empty means "not in your plan" rather than "checked, and no".
 
 ```java
 result.isHosting().orElse(false);   // when you only want the flag
-result.isHosting().isEmpty();       // on the Unlimited tier: not in your plan
+result.isHosting().isEmpty();       // on Unlimited: not in your plan
 result.trialExpired().orElse(false); // a free-plan key's daily trial is spent
 ```
 
