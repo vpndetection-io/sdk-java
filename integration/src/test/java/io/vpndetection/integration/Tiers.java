@@ -39,6 +39,11 @@ final class Tiers {
         return RUNGS.get(0);
     }
 
+    /** The cheapest rung a batch can run on: POST /batch needs a key. */
+    static Rung free() {
+        return RUNGS.get(1);
+    }
+
     static Rung max() {
         return RUNGS.get(RUNGS.size() - 1);
     }

@@ -10,13 +10,13 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 /**
  * Hits the real API, so it is opt-in: {@code VPNDETECTION_LIVE=1 mvn test}.
  *
- * <p>CI leaves it off. A test suite that spends the keyless daily allowance on every pull request
- * eventually fails for reasons that have nothing to do with the change under review.
+ * <p>CI leaves it off. A test suite that queries the real API on every pull request eventually
+ * fails for reasons that have nothing to do with the change under review.
  */
 @EnabledIfEnvironmentVariable(named = "VPNDETECTION_LIVE", matches = "1")
 class LiveTest {
     @Test
-    void theFreeTierAnswersIsVpnAndWithholdsEverythingElse() {
+    void aLookupWithoutAKeyAnswersIsVpnAndWithholdsIsHosting() {
         try (VPNDetection client = VPNDetection.create()) {
             Result vpn = client.lookup("45.83.91.1");
             Result notVpn = client.lookup("1.1.1.1");
@@ -32,8 +32,8 @@ class LiveTest {
 
             assertTrue(vpn.isVpn(), "45.83.91.1 is VPN infrastructure");
             assertFalse(notVpn.isVpn(), "1.1.1.1 is not");
-            // Absent, not false: the hosting flag is a paid member and this call carries no key.
-            assertTrue(notVpn.isHosting().isEmpty(), "the free tier must withhold is_hosting");
+            // Absent, not false: the hosting flag needs a key and this call carries none.
+            assertTrue(notVpn.isHosting().isEmpty(), "an answer without a key must withhold is_hosting");
             assertFalse(notVpn.isHosting().orElse(false));
 
             Result bogon = client.lookup("192.168.1.1");

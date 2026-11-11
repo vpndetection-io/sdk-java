@@ -46,7 +46,7 @@ final class Served {
         putDetail(out, "dcproxy", result.dcproxy());
         putDetail(out, "mobproxy", result.mobproxy());
         putDetail(out, "pubproxy", result.pubproxy());
-        // Not detail objects, but mapped the same way: absent without a key, every field set with one.
+        // Not detail objects, but mapped the same way: every field set whenever the member is present.
         putDetail(out, "location", result.location());
         putDetail(out, "asn", result.asn());
         return out;

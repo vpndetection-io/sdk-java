@@ -172,14 +172,14 @@ public final class Result {
     }
 
     /**
-     * Where the address is, on every keyed answer: every field set, an empty string where it is
-     * not known.
+     * Where the address is, on every answer, with or without a key: every field set, an empty
+     * string where it is not known.
      */
     public Optional<Location> location() {
         return Optional.ofNullable(raw.getLocation());
     }
 
-    /** The AS announcing the address, on every keyed answer: its number is 0 where none does. */
+    /** The AS announcing the address, on every answer, with or without a key: 0 where none does. */
     public Optional<Asn> asn() {
         return Optional.ofNullable(raw.getAsn());
     }

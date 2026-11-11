@@ -100,7 +100,7 @@ public final class VPNDetection implements AutoCloseable {
         return new Builder();
     }
 
-    /** A client on the free tier, with every default. */
+    /** A client without a key, with every default. */
     public static VPNDetection create() {
         return builder().build();
     }
@@ -317,7 +317,8 @@ public final class VPNDetection implements AutoCloseable {
      * error as its value, so one bad entry cannot lose the rest of the answers: the API reports a
      * per-entry failure with the status the single lookup would have answered, and a chunk that
      * fails as a whole marks every address in it. Iteration order is the order the addresses were
-     * first seen in the input.
+     * first seen in the input. The batch endpoint needs an API key, a free one included: without
+     * one, every address sent to it carries an {@link ErrorKind#UNAUTHORIZED} error.
      */
     public LinkedHashMap<String, BatchResult> lookupBatch(Collection<String> ips, BatchOptions options) {
         Objects.requireNonNull(ips, "ips");
@@ -620,8 +621,9 @@ public final class VPNDetection implements AutoCloseable {
         private Builder() {}
 
         /**
-         * Your API key. Leave it unset to use the free tier, which answers {@code ip} and
-         * {@code is_vpn} and allows 1000 requests per day per source address. The key is trimmed,
+         * Your API key. Leave it unset to look up without one: a lookup then answers {@code ip},
+         * {@code is_vpn}, the Tor and relay members, {@code location} and {@code asn}, up to 60 a
+         * minute from each address, and a batch is refused as unauthorized. The key is trimmed,
          * and one of blanks alone is no key.
          *
          * @throws IllegalArgumentException for a key holding a control character or a character

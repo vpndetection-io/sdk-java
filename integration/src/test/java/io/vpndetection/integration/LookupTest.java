@@ -7,7 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.vpndetection.Bogon;
 import io.vpndetection.BatchResult;
+import io.vpndetection.ErrorKind;
 import io.vpndetection.Result;
+import io.vpndetection.VPNDetectionException;
 import io.vpndetection.integration.Staging.Answer;
 import io.vpndetection.integration.Staging.Probe;
 import io.vpndetection.integration.Tiers.Rung;
@@ -34,7 +36,7 @@ import java.util.TreeSet;
  */
 class LookupTest {
     @Test
-    void anUnauthenticatedLookupAnswersIpAndIsVpn() {
+    void aLookupWithoutAKeyAnswersIpAndIsVpnAtTheLeast() {
         Answer answer = Staging.answerFor(Tiers.unauth());
 
         assertEquals(Staging.PROBE, answer.raw().get("ip"));
@@ -130,8 +132,28 @@ class LookupTest {
     }
 
     @Test
-    void aBatchCollapsesDuplicatesAndKeepsBogonsOffTheWire() {
+    void aBatchWithoutAKeyIsRefusedOnceAndItsBogonStillAnswered() {
         Probe probe = Staging.clientFor(Tiers.unauth());
+
+        LinkedHashMap<String, BatchResult> got = probe.client().lookupBatch(
+                List.of(Staging.PROBE, "10.0.0.1"));
+
+        assertTrue(got.get("10.0.0.1").orElseThrow().isBogon());
+        VPNDetectionException refused = got.get(Staging.PROBE).error()
+                .orElseThrow(() -> new AssertionError("a batch without a key must fail"));
+        assertEquals(ErrorKind.UNAUTHORIZED, refused.kind());
+        assertEquals(Optional.of(401), refused.statusCode());
+        assertFalse(refused.retryable());
+        assertEquals(List.of("/batch"),
+                probe.recorder().facts().stream().map(fact -> fact.path()).toList(),
+                "one request, never retried");
+    }
+
+    @Test
+    void aBatchCollapsesDuplicatesAndKeepsBogonsOffTheWire() {
+        // A batch needs a key, and the free one is the cheapest that has it.
+        skipUnlessObservable(Tiers.free());
+        Probe probe = Staging.clientFor(Tiers.free());
 
         LinkedHashMap<String, BatchResult> got = probe.client().lookupBatch(
                 List.of(Staging.PROBE, "8.8.8.8", Staging.PROBE, "10.0.0.1", "8.8.8.8"));
@@ -142,6 +164,7 @@ class LookupTest {
         Set<String> asked = new TreeSet<>();
         probe.recorder().facts().forEach(fact -> asked.add(fact.path()));
         assertEquals(Set.of("/batch"), asked, "the batch went somewhere other than POST /batch");
+        assertTrue(probe.recorder().carriedKey(), "the free key never reached the wire");
         // The endpoint keys its answer by exactly the strings it was sent, so this is what went out.
         Map<String, Object> served = Staging.jsonBody(probe.recorder(), "/batch");
         Set<String> sent = new TreeSet<>();

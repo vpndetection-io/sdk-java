@@ -4,9 +4,10 @@ package io.vpndetection;
  * Why a request failed.
  *
  * <p>{@link #RATE_LIMITED} and {@link #QUOTA_EXCEEDED} both arrive as HTTP 429 and are NOT the
- * same thing. A rate limit is the API protecting itself and carries {@code Retry-After}; retrying
- * works. A spent quota carries no such header and retrying will not help until the window rolls
- * over or the limit is raised. The header is the only thing that distinguishes them.
+ * same thing. A rate limit is the API protecting itself, or a lookup without a key past 60 a
+ * minute, and carries {@code Retry-After}; retrying works. A spent quota carries no such header and
+ * retrying will not help until the window rolls over or the limit is raised. The header is the only
+ * thing that distinguishes them.
  */
 public enum ErrorKind {
     BAD_REQUEST,

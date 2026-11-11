@@ -89,7 +89,7 @@ final class Staging {
             Result result = probe.client().lookup(PROBE);
             boolean carried = probe.recorder().carriedKey();
             // Checked HERE rather than in one test, so no comparison anywhere can be made against a
-            // tier that silently ran unauthenticated: an unsent key answers the free shape, which
+            // tier that silently ran unauthenticated: an unsent key answers the keyless shape, which
             // satisfies every containment check vacuously.
             if (rung.secret() != null && !carried) {
                 fail(tier + ": the key never reached the wire");
