@@ -1,6 +1,6 @@
 /*
  * VPNDetection API
- * The VPNDetection API: classify any IP address, and download the databases behind the answers.  See https://docs.vpndetection.io for guides and https://github.com/vpndetection-io for the official client libraries. 
+ * The VPNDetection API: classify any IP address, and download the databases behind the answers.  Lookups need no API key: the Unlimited tier answers any address with no daily or monthly cap, for non-commercial use, and a service built on it must credit VPNDetection (https://vpndetection.io/terms#no-key). Commercial use needs a key, a free one included, which also adds every remaining flag.  See https://docs.vpndetection.io for guides and https://github.com/vpndetection-io for the official client libraries. 
  *
  * The version of the OpenAPI document: 2026.11.11
  * Contact: support@vpndetection.io
@@ -173,7 +173,7 @@ public class LookupWireApi {
 
   /**
    * Batch
-   * Answers up to 1000 addresses in one call. Each distinct string in &#x60;ips&#x60; is one lookup: it costs exactly what &#x60;GET /{ip}&#x60; costs for that address and comes back with exactly the fields that call would carry for your plan. Exact duplicates collapse to one entry and one lookup.  Both maps in the answer are keyed by the string you sent, so nothing has to be lined up by position; the &#x60;ip&#x60; inside each result is the normalized form. An address that could not be answered sits in &#x60;errors&#x60; with the status and message the single lookup would have given, and never disturbs the others: a string that is not an address is a &#x60;400&#x60; there, and an allowance that runs out part way through leaves the remaining entries as &#x60;429&#x60;s.  The call itself fails only for the reasons below, and a &#x60;429&#x60; on the call always carries &#x60;Retry-After&#x60;: the batch is admitted or refused whole by the rate limit, so a per-entry &#x60;429&#x60; is always a spent allowance and never a throttle.  A batch needs an API key, a free one included: without one the call is refused with &#x60;401&#x60;. Keyless lookups are one address at a time. 
+   * Answers up to 1000 addresses in one call. Each distinct string in &#x60;ips&#x60; is one lookup: it costs exactly what &#x60;GET /{ip}&#x60; costs for that address and comes back with exactly the fields that call would carry for your plan. Exact duplicates collapse to one entry and one lookup.  Both maps in the answer are keyed by the string you sent, so nothing has to be lined up by position; the &#x60;ip&#x60; inside each result is the normalized form. An address that could not be answered sits in &#x60;errors&#x60; with the status and message the single lookup would have given, and never disturbs the others: a string that is not an address is a &#x60;400&#x60; there, and an allowance that runs out part way through leaves the remaining entries as &#x60;429&#x60;s.  The call itself fails only for the reasons below, and a &#x60;429&#x60; on the call always carries &#x60;Retry-After&#x60;: the batch is admitted or refused whole by the rate limit, so a per-entry &#x60;429&#x60; is always a spent allowance and never a throttle.  A batch needs an API key, a free one included: without one the call is refused with &#x60;401&#x60;. The Unlimited tier looks up one address at a time. 
    * @param batchLookupRequest  (required)
    * @return BatchLookupResponse
    * @throws ApiException if fails to make API call
@@ -184,7 +184,7 @@ public class LookupWireApi {
 
   /**
    * Batch
-   * Answers up to 1000 addresses in one call. Each distinct string in &#x60;ips&#x60; is one lookup: it costs exactly what &#x60;GET /{ip}&#x60; costs for that address and comes back with exactly the fields that call would carry for your plan. Exact duplicates collapse to one entry and one lookup.  Both maps in the answer are keyed by the string you sent, so nothing has to be lined up by position; the &#x60;ip&#x60; inside each result is the normalized form. An address that could not be answered sits in &#x60;errors&#x60; with the status and message the single lookup would have given, and never disturbs the others: a string that is not an address is a &#x60;400&#x60; there, and an allowance that runs out part way through leaves the remaining entries as &#x60;429&#x60;s.  The call itself fails only for the reasons below, and a &#x60;429&#x60; on the call always carries &#x60;Retry-After&#x60;: the batch is admitted or refused whole by the rate limit, so a per-entry &#x60;429&#x60; is always a spent allowance and never a throttle.  A batch needs an API key, a free one included: without one the call is refused with &#x60;401&#x60;. Keyless lookups are one address at a time. 
+   * Answers up to 1000 addresses in one call. Each distinct string in &#x60;ips&#x60; is one lookup: it costs exactly what &#x60;GET /{ip}&#x60; costs for that address and comes back with exactly the fields that call would carry for your plan. Exact duplicates collapse to one entry and one lookup.  Both maps in the answer are keyed by the string you sent, so nothing has to be lined up by position; the &#x60;ip&#x60; inside each result is the normalized form. An address that could not be answered sits in &#x60;errors&#x60; with the status and message the single lookup would have given, and never disturbs the others: a string that is not an address is a &#x60;400&#x60; there, and an allowance that runs out part way through leaves the remaining entries as &#x60;429&#x60;s.  The call itself fails only for the reasons below, and a &#x60;429&#x60; on the call always carries &#x60;Retry-After&#x60;: the batch is admitted or refused whole by the rate limit, so a per-entry &#x60;429&#x60; is always a spent allowance and never a throttle.  A batch needs an API key, a free one included: without one the call is refused with &#x60;401&#x60;. The Unlimited tier looks up one address at a time. 
    * @param batchLookupRequest  (required)
    * @param headers Optional headers to include in the request
    * @return BatchLookupResponse
@@ -197,7 +197,7 @@ public class LookupWireApi {
 
   /**
    * Batch
-   * Answers up to 1000 addresses in one call. Each distinct string in &#x60;ips&#x60; is one lookup: it costs exactly what &#x60;GET /{ip}&#x60; costs for that address and comes back with exactly the fields that call would carry for your plan. Exact duplicates collapse to one entry and one lookup.  Both maps in the answer are keyed by the string you sent, so nothing has to be lined up by position; the &#x60;ip&#x60; inside each result is the normalized form. An address that could not be answered sits in &#x60;errors&#x60; with the status and message the single lookup would have given, and never disturbs the others: a string that is not an address is a &#x60;400&#x60; there, and an allowance that runs out part way through leaves the remaining entries as &#x60;429&#x60;s.  The call itself fails only for the reasons below, and a &#x60;429&#x60; on the call always carries &#x60;Retry-After&#x60;: the batch is admitted or refused whole by the rate limit, so a per-entry &#x60;429&#x60; is always a spent allowance and never a throttle.  A batch needs an API key, a free one included: without one the call is refused with &#x60;401&#x60;. Keyless lookups are one address at a time. 
+   * Answers up to 1000 addresses in one call. Each distinct string in &#x60;ips&#x60; is one lookup: it costs exactly what &#x60;GET /{ip}&#x60; costs for that address and comes back with exactly the fields that call would carry for your plan. Exact duplicates collapse to one entry and one lookup.  Both maps in the answer are keyed by the string you sent, so nothing has to be lined up by position; the &#x60;ip&#x60; inside each result is the normalized form. An address that could not be answered sits in &#x60;errors&#x60; with the status and message the single lookup would have given, and never disturbs the others: a string that is not an address is a &#x60;400&#x60; there, and an allowance that runs out part way through leaves the remaining entries as &#x60;429&#x60;s.  The call itself fails only for the reasons below, and a &#x60;429&#x60; on the call always carries &#x60;Retry-After&#x60;: the batch is admitted or refused whole by the rate limit, so a per-entry &#x60;429&#x60; is always a spent allowance and never a throttle.  A batch needs an API key, a free one included: without one the call is refused with &#x60;401&#x60;. The Unlimited tier looks up one address at a time. 
    * @param batchLookupRequest  (required)
    * @return ApiResponse&lt;BatchLookupResponse&gt;
    * @throws ApiException if fails to make API call
@@ -208,7 +208,7 @@ public class LookupWireApi {
 
   /**
    * Batch
-   * Answers up to 1000 addresses in one call. Each distinct string in &#x60;ips&#x60; is one lookup: it costs exactly what &#x60;GET /{ip}&#x60; costs for that address and comes back with exactly the fields that call would carry for your plan. Exact duplicates collapse to one entry and one lookup.  Both maps in the answer are keyed by the string you sent, so nothing has to be lined up by position; the &#x60;ip&#x60; inside each result is the normalized form. An address that could not be answered sits in &#x60;errors&#x60; with the status and message the single lookup would have given, and never disturbs the others: a string that is not an address is a &#x60;400&#x60; there, and an allowance that runs out part way through leaves the remaining entries as &#x60;429&#x60;s.  The call itself fails only for the reasons below, and a &#x60;429&#x60; on the call always carries &#x60;Retry-After&#x60;: the batch is admitted or refused whole by the rate limit, so a per-entry &#x60;429&#x60; is always a spent allowance and never a throttle.  A batch needs an API key, a free one included: without one the call is refused with &#x60;401&#x60;. Keyless lookups are one address at a time. 
+   * Answers up to 1000 addresses in one call. Each distinct string in &#x60;ips&#x60; is one lookup: it costs exactly what &#x60;GET /{ip}&#x60; costs for that address and comes back with exactly the fields that call would carry for your plan. Exact duplicates collapse to one entry and one lookup.  Both maps in the answer are keyed by the string you sent, so nothing has to be lined up by position; the &#x60;ip&#x60; inside each result is the normalized form. An address that could not be answered sits in &#x60;errors&#x60; with the status and message the single lookup would have given, and never disturbs the others: a string that is not an address is a &#x60;400&#x60; there, and an allowance that runs out part way through leaves the remaining entries as &#x60;429&#x60;s.  The call itself fails only for the reasons below, and a &#x60;429&#x60; on the call always carries &#x60;Retry-After&#x60;: the batch is admitted or refused whole by the rate limit, so a per-entry &#x60;429&#x60; is always a spent allowance and never a throttle.  A batch needs an API key, a free one included: without one the call is refused with &#x60;401&#x60;. The Unlimited tier looks up one address at a time. 
    * @param batchLookupRequest  (required)
    * @param headers Optional headers to include in the request
    * @return ApiResponse&lt;BatchLookupResponse&gt;
@@ -296,7 +296,7 @@ public class LookupWireApi {
 
   /**
    * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
+   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key, the Unlimited tier, the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
    * @param ip The IPv4 or IPv6 address to classify. (required)
    * @return LookupResponse
    * @throws ApiException if fails to make API call
@@ -307,7 +307,7 @@ public class LookupWireApi {
 
   /**
    * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
+   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key, the Unlimited tier, the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
    * @param ip The IPv4 or IPv6 address to classify. (required)
    * @param headers Optional headers to include in the request
    * @return LookupResponse
@@ -320,7 +320,7 @@ public class LookupWireApi {
 
   /**
    * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
+   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key, the Unlimited tier, the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
    * @param ip The IPv4 or IPv6 address to classify. (required)
    * @return ApiResponse&lt;LookupResponse&gt;
    * @throws ApiException if fails to make API call
@@ -331,7 +331,7 @@ public class LookupWireApi {
 
   /**
    * Lookup
-   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
+   * Answers what is known about a single IPv4 or IPv6 address. Which fields come back is decided by the presented key; with no key, the Unlimited tier, the answer is &#x60;ip&#x60;, &#x60;is_vpn&#x60;, the Tor and relay members, &#x60;location&#x60; and &#x60;asn&#x60;. 
    * @param ip The IPv4 or IPv6 address to classify. (required)
    * @param headers Optional headers to include in the request
    * @return ApiResponse&lt;LookupResponse&gt;
