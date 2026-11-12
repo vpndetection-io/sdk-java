@@ -318,9 +318,10 @@ public final class VPNDetection implements AutoCloseable {
      * error as its value, so one bad entry cannot lose the rest of the answers: the API reports a
      * per-entry failure with the status the single lookup would have answered, and a chunk that
      * fails as a whole marks every address in it. Iteration order is the order the addresses were
-     * first seen in the input. The batch endpoint needs a paid plan: without a key every address
-     * sent to it carries an {@link ErrorKind#UNAUTHORIZED} error, and a free-plan key's batch of two
-     * or more a {@link ErrorKind#BAD_REQUEST} (HTTP 402).
+     * first seen in the input. The batch endpoint needs a paid plan: without a key every address in
+     * a request of two or more carries an {@link ErrorKind#UNAUTHORIZED} error, and a free-plan
+     * key's request of two or more a {@link ErrorKind#BAD_REQUEST} (HTTP 402). A request of one
+     * address is answered as its lookup would be.
      */
     public LinkedHashMap<String, BatchResult> lookupBatch(Collection<String> ips, BatchOptions options) {
         Objects.requireNonNull(ips, "ips");
