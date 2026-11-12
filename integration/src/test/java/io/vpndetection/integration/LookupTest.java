@@ -187,7 +187,8 @@ class LookupTest {
         Probe probe = Staging.clientFor(Tiers.unauth());
 
         LinkedHashMap<String, BatchResult> got = probe.client().lookupBatch(
-                List.of(Staging.PROBE, "10.0.0.1"));
+                // Two addresses on the wire: a keyless batch of one is answered as its lookup.
+                List.of(Staging.PROBE, "8.8.8.8", "10.0.0.1"));
 
         assertTrue(got.get("10.0.0.1").orElseThrow().isBogon());
         VPNDetectionException refused = got.get(Staging.PROBE).error()
