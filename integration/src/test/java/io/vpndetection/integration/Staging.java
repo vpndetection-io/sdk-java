@@ -42,9 +42,10 @@ final class Staging {
      */
     record Detail(List<String> required, List<String> optional) {}
 
-    private static final List<String> CLASS_KEYS = List.of("provider", "confidence", "last_seen");
+    private static final List<String> CLASS_KEYS = List.of("provider", "provider_name", "confidence", "last_seen");
     private static final List<String> PROXY_KEYS =
-            List.of("provider", "first_seen", "last_seen", "hits", "hits_days_pct", "providers_num");
+            List.of("provider", "provider_name", "first_seen", "last_seen", "hits", "hits_days_pct",
+                    "providers_num");
 
     /** One entry per dataset the API answers about. */
     static final Map<String, Detail> MEMBERS = members();
@@ -175,7 +176,7 @@ final class Staging {
 
     private static Map<String, Detail> members() {
         Map<String, Detail> map = new LinkedHashMap<>();
-        map.put("vpn", new Detail(List.of("provider", "last_seen"), List.of("confidence", "method")));
+        map.put("vpn", new Detail(List.of("provider", "provider_name", "last_seen"), List.of("confidence", "method")));
         map.put("hosting", new Detail(CLASS_KEYS, List.of()));
         map.put("relay", new Detail(CLASS_KEYS, List.of()));
         map.put("tor", new Detail(CLASS_KEYS, List.of()));
