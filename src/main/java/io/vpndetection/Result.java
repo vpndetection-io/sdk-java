@@ -32,21 +32,21 @@ public final class Result {
     }
 
     static Result of(LookupResponse body) {
-        return new Result(body, false);
+        return new Result(body, Boolean.TRUE.equals(body.getIsBogon()));
     }
 
     /**
-     * The answer a bogon gets, in the full shape the API serves at its widest plan: every flag
-     * present and false, every detail object present and empty, and the location and AS with every
-     * field empty, as the API answers a bogon.
+     * The answer a bogon gets, in the full shape the API serves at its widest plan: {@link
+     * #isBogon()} true and every other flag present and false, every detail object present and
+     * empty, and the location and AS with every field empty, as the API answers a bogon.
      *
      * <p>Note this is deliberately the WIDEST shape regardless of your plan, so do not infer which
-     * fields your plan includes from a bogon answer. {@link #isBogon()} is how you tell a locally
-     * computed answer from a served one.
+     * fields your plan includes from a bogon answer.
      */
     static Result bogon(String ip) {
         LookupResponse r = new LookupResponse()
                 .ip(ip)
+                .isBogon(true)
                 .isVpn(false)
                 .isHosting(false)
                 .isRelay(false)
@@ -90,7 +90,11 @@ public final class Result {
         return Boolean.TRUE.equals(raw.getIsVpn());
     }
 
-    /** Set when this answer was computed locally rather than served. */
+    /**
+     * True for reserved space (private, loopback, documentation and the like), which the client
+     * answers locally without a request. A served answer carries the API's own {@code is_bogon},
+     * and this reads it.
+     */
     public boolean isBogon() {
         return bogon;
     }
@@ -196,8 +200,7 @@ public final class Result {
     /**
      * The response exactly as it came off the wire, with its original names.
      *
-     * <p>For a bogon this is synthesized locally rather than served; {@link #isBogon()} is how you
-     * tell the two apart.
+     * <p>For a bogon this is synthesized locally rather than served.
      */
     public LookupResponse raw() {
         return raw;

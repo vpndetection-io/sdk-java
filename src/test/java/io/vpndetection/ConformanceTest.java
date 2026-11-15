@@ -357,6 +357,38 @@ class ConformanceTest {
     }
 
     @Test
+    void aServedIsBogonReachesTheResult() {
+        StubHttpClient http = StubHttpClient.of(Map.of(
+                "8.8.8.8", StubHttpClient.Route.ok("{\"ip\": \"8.8.8.8\", \"is_bogon\": true, \"is_vpn\": false}"),
+                "8.8.4.4", StubHttpClient.Route.ok("{\"ip\": \"8.8.4.4\", \"is_bogon\": false, \"is_vpn\": false}"),
+                "1.1.1.1", StubHttpClient.Route.ok("{\"ip\": \"1.1.1.1\", \"is_vpn\": false}")));
+
+        try (VPNDetection client = clientOn(http).cacheEnabled(false).build()) {
+            assertTrue(client.lookup("8.8.8.8").isBogon(), "lookup: the served true");
+            assertFalse(client.lookup("1.1.1.1").isBogon(), "lookup: an absent is_bogon is false");
+            LinkedHashMap<String, BatchResult> got = client.lookupBatch(List.of("8.8.8.8", "8.8.4.4"));
+            assertTrue(got.get("8.8.8.8").orElseThrow().isBogon(), "batch: the served true");
+            assertFalse(got.get("8.8.4.4").orElseThrow().isBogon(), "batch: the served false");
+        }
+    }
+
+    @Test
+    void aServedProviderNameIsATypedMemberOfEachDetail() {
+        StubHttpClient http = StubHttpClient.of(Map.of(
+                "9.9.9.9", StubHttpClient.Route.ok("{\"ip\": \"9.9.9.9\", \"is_vpn\": true,"
+                        + " \"vpn\": {\"provider\": \"mullvad\", \"provider_name\": \"Mullvad\"},"
+                        + " \"hosting\": {\"provider\": \"m247\", \"provider_name\": \"M247\"},"
+                        + " \"dcproxy\": {\"provider\": \"brightdata\", \"provider_name\": \"Bright Data\"}}")));
+
+        try (VPNDetection client = clientOn(http).build()) {
+            Result result = client.lookup("9.9.9.9");
+            assertEquals("Mullvad", result.vpn().orElseThrow().getProviderName());
+            assertEquals("M247", result.hosting().orElseThrow().getProviderName());
+            assertEquals("Bright Data", result.dcproxy().orElseThrow().getProviderName());
+        }
+    }
+
+    @Test
     void aCacheHitIssuesNoSecondRequest() {
         JsonNode c = batchCase("cache-hit-issues-no-second-request");
         StubHttpClient http = StubHttpClient.of(Map.of(
