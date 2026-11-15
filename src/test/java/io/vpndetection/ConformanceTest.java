@@ -95,6 +95,18 @@ class ConformanceTest {
                 assertEquals(expect ? List.of() : List.of(carries), batch.batchIps,
                         ip + ": the batch body");
             }
+
+            // Beside its plain form, the mapped form is the same address, sent once: a batch that
+            // deduplicated before unmapping sends it twice.
+            if (!expect) {
+                StubHttpClient both = StubHttpClient.of(routes);
+                try (VPNDetection client = clientOn(both).retries(0).cacheEnabled(false).build()) {
+                    LinkedHashMap<String, BatchResult> got = client.lookupBatch(List.of(carries, ip));
+                    assertEquals(List.of(carries, ip), new ArrayList<>(got.keySet()), ip + ": both keyed as passed");
+                    assertEquals(carries, got.get(ip).orElseThrow().ip(), ip + ": the mapped form's answer");
+                    assertEquals(List.of(carries), both.batchIps, ip + ": one address on the wire");
+                }
+            }
         }
     }
 
