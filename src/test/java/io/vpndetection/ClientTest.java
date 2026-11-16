@@ -413,7 +413,7 @@ class ClientTest {
                 "expires": null,
                 "allowed_cidrs": []
               },
-              "plan": {"key": "max", "tier": "max"},
+              "plan": {"key": "max", "name": "Max", "tier": "max"},
               "usage": {
                 "requests": 580,
                 "quota": 5000000,
@@ -457,6 +457,7 @@ class ClientTest {
         try (VPNDetection client = VPNDetection.builder().httpClient(http).build()) {
             Entitlement ent = client.myEntitlement();
             assertEquals("max", ent.getPlan().getKey());
+            assertEquals("Max", ent.getPlan().getName());
             assertEquals(EntitlementPlan.TierEnum.MAX, ent.getPlan().getTier());
             assertEquals(580L, ent.getUsage().getRequests());
             assertEquals(5000000L, ent.getUsage().getQuota());

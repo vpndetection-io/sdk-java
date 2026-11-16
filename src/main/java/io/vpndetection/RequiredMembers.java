@@ -81,7 +81,7 @@ final class RequiredMembers extends BeanDeserializerModifier {
             Map.entry(Asn.class, List.of("asn", "name", "domain", "type", "prefix")),
             Map.entry(Entitlement.class, List.of("org_id", "apikey", "plan", "usage")),
             Map.entry(EntitlementApikey.class, List.of("id", "allowed_cidrs")),
-            Map.entry(EntitlementPlan.class, List.of("key", "tier")),
+            Map.entry(EntitlementPlan.class, List.of("key", "name", "tier")),
             Map.entry(EntitlementUsage.class, List.of("requests", "quota", "window_start", "window_end")),
             Map.entry(DatabaseList.class, List.of("databases")),
             Map.entry(DownloadList.class, List.of("downloads")),

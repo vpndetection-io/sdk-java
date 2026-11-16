@@ -44,7 +44,8 @@ final class UnreadableAnswerTest {
         WHOLE.put("myip", "{\"ip\": \"203.0.114.7\", \"is_vpn\": true}");
         WHOLE.put("api/v1/entitlement", "{\"org_id\": \"6f1c2a52-6c83-4c8a-9a3e-2f3b8c1d0e9f\","
                 + " \"apikey\": {\"id\": \"0b6e2d8a-1c4f-4a5e-8d7b-3e2f1a0c9b8d\", \"expires\": null,"
-                + " \"allowed_cidrs\": []}, \"plan\": {\"key\": \"scale\", \"tier\": \"scale\"},"
+                + " \"allowed_cidrs\": []}, \"plan\": {\"key\": \"scale\","
+                + " \"name\": \"Scale\", \"tier\": \"scale\"},"
                 + " \"usage\": {\"requests\": 12, \"quota\": 100000, \"hard_limit\": null,"
                 + " \"window_start\": \"2026-10-01T00:00:00Z\", \"window_end\": \"2026-11-01T00:00:00Z\"}}");
         WHOLE.put("api/v1/database/list", "{\"databases\": [{\"base\": \"vpn_ip\", \"name\": \"VPN IP\","
@@ -105,7 +106,7 @@ final class UnreadableAnswerTest {
                 List.of("myip", "", "ip", "is_vpn"),
                 List.of("api/v1/entitlement", "", "org_id", "apikey", "plan", "usage"),
                 List.of("api/v1/entitlement", "/apikey", "id", "allowed_cidrs"),
-                List.of("api/v1/entitlement", "/plan", "key", "tier"),
+                List.of("api/v1/entitlement", "/plan", "key", "name", "tier"),
                 List.of("api/v1/entitlement", "/usage", "requests", "quota", "window_start", "window_end"),
                 List.of("api/v1/database/list", "/databases/0", "base", "name", "summary", "in_term", "standing",
                         "open", "versions"),

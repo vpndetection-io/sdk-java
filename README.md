@@ -69,12 +69,15 @@ Same answer `lookup` would give for that address, and the same cost against your
 
 ```java
 Entitlement acct = client.myEntitlement();
-System.out.println(acct.getPlan().getKey());         // max
+System.out.println(acct.getPlan().getName());        // Max, what to show
+System.out.println(acct.getPlan().getKey());         // max, what to compare against
 System.out.println(acct.getUsage().getRequests());  // 580
 System.out.println(acct.getUsage().getWindowEnd()); // when the allowance resets
 ```
 
 Usage counts against the anniversary of your subscription on a paid plan, not the calendar month and not the billing period, and against the UTC day on the free plan; it is the same number a lookup is gated on. `getHardLimit()` is `null` on an uncapped plan, which is not the same as zero.
+
+Show `getName()` and compare against `getKey()`: a plan's name can change, and its key never does.
 
 `myIpAsync()` and `myEntitlementAsync()` return a `CompletableFuture` of the same thing.
 
