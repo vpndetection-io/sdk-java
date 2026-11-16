@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vpndetection.internal.ApiClient;
 import io.vpndetection.model.Asn;
 import io.vpndetection.model.ClassDetail;
+import io.vpndetection.model.EntitlementPlan;
 import io.vpndetection.model.Location;
 import io.vpndetection.model.ProxyDetail;
 import io.vpndetection.model.PubproxyDetail;
@@ -107,6 +108,41 @@ class ConformanceTest {
                     assertEquals(List.of(carries), both.batchIps, ip + ": one address on the wire");
                 }
             }
+        }
+    }
+
+    // The plan reads its name, the thing a client shows, beside the key it compares. Only the plan
+    // name's case is read here: a tier, standing, license type, format and outcome are generated
+    // enums, which refuse a value they were not built with.
+    @Test
+    void anEntitlementReadsThePlanName() {
+        JsonNode c = null;
+        for (JsonNode each : data.get("vocabulary").get("cases")) {
+            if (each.get("name").asText().equals("entitlement-plan-name")) {
+                c = each;
+            }
+        }
+        assertTrue(c != null, "the corpus has no entitlement-plan-name case");
+        StubHttpClient http = StubHttpClient.of(Map.of(
+                "api/v1/entitlement", StubHttpClient.Route.ok(c.get("answer").toString())));
+        try (VPNDetection client = clientOn(http).build()) {
+            EntitlementPlan plan = client.myEntitlement().getPlan();
+
+            JsonNode expect = c.get("expect");
+            assertEquals(expect.get("plan.key").asText(), plan.getKey());
+            assertEquals(expect.get("plan.name").asText(), plan.getName());
+            assertEquals(expect.get("plan.tier").asText(), plan.getTier().getValue());
+        }
+    }
+
+    // An AS number is 32 bits unsigned, so the private-use range from 4200000000 is past an int.
+    @Test
+    void anAsNumberPastAnIntReads() {
+        StubHttpClient http = StubHttpClient.of(Map.of("45.83.91.1", StubHttpClient.Route.ok(
+                "{\"ip\": \"45.83.91.1\", \"is_vpn\": false, \"asn\": {\"asn\": 4200000001, \"name\": \"n\","
+                + " \"domain\": \"d\", \"type\": \"isp\", \"prefix\": \"45.83.91.0/24\"}}")));
+        try (VPNDetection client = clientOn(http).build()) {
+            assertEquals(4200000001L, client.lookup("45.83.91.1").asn().orElseThrow().getAsn());
         }
     }
 

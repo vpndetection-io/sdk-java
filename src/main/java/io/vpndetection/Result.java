@@ -76,7 +76,7 @@ public final class Result {
                         .currencySymbol("")
                         .flagEmoji("")
                         .flagUnicode(""))
-                .asn(new Asn().asn(0).name("").domain("").type("").prefix(""));
+                .asn(new Asn().asn(0L).name("").domain("").type("").prefix(""));
         return new Result(r, true);
     }
 
