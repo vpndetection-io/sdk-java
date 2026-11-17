@@ -50,39 +50,74 @@ public class EntitlementPlan {
   /**
    * The field tier, which decides how much of a lookup answer comes back; &#x60;free&#x60; is the free plan&#39;s. This list never gains a value: a new plan reports one of these. What each tier includes is documented on the lookup endpoint rather than repeated here, so there is one place it can be wrong. 
    */
-  public enum TierEnum {
-    FREE(String.valueOf("free")),
-    
-    STARTER(String.valueOf("starter")),
-    
-    SCALE(String.valueOf("scale")),
-    
-    MAX(String.valueOf("max"));
+  public static final class TierEnum {
+    /** {@code free} */
+    public static final TierEnum FREE = new TierEnum("free");
 
-    private String value;
+    /** {@code starter} */
+    public static final TierEnum STARTER = new TierEnum("starter");
 
-    TierEnum(String value) {
-      this.value = value;
+    /** {@code scale} */
+    public static final TierEnum SCALE = new TierEnum("scale");
+
+    /** {@code max} */
+    public static final TierEnum MAX = new TierEnum("max");
+
+    private static final java.util.List<TierEnum> KNOWN = java.util.List.of(FREE, STARTER, SCALE, MAX);
+
+    private final String value;
+
+    private TierEnum(String value) {
+      this.value = java.util.Objects.requireNonNull(value, "value");
     }
 
+    /**
+     * The value as the API spells it, a constant's when this release was built with it, and
+     * otherwise a new value that equals any other holding the same string.
+     */
+    @JsonCreator
+    public static TierEnum fromValue(String value) {
+      for (TierEnum known : KNOWN) {
+        if (known.value.equals(value)) {
+          return known;
+        }
+      }
+      return new TierEnum(value);
+    }
+
+    /** Every value this release was built with, in the spec's order. */
+    public static java.util.List<TierEnum> known() {
+      return KNOWN;
+    }
+
+    /** The value as the API spells it. */
     @JsonValue
     public String getValue() {
       return value;
     }
 
-    @Override
-    public String toString() {
-      return String.valueOf(value);
+    /**
+     * Whether this release was built with the value, one of {@link #known()}. A value the API
+     * added since reads as itself with this false, rather than failing the call.
+     */
+    public boolean isKnown() {
+      return KNOWN.contains(this);
     }
 
-    @JsonCreator
-    public static TierEnum fromValue(String value) {
-      for (TierEnum b : TierEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    @Override
+    public boolean equals(Object o) {
+      return this == o || (o instanceof TierEnum && value.equals(((TierEnum) o).value));
+    }
+
+    @Override
+    public int hashCode() {
+      return value.hashCode();
+    }
+
+    /** The value as the API spells it. */
+    @Override
+    public String toString() {
+      return value;
     }
   }
 

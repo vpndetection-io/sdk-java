@@ -111,27 +111,63 @@ class ConformanceTest {
         }
     }
 
-    // The plan reads its name, the thing a client shows, beside the key it compares. Only the plan
-    // name's case is read here: a tier, standing, license type, format and outcome are generated
-    // enums, which refuse a value they were not built with.
+    // Each vocabulary case serves a well-formed answer, and each `expect` path, wire names with a
+    // number indexing a list, reads the same value off the typed result: the plan's name beside its
+    // key, and a tier, standing, license type, format and outcome no published list holds (6.13.0
+    // failed the call on each of the five, measured 2026-11-17).
     @Test
-    void anEntitlementReadsThePlanName() {
+    void everyVocabularyCaseReadsAsServed() throws IOException {
+        Map<String, String> paths = Map.of(
+                "myEntitlement", "api/v1/entitlement",
+                "listDatabases", "api/v1/database/list",
+                "listDownloads", "api/v1/database/downloads");
+        int read = 0;
+        for (JsonNode c : data.get("vocabulary").get("cases")) {
+            String name = c.get("name").asText();
+            String call = c.get("call").asText();
+            StubHttpClient http = StubHttpClient.of(Map.of(
+                    paths.get(call), StubHttpClient.Route.ok(c.get("answer").toString())));
+            Object typed;
+            try (VPNDetection client = clientOn(http).apiKey("k").build()) {
+                typed = switch (call) {
+                    case "myEntitlement" -> client.myEntitlement();
+                    case "listDatabases" -> Map.of("databases", client.database().list());
+                    case "listDownloads" -> Map.of("downloads", client.database().downloads());
+                    default -> throw new AssertionError(name + ": no call " + call);
+                };
+            }
+            JsonNode wire = MAPPER.valueToTree(typed);
+            for (Map.Entry<String, JsonNode> expect : c.get("expect").properties()) {
+                JsonNode at = wire;
+                for (String step : expect.getKey().split("\\.")) {
+                    at = step.chars().allMatch(Character::isDigit) ? at.get(Integer.parseInt(step)) : at.get(step);
+                }
+                assertEquals(expect.getValue().toString(), at.toString(), name + ": " + expect.getKey());
+            }
+            read++;
+        }
+        assertEquals(6, read);
+    }
+
+    @Test
+    void anUnknownVocabularyValueIsNotAKnownOne() {
         JsonNode c = null;
         for (JsonNode each : data.get("vocabulary").get("cases")) {
-            if (each.get("name").asText().equals("entitlement-plan-name")) {
+            if (each.get("name").asText().equals("entitlement-tier-unknown")) {
                 c = each;
             }
         }
-        assertTrue(c != null, "the corpus has no entitlement-plan-name case");
+        assertTrue(c != null, "the corpus has no entitlement-tier-unknown case");
         StubHttpClient http = StubHttpClient.of(Map.of(
                 "api/v1/entitlement", StubHttpClient.Route.ok(c.get("answer").toString())));
         try (VPNDetection client = clientOn(http).build()) {
             EntitlementPlan plan = client.myEntitlement().getPlan();
 
-            JsonNode expect = c.get("expect");
-            assertEquals(expect.get("plan.key").asText(), plan.getKey());
-            assertEquals(expect.get("plan.name").asText(), plan.getName());
-            assertEquals(expect.get("plan.tier").asText(), plan.getTier().getValue());
+            assertEquals("data", plan.getTier().getValue());
+            assertFalse(plan.getTier().isKnown());
+            assertEquals(EntitlementPlan.TierEnum.fromValue("data"), plan.getTier());
+            assertFalse(EntitlementPlan.TierEnum.FREE.equals(plan.getTier()));
+            assertEquals("Data", plan.getName());
         }
     }
 

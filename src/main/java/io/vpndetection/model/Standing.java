@@ -28,38 +28,71 @@ import com.fasterxml.jackson.annotation.JsonValue;
 /**
  * Where your license for a database family stands today. &#x60;licensed&#x60; is a live grant, &#x60;expired&#x60; one whose term has ended, and &#x60;unlicensed&#x60; a database published but never bought. 
  */
-public enum Standing {
-  
-  EXPIRED("expired"),
-  
-  LICENSED("licensed"),
-  
-  UNLICENSED("unlicensed");
+public final class Standing {
+  /** {@code expired} */
+  public static final Standing EXPIRED = new Standing("expired");
 
-  private String value;
+  /** {@code licensed} */
+  public static final Standing LICENSED = new Standing("licensed");
 
-  Standing(String value) {
-    this.value = value;
+  /** {@code unlicensed} */
+  public static final Standing UNLICENSED = new Standing("unlicensed");
+
+  private static final java.util.List<Standing> KNOWN = java.util.List.of(EXPIRED, LICENSED, UNLICENSED);
+
+  private final String value;
+
+  private Standing(String value) {
+    this.value = java.util.Objects.requireNonNull(value, "value");
   }
 
+  /**
+   * The value as the API spells it, a constant's when this release was built with it, and
+   * otherwise a new value that equals any other holding the same string.
+   */
+  @JsonCreator
+  public static Standing fromValue(String value) {
+    for (Standing known : KNOWN) {
+      if (known.value.equals(value)) {
+        return known;
+      }
+    }
+    return new Standing(value);
+  }
+
+  /** Every value this release was built with, in the spec's order. */
+  public static java.util.List<Standing> known() {
+    return KNOWN;
+  }
+
+  /** The value as the API spells it. */
   @JsonValue
   public String getValue() {
     return value;
   }
 
-  @Override
-  public String toString() {
-    return String.valueOf(value);
+  /**
+   * Whether this release was built with the value, one of {@link #known()}. A value the API
+   * added since reads as itself with this false, rather than failing the call.
+   */
+  public boolean isKnown() {
+    return KNOWN.contains(this);
   }
 
-  @JsonCreator
-  public static Standing fromValue(String value) {
-    for (Standing b : Standing.values()) {
-      if (b.value.equals(value)) {
-        return b;
-      }
-    }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+  @Override
+  public boolean equals(Object o) {
+    return this == o || (o instanceof Standing && value.equals(((Standing) o).value));
+  }
+
+  @Override
+  public int hashCode() {
+    return value.hashCode();
+  }
+
+  /** The value as the API spells it. */
+  @Override
+  public String toString() {
+    return value;
   }
 
   /**
@@ -75,6 +108,5 @@ public enum Standing {
 
     return String.format(java.util.Locale.ROOT, "%s=%s", prefix, this.toString());
   }
-
 }
 

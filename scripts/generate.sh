@@ -70,6 +70,10 @@ done
 
 # The generated OAuth class is public by accident and nothing calls it: client.oauth() is the
 # surface. Deprecated for the next major to delete.
+# A generated enum fails the whole call on a value the API adds; each becomes a class that holds
+# any value as served (scripts/open_enums.py says how).
+python3 scripts/open_enums.py src/main/java/io/vpndetection/model
+
 AUTHORIZATION="src/main/java/io/vpndetection/api/AuthorizationWireApi.java"
 sed -i \
     -e 's|^@javax.annotation.Generated(|/** @deprecated Use {@link io.vpndetection.VPNDetection#oauth()}. */\n&|' \

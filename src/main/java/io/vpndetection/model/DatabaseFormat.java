@@ -28,36 +28,68 @@ import com.fasterxml.jackson.annotation.JsonValue;
 /**
  * A file format a database version is published in.
  */
-public enum DatabaseFormat {
-  
-  CSVGZ("csvgz"),
-  
-  MMDB("mmdb");
+public final class DatabaseFormat {
+  /** {@code csvgz} */
+  public static final DatabaseFormat CSVGZ = new DatabaseFormat("csvgz");
 
-  private String value;
+  /** {@code mmdb} */
+  public static final DatabaseFormat MMDB = new DatabaseFormat("mmdb");
 
-  DatabaseFormat(String value) {
-    this.value = value;
+  private static final java.util.List<DatabaseFormat> KNOWN = java.util.List.of(CSVGZ, MMDB);
+
+  private final String value;
+
+  private DatabaseFormat(String value) {
+    this.value = java.util.Objects.requireNonNull(value, "value");
   }
 
+  /**
+   * The value as the API spells it, a constant's when this release was built with it, and
+   * otherwise a new value that equals any other holding the same string.
+   */
+  @JsonCreator
+  public static DatabaseFormat fromValue(String value) {
+    for (DatabaseFormat known : KNOWN) {
+      if (known.value.equals(value)) {
+        return known;
+      }
+    }
+    return new DatabaseFormat(value);
+  }
+
+  /** Every value this release was built with, in the spec's order. */
+  public static java.util.List<DatabaseFormat> known() {
+    return KNOWN;
+  }
+
+  /** The value as the API spells it. */
   @JsonValue
   public String getValue() {
     return value;
   }
 
-  @Override
-  public String toString() {
-    return String.valueOf(value);
+  /**
+   * Whether this release was built with the value, one of {@link #known()}. A value the API
+   * added since reads as itself with this false, rather than failing the call.
+   */
+  public boolean isKnown() {
+    return KNOWN.contains(this);
   }
 
-  @JsonCreator
-  public static DatabaseFormat fromValue(String value) {
-    for (DatabaseFormat b : DatabaseFormat.values()) {
-      if (b.value.equals(value)) {
-        return b;
-      }
-    }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+  @Override
+  public boolean equals(Object o) {
+    return this == o || (o instanceof DatabaseFormat && value.equals(((DatabaseFormat) o).value));
+  }
+
+  @Override
+  public int hashCode() {
+    return value.hashCode();
+  }
+
+  /** The value as the API spells it. */
+  @Override
+  public String toString() {
+    return value;
   }
 
   /**
@@ -73,6 +105,5 @@ public enum DatabaseFormat {
 
     return String.format(java.util.Locale.ROOT, "%s=%s", prefix, this.toString());
   }
-
 }
 

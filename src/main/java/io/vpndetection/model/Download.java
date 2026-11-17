@@ -59,43 +59,80 @@ public class Download {
   /**
    * Gets or Sets outcome
    */
-  public enum OutcomeEnum {
-    OK(String.valueOf("ok")),
-    
-    UNAUTHORIZED(String.valueOf("unauthorized")),
-    
-    DENIED(String.valueOf("denied")),
-    
-    EXPIRED(String.valueOf("expired")),
-    
-    UNKNOWN(String.valueOf("unknown")),
-    
-    UNAVAILABLE(String.valueOf("unavailable"));
+  public static final class OutcomeEnum {
+    /** {@code ok} */
+    public static final OutcomeEnum OK = new OutcomeEnum("ok");
 
-    private String value;
+    /** {@code unauthorized} */
+    public static final OutcomeEnum UNAUTHORIZED = new OutcomeEnum("unauthorized");
 
-    OutcomeEnum(String value) {
-      this.value = value;
+    /** {@code denied} */
+    public static final OutcomeEnum DENIED = new OutcomeEnum("denied");
+
+    /** {@code expired} */
+    public static final OutcomeEnum EXPIRED = new OutcomeEnum("expired");
+
+    /** {@code unknown} */
+    public static final OutcomeEnum UNKNOWN = new OutcomeEnum("unknown");
+
+    /** {@code unavailable} */
+    public static final OutcomeEnum UNAVAILABLE = new OutcomeEnum("unavailable");
+
+    private static final java.util.List<OutcomeEnum> KNOWN = java.util.List.of(OK, UNAUTHORIZED, DENIED, EXPIRED, UNKNOWN, UNAVAILABLE);
+
+    private final String value;
+
+    private OutcomeEnum(String value) {
+      this.value = java.util.Objects.requireNonNull(value, "value");
     }
 
+    /**
+     * The value as the API spells it, a constant's when this release was built with it, and
+     * otherwise a new value that equals any other holding the same string.
+     */
+    @JsonCreator
+    public static OutcomeEnum fromValue(String value) {
+      for (OutcomeEnum known : KNOWN) {
+        if (known.value.equals(value)) {
+          return known;
+        }
+      }
+      return new OutcomeEnum(value);
+    }
+
+    /** Every value this release was built with, in the spec's order. */
+    public static java.util.List<OutcomeEnum> known() {
+      return KNOWN;
+    }
+
+    /** The value as the API spells it. */
     @JsonValue
     public String getValue() {
       return value;
     }
 
-    @Override
-    public String toString() {
-      return String.valueOf(value);
+    /**
+     * Whether this release was built with the value, one of {@link #known()}. A value the API
+     * added since reads as itself with this false, rather than failing the call.
+     */
+    public boolean isKnown() {
+      return KNOWN.contains(this);
     }
 
-    @JsonCreator
-    public static OutcomeEnum fromValue(String value) {
-      for (OutcomeEnum b : OutcomeEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    @Override
+    public boolean equals(Object o) {
+      return this == o || (o instanceof OutcomeEnum && value.equals(((OutcomeEnum) o).value));
+    }
+
+    @Override
+    public int hashCode() {
+      return value.hashCode();
+    }
+
+    /** The value as the API spells it. */
+    @Override
+    public String toString() {
+      return value;
     }
   }
 

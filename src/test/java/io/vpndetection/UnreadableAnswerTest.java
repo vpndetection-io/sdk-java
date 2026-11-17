@@ -1,6 +1,9 @@
 package io.vpndetection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -169,17 +172,27 @@ final class UnreadableAnswerTest {
     }
 
     /**
-     * A null inside a list or map, a value outside an enum and a sample row that is no object, each
-     * in an otherwise whole answer. Through 6.9.1 each came back as an answer, a {@code license_type}
-     * outside its enum as null, which reads as no license at all.
+     * A null inside a list or map, a vocabulary that is no string and a sample row that is no object,
+     * each in an otherwise whole answer. Through 6.9.1 each came back as an answer, a
+     * {@code license_type} outside its enum as null, which reads as no license at all; from 7.0.0 a
+     * vocabulary is any string, as served.
      */
     @Test
-    void aNullEntryAValueOutsideItsEnumOrARowThatIsNoObjectIsARetriedServerError() throws IOException {
+    void aNullEntryAVocabularyThatIsNoStringOrARowThatIsNoObjectIsARetriedServerError() throws IOException {
         List<List<Object>> cases = List.of(
                 List.of("8.8.8.8", "", "pubproxy", Map.of("protocols", Arrays.asList((Object) null))),
                 List.of("api/v1/database/list", "/databases/0/versions/0", "sample_formats", Arrays.asList((Object) null)),
-                List.of("api/v1/database/list", "/databases/0", "license_type", "perpetual"),
+                List.of("api/v1/database/list", "/databases/0/versions/0", "sample_formats", List.of(0)),
+                List.of("api/v1/database/list", "/databases/0/versions/0/formats/0", "format", 0),
+                List.of("api/v1/database/list", "/databases/0/versions/0/formats/0", "format", List.of("mmdb")),
                 List.of("api/v1/database/list", "/databases/0", "license_type", 1),
+                List.of("api/v1/database/list", "/databases/0", "license_type", true),
+                List.of("api/v1/database/list", "/databases/0", "standing", 0),
+                List.of("api/v1/database/list", "/databases/0", "standing", Map.of("value", "licensed")),
+                List.of("api/v1/database/downloads", "/downloads/0", "outcome", 1),
+                List.of("api/v1/database/downloads", "/downloads/0", "outcome", List.of("ok")),
+                List.of("api/v1/entitlement", "/plan", "tier", 3),
+                List.of("api/v1/entitlement", "/plan", "tier", false),
                 List.of("api/v1/database/metadata", "", "sample", Map.of("mmdb", Arrays.asList((Object) null))),
                 List.of("api/v1/database/metadata", "", "sample", Map.of("mmdb", List.of(List.of("10.0.0.0/8")))),
                 List.of("api/v1/database/metadata", "", "sample", Map.of("mmdb", List.of("10.0.0.0/8"))),
@@ -202,6 +215,69 @@ final class UnreadableAnswerTest {
             assertEquals(1, client.database().metadata("vpn_ip_extended_v1").getSample().get("mmdb").size(),
                     "a null inside a row is the row's own");
         }
+    }
+
+    /**
+     * 6.13.0 read a vocabulary as a closed enum, so a value the API added failed the call. Each
+     * string comes back as served, equal to no constant unless it is one exactly.
+     */
+    @Test
+    void aVocabularyValueReadsAsServed() throws IOException {
+        for (String value : List.of("suspended", "LICENSED", "Licensed", "0", "")) {
+            JsonNode list = MAPPER.readTree(WHOLE.get("api/v1/database/list"));
+            ObjectNode family = (ObjectNode) list.at("/databases/0");
+            family.put("standing", value);
+            family.put("license_type", value);
+            ((ObjectNode) list.at("/databases/0/versions/0/formats/0")).put("format", value);
+            ((ObjectNode) list.at("/databases/0/versions/0")).set("sample_formats", MAPPER.valueToTree(List.of(value, "csvgz")));
+            JsonNode downloads = MAPPER.readTree(WHOLE.get("api/v1/database/downloads"));
+            ((ObjectNode) downloads.at("/downloads/0")).put("outcome", value);
+            JsonNode entitlement = MAPPER.readTree(WHOLE.get("api/v1/entitlement"));
+            ((ObjectNode) entitlement.at("/plan")).put("tier", value);
+            StubHttpClient http = StubHttpClient.of(Map.of(
+                    "api/v1/database/list", StubHttpClient.Route.ok(MAPPER.writeValueAsString(list)),
+                    "api/v1/database/downloads", StubHttpClient.Route.ok(MAPPER.writeValueAsString(downloads)),
+                    "api/v1/entitlement", StubHttpClient.Route.ok(MAPPER.writeValueAsString(entitlement))));
+            try (VPNDetection client = clientOn(http).build()) {
+                io.vpndetection.model.Database database = client.database().list().get(0);
+                io.vpndetection.model.Download attempt = client.database().downloads().get(0);
+                io.vpndetection.model.EntitlementPlan plan = client.myEntitlement().getPlan();
+
+                assertEquals(value, database.getStanding().getValue());
+                assertFalse(database.getStanding().isKnown());
+                assertEquals(io.vpndetection.model.Standing.fromValue(value), database.getStanding());
+                assertNotEquals(io.vpndetection.model.Standing.LICENSED, database.getStanding());
+                assertEquals(value, database.getLicenseType().getValue());
+                assertFalse(database.getLicenseType().isKnown());
+                assertEquals(value, database.getVersions().get(0).getFormats().get(0).getFormat().getValue());
+                assertEquals(List.of(io.vpndetection.model.DatabaseFormat.fromValue(value), io.vpndetection.model.DatabaseFormat.CSVGZ),
+                        database.getVersions().get(0).getSampleFormats());
+                assertEquals(value, attempt.getOutcome().getValue());
+                assertFalse(attempt.getOutcome().isKnown());
+                assertEquals(value, plan.getTier().getValue());
+                assertFalse(plan.getTier().isKnown());
+            }
+        }
+    }
+
+    @Test
+    void aVocabularyComparesByValueAndListsWhatThisReleaseKnows() {
+        assertSame(io.vpndetection.model.Standing.LICENSED, io.vpndetection.model.Standing.fromValue("licensed"));
+        assertTrue(io.vpndetection.model.Standing.fromValue("licensed").isKnown());
+        assertNotEquals(io.vpndetection.model.Standing.LICENSED, io.vpndetection.model.Standing.fromValue("LICENSED"));
+        assertEquals(io.vpndetection.model.Standing.fromValue("x").hashCode(), io.vpndetection.model.Standing.fromValue("x").hashCode());
+        assertEquals("licensed", io.vpndetection.model.Standing.LICENSED.toString());
+        assertEquals(List.of("expired", "licensed", "unlicensed"),
+                io.vpndetection.model.Standing.known().stream().map(io.vpndetection.model.Standing::getValue).toList());
+        assertEquals(List.of("csvgz", "mmdb"),
+                io.vpndetection.model.DatabaseFormat.known().stream().map(io.vpndetection.model.DatabaseFormat::getValue).toList());
+        assertEquals(List.of("evaluation", "standard", "redistribute"),
+                io.vpndetection.model.Database.LicenseTypeEnum.known().stream().map(io.vpndetection.model.Database.LicenseTypeEnum::getValue).toList());
+        assertEquals(List.of("ok", "unauthorized", "denied", "expired", "unknown", "unavailable"),
+                io.vpndetection.model.Download.OutcomeEnum.known().stream().map(io.vpndetection.model.Download.OutcomeEnum::getValue).toList());
+        assertEquals(List.of("free", "starter", "scale", "max"),
+                io.vpndetection.model.EntitlementPlan.TierEnum.known().stream().map(io.vpndetection.model.EntitlementPlan.TierEnum::getValue).toList());
+        assertThrows(NullPointerException.class, () -> io.vpndetection.model.Standing.fromValue(null));
     }
 
     /**
@@ -399,7 +475,7 @@ final class UnreadableAnswerTest {
             for (java.lang.reflect.Type argument : parameterized.getActualTypeArguments()) {
                 models(argument, into);
             }
-        } else if (type instanceof Class<?> model && !model.isEnum()
+        } else if (type instanceof Class<?> model && !RequiredMembers.isVocabulary(model)
                 && model.getPackageName().equals("io.vpndetection.model")) {
             into.add(model);
         }

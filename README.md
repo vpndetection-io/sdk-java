@@ -69,7 +69,7 @@ Same answer `lookup` would give for that address, and the same cost against your
 
 ```java
 Entitlement acct = client.myEntitlement();
-System.out.println(acct.getPlan().getName());        // Max, what to show (from 6.14.0)
+System.out.println(acct.getPlan().getName());        // Max, what to show (from 7.0.0)
 System.out.println(acct.getPlan().getKey());         // max, what to compare against
 System.out.println(acct.getUsage().getRequests());  // 580
 System.out.println(acct.getUsage().getWindowEnd()); // when the allowance resets
@@ -77,7 +77,7 @@ System.out.println(acct.getUsage().getWindowEnd()); // when the allowance resets
 
 Usage counts against the anniversary of your subscription on a paid plan, not the calendar month and not the billing period, and against the UTC day on the free plan; it is the same number a lookup is gated on. `getHardLimit()` is `null` on an uncapped plan, which is not the same as zero.
 
-From 6.14.0, show `getName()` and compare against `getKey()`: a plan's name can change, and its key never does.
+From 7.0.0, show `getName()` and compare against `getKey()`: a plan's name can change, and its key never does.
 
 `myIpAsync()` and `myEntitlementAsync()` return a `CompletableFuture` of the same thing.
 
@@ -268,13 +268,26 @@ Each redirect URI must be https on a public host name, or http on a loopback add
 
 ### Absent is not false
 
-Unlimited leaves out `isHosting()`, `isCdn()` and the four proxy flags, and of the detail behind each flag it answers only Tor's and relay's; from 6.14.0, a free-plan key's answer carries `trialExpired()`, true once its daily trial is spent. Every member but `ip` and `isVpn` is an `Optional`, where empty means "not in your plan" rather than "checked, and no".
+Unlimited leaves out `isHosting()`, `isCdn()` and the four proxy flags, and of the detail behind each flag it answers only Tor's and relay's; from 7.0.0, a free-plan key's answer carries `trialExpired()`, true once its daily trial is spent. Every member but `ip` and `isVpn` is an `Optional`, where empty means "not in your plan" rather than "checked, and no".
 
 ```java
 result.isHosting().orElse(false);   // when you only want the flag
 result.isHosting().isEmpty();       // on Unlimited: not in your plan
-result.trialExpired().orElse(false); // a free-plan key's daily trial is spent (from 6.14.0)
+result.trialExpired().orElse(false); // a free-plan key's daily trial is spent (from 7.0.0)
 ```
+
+### A value the API adds
+
+From 7.0.0, a plan's tier, a database's standing and license type, a format and a download's outcome are each a class with a constant per value this release knows. A value the API adds later reads as itself rather than failing the call, so compare with `equals` and keep a fallback:
+
+```java
+if (Standing.LICENSED.equals(database.getStanding())) { /* download it */ }
+database.getStanding().getValue();  // "licensed", as the API spells it
+database.getStanding().isKnown();   // false for a value added after this release
+Standing.known();                   // every value this release knows
+```
+
+A known value is its constant, so `==` against one still holds, but a `switch` on these no longer compiles.
 
 ## Other Libraries
 

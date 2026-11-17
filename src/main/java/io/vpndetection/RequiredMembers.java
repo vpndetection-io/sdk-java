@@ -1,5 +1,6 @@
 package io.vpndetection;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
@@ -38,14 +39,11 @@ import io.vpndetection.model.LookupResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Refuses an answer without a member it must carry, or with a member of the wrong type, or holding
@@ -123,49 +121,57 @@ final class RequiredMembers extends BeanDeserializerModifier {
             return new Batch(deserializer);
         }
         Class<?> model = description.getBeanClass();
-        if (!model.getPackageName().equals(Database.class.getPackageName())) {
+        if (!model.getPackageName().equals(Database.class.getPackageName()) || isVocabulary(model)) {
             return deserializer;
         }
-        // A map's values are checked like a list's entries, and an enum's value against its
-        // constants; a model's members are its own deserializer's to check.
+        // A map's values are checked like a list's entries; a model's members are its own
+        // deserializer's to check. A vocabulary (a tier, a standing, a format) is any string, as
+        // served, and the textual coercions configure() turns off refuse any other JSON type.
         Set<String> lists = new HashSet<>();
         Set<String> maps = new HashSet<>();
-        Map<String, Set<String>> enums = new HashMap<>();
         for (BeanPropertyDefinition property : description.findProperties()) {
             Class<?> type = property.getRawPrimaryType();
             if (Map.class.isAssignableFrom(type)) {
                 maps.add(property.getName());
             } else if (Collection.class.isAssignableFrom(type)) {
                 lists.add(property.getName());
-            } else if (type.isEnum()) {
-                enums.put(property.getName(), Arrays.stream(type.getEnumConstants())
-                        .map(String::valueOf).collect(Collectors.toUnmodifiableSet()));
             }
         }
         return new Requiring(deserializer, MEMBERS.getOrDefault(model, List.of()), Set.copyOf(lists),
-                Set.copyOf(maps), Map.copyOf(enums), OBJECT_ROWS.get(model));
+                Set.copyOf(maps), OBJECT_ROWS.get(model));
+    }
+
+    /**
+     * A generated vocabulary (a tier, a standing, a format) is read from a string, not an object: the
+     * class {@code scripts/open_enums.py} makes of an enum, written as its {@code @JsonValue}.
+     */
+    static boolean isVocabulary(Class<?> type) {
+        for (java.lang.reflect.Method method : type.getMethods()) {
+            if (method.isAnnotationPresent(JsonValue.class)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static final class Requiring extends DelegatingDeserializer {
         private final List<String> members;
         private final Set<String> lists;
         private final Set<String> maps;
-        private final Map<String, Set<String>> enums;
         private final String objectRows;
 
         Requiring(JsonDeserializer<?> delegate, List<String> members, Set<String> lists, Set<String> maps,
-                Map<String, Set<String>> enums, String objectRows) {
+                String objectRows) {
             super(delegate);
             this.members = members;
             this.lists = lists;
             this.maps = maps;
-            this.enums = enums;
             this.objectRows = objectRows;
         }
 
         @Override
         protected JsonDeserializer<?> newDelegatingInstance(JsonDeserializer<?> delegate) {
-            return new Requiring(delegate, members, lists, maps, enums, objectRows);
+            return new Requiring(delegate, members, lists, maps, objectRows);
         }
 
         @Override
@@ -185,10 +191,6 @@ final class RequiredMembers extends BeanDeserializerModifier {
                 JsonNode value = member.getValue();
                 if ((lists.contains(name) || maps.contains(name)) && holdsNull(value, maps.contains(name))) {
                     return context.reportInputMismatch(this, "the answer's %s holds a null", name);
-                }
-                Set<String> constants = enums.get(name);
-                if (constants != null && !value.isNull() && !(value.isTextual() && constants.contains(value.asText()))) {
-                    return context.reportInputMismatch(this, "the answer's %s is not one of %s", name, constants);
                 }
                 if (name.equals(objectRows) && !rowsAreObjects(value)) {
                     return context.reportInputMismatch(this, "the answer's %s holds a row that is not an object", name);
