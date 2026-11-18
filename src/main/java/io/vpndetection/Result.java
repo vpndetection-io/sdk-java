@@ -198,6 +198,15 @@ public final class Result {
     }
 
     /**
+     * On answers to a key on a paid plan only: {@code false} while the answer has every field,
+     * {@code true} once its organization's overage cap is reached and the answer has Unlimited's.
+     * Lookups answered past the cap are not billed.
+     */
+    public Optional<Boolean> capReached() {
+        return Optional.ofNullable(raw.getCapReached());
+    }
+
+    /**
      * The response exactly as it came off the wire, with its original names.
      *
      * <p>For a bogon this is synthesized locally rather than served.

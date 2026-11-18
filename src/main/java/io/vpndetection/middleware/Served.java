@@ -50,6 +50,7 @@ final class Served {
         putDetail(out, "location", result.location());
         putDetail(out, "asn", result.asn());
         put(out, "trial_expired", result.trialExpired());
+        put(out, "cap_reached", result.capReached());
         return out;
     }
 

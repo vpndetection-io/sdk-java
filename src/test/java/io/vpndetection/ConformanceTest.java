@@ -631,6 +631,8 @@ class ConformanceTest {
                 return r.isPubproxy();
             case "trial_expired":
                 return r.trialExpired();
+            case "cap_reached":
+                return r.capReached();
             case "vpn":
                 return r.vpn();
             case "hosting":

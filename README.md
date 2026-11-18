@@ -268,12 +268,13 @@ Each redirect URI must be https on a public host name, or http on a loopback add
 
 ### Absent is not false
 
-Unlimited leaves out `isHosting()`, `isCdn()` and the four proxy flags, and of the detail behind each flag it answers only Tor's and relay's; from 7.0.0, a free-plan key's answer carries `trialExpired()`, true once its daily trial is spent. Every member but `ip` and `isVpn` is an `Optional`, where empty means "not in your plan" rather than "checked, and no".
+Unlimited leaves out `isHosting()`, `isCdn()` and the four proxy flags, and of the detail behind each flag it answers only Tor's and relay's; from 7.0.0, a free-plan key's answer carries `trialExpired()`, true once its daily trial is spent, and a paid key's carries `capReached()`, true once its organization's overage cap is reached and the answer has Unlimited's. Every member but `ip` and `isVpn` is an `Optional`, where empty means "not in your plan" rather than "checked, and no".
 
 ```java
 result.isHosting().orElse(false);   // when you only want the flag
 result.isHosting().isEmpty();       // on Unlimited: not in your plan
 result.trialExpired().orElse(false); // a free-plan key's daily trial is spent (from 7.0.0)
+result.capReached().orElse(false);   // a paid key past its overage cap (from 7.0.0)
 ```
 
 ### A value the API adds
