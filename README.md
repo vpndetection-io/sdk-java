@@ -235,7 +235,7 @@ if (token.getApikey() == null) {
 VPNDetection keyed = VPNDetection.builder().apiKey(token.getApikey()).build();
 ```
 
-A denied sign-in throws `OauthAccessDeniedException` and a code that ran out `OauthExpiredTokenException`, and client IDs are issued on request from support@vpndetection.io. `client.oauth().revoke("your-client-id", token.getRefreshToken())` signs the machine out again.
+A denied sign-in throws `OauthAccessDeniedException` and a code that ran out `OauthExpiredTokenException`. `client.oauth().revoke("your-client-id", token.getRefreshToken())` signs the machine out again. Only a client we registered, such as our CLI, can use the device flow: an app of your own signs people in with the authorization code flow below.
 
 ### Sign in with OAuth (authorization code)
 
