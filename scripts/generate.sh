@@ -84,6 +84,16 @@ if [ "$(grep -c -e '^/\*\* @deprecated' -e '^@Deprecated(forRemoval = true)$' "$
     exit 1
 fi
 
+# The generator starts every list member at an empty list, so a lookup answer without `web` (a
+# plan that leaves it out) read as `[]`, the answer under a false is_web, and absent-versus-false
+# was lost. It starts null instead; a detail object's lists stay as generated, since the detail
+# itself is what a plan leaves out.
+LOOKUP="src/main/java/io/vpndetection/model/LookupResponse.java"
+sed -i 's|^  private List<WebDetail> web = new ArrayList<>();$|  private List<WebDetail> web;|' "$LOOKUP"
+if ! grep -q '^  private List<WebDetail> web;$' "$LOOKUP" ; then
+    echo "could not start ${LOOKUP}'s web as null: its declaration changed shape" >&2
+    exit 1
+fi
 rm -rf .gen
 echo "regenerated src/main/java/io/vpndetection/{internal,api,model} from spec/openapi.yaml"
 grep -m1 '^  version:' spec/openapi.yaml

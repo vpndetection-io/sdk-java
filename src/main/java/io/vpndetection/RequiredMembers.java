@@ -17,9 +17,11 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.LogicalType;
 
+import io.vpndetection.model.AbuseContact;
 import io.vpndetection.model.Asn;
 import io.vpndetection.model.BatchLookupError;
 import io.vpndetection.model.BatchLookupResponse;
+import io.vpndetection.model.Company;
 import io.vpndetection.model.Database;
 import io.vpndetection.model.DatabaseChecksumsResponse;
 import io.vpndetection.model.DatabaseFormatSize;
@@ -36,6 +38,7 @@ import io.vpndetection.model.EntitlementPlan;
 import io.vpndetection.model.EntitlementUsage;
 import io.vpndetection.model.Location;
 import io.vpndetection.model.LookupResponse;
+import io.vpndetection.model.WebDetail;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -77,6 +80,11 @@ final class RequiredMembers extends BeanDeserializerModifier {
             Map.entry(Location.class, List.of("continent", "continent_name", "country", "country_name", "timezone",
                     "currency_code", "currency_name", "currency_symbol", "flag_emoji", "flag_unicode")),
             Map.entry(Asn.class, List.of("asn", "name", "domain", "type", "prefix")),
+            Map.entry(WebDetail.class, List.of("port", "tls_ok", "session_ok", "status_code", "server", "location",
+                    "title", "cert_subject_cn", "cert_subject_o", "cert_issuer_dn", "cert_browser_trusted",
+                    "tls_version", "first_seen", "last_seen")),
+            Map.entry(Company.class, List.of("name", "domain")),
+            Map.entry(AbuseContact.class, List.of("email")),
             Map.entry(Entitlement.class, List.of("org_id", "apikey", "plan", "usage")),
             Map.entry(EntitlementApikey.class, List.of("id", "allowed_cidrs")),
             Map.entry(EntitlementPlan.class, List.of("key", "name", "tier")),

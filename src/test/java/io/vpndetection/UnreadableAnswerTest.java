@@ -411,7 +411,10 @@ final class UnreadableAnswerTest {
         Set<Class<?>> envelopes = Set.of(io.vpndetection.model.DatabaseList.class,
                 io.vpndetection.model.DownloadList.class, io.vpndetection.model.DatabaseChecksumsResponse.class);
         Set<Class<?>> unchecked = Set.of(io.vpndetection.model.VpnDetail.class, io.vpndetection.model.ClassDetail.class,
-                io.vpndetection.model.ProxyDetail.class, io.vpndetection.model.PubproxyDetail.class);
+                io.vpndetection.model.ProxyDetail.class, io.vpndetection.model.PubproxyDetail.class,
+                io.vpndetection.model.CarrierDetail.class, io.vpndetection.model.SatelliteDetail.class,
+                io.vpndetection.model.SshDetail.class, io.vpndetection.model.SmtpDetail.class,
+                io.vpndetection.model.DnsResolverDetail.class, io.vpndetection.model.BitTorrentDetail.class);
         Set<Class<?>> reached = new LinkedHashSet<>();
         List<Class<?>> pending = new ArrayList<>(envelopes);
         pending.add(io.vpndetection.model.DatabaseMetadata.class);
