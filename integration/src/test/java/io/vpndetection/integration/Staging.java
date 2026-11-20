@@ -141,6 +141,7 @@ final class Staging {
             assertTrue(raw.containsKey("is_" + name), tier + ": " + name + " is served without its flag");
             assertDetail(tier, name, spec, raw);
         });
+        assertWebAndObjects(tier, raw);
     }
 
     @SuppressWarnings("unchecked")
@@ -184,7 +185,65 @@ final class Staging {
         map.put("resproxy", new Detail(PROXY_KEYS, List.of()));
         map.put("dcproxy", new Detail(PROXY_KEYS, List.of()));
         map.put("mobproxy", new Detail(PROXY_KEYS, List.of()));
+        map.put("carrier", new Detail(List.of("name", "mcc", "mnc", "country", "confidence"), List.of()));
+        map.put("satellite", new Detail(
+                List.of("provider", "provider_name", "orbit", "segment", "country", "asn", "confidence"), List.of()));
+        map.put("ssh", new Detail(
+                List.of("port", "banner", "host_key_fp", "session_ok", "first_seen", "last_seen"), List.of()));
+        map.put("smtp", new Detail(List.of("port", "banner", "session_ok", "first_seen", "last_seen"), List.of()));
+        map.put("dns_resolver", new Detail(
+                List.of("port", "recursion_available", "rcode", "answer_correct", "first_seen", "last_seen"),
+                List.of()));
+        map.put("bittorrent", new Detail(
+                List.of("verified", "id_matches_ip", "first_seen", "last_seen", "last_reachable", "days_seen",
+                        "num_ports", "peak_num_ports", "indexer", "clients"),
+                List.of()));
         return Collections.unmodifiableMap(map);
+    }
+
+    /**
+     * The web detail is a LIST, a row per port that answered and {@code []} when {@code is_web} is
+     * false, so it is checked apart from the objects above. Every row carries every key.
+     */
+    static final List<String> WEB_KEYS = List.of("port", "tls_ok", "session_ok", "status_code", "server",
+            "location", "title", "cert_subject_cn", "cert_subject_o", "cert_issuer_dn", "cert_browser_trusted",
+            "tls_version", "first_seen", "last_seen");
+
+    /** Objects with no flag above them: a paid answer's company and abuse contact. */
+    static final Map<String, Detail> OBJECTS = Map.of(
+            "company", new Detail(List.of("name", "domain"), List.of("type", "country")),
+            "abuse", new Detail(List.of("email"),
+                    List.of("name", "phone", "address", "country", "network", "validated", "unvalidated_since")));
+
+    @SuppressWarnings("unchecked")
+    private static void assertWebAndObjects(String tier, Map<String, Object> raw) {
+        if (raw.containsKey("web")) {
+            assertInstanceOf(Boolean.class, raw.get("is_web"), tier + ": web is served without is_web");
+            assertInstanceOf(List.class, raw.get("web"), tier + ": web must be a list when present");
+            List<Object> rows = (List<Object>) raw.get("web");
+            assertEquals(raw.get("is_web"), !rows.isEmpty(), tier + ": web is empty exactly when is_web is false");
+            for (Object row : rows) {
+                assertKeys(tier, "web", new Detail(WEB_KEYS, List.of()), row);
+            }
+        }
+        OBJECTS.forEach((name, spec) -> {
+            if (raw.containsKey(name)) {
+                assertKeys(tier, name, spec, raw.get(name));
+            }
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void assertKeys(String tier, String name, Detail spec, Object object) {
+        assertInstanceOf(Map.class, object, tier + ": " + name + " must be an object");
+        Map<String, Object> fields = (Map<String, Object>) object;
+        for (String key : spec.required()) {
+            assertTrue(fields.containsKey(key), tier + ": " + name + " carries no " + key);
+        }
+        for (String key : fields.keySet()) {
+            assertTrue(spec.required().contains(key) || spec.optional().contains(key),
+                    tier + ": " + name + "." + key + " is not a documented key of this object");
+        }
     }
 
     private static Map<String, Function<Result, Optional<?>>> accessors() {

@@ -95,9 +95,9 @@ class LookupTest {
 
         Boolean expired = assertInstanceOf(Boolean.class, raw.get("trial_expired"),
                 "a free-plan key answers trial_expired");
-        // The organization's first 100 lookups of the UTC day are answered in full, and the rest
-        // as Unlimited's: which half a run sees depends on the day.
-        assertEquals(!expired, raw.containsKey("is_hosting"), "is_hosting is served exactly while the day lasts");
+        // The organization's answers are in full while its trial of every field lasts, and
+        // Unlimited's after: which half a run sees depends on when it runs.
+        assertEquals(!expired, raw.containsKey("is_hosting"), "is_hosting is served exactly while the trial lasts");
     }
 
     @Test
