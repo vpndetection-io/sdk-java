@@ -58,6 +58,40 @@ class MiddlewareConformanceTest {
         }
     }
 
+    // A condition is written in the shape of a result, so it reaches every member an answer serves:
+    // each new flag and detail, the company, abuse contact and hostname, matched and never reported
+    // missing.
+    @Test
+    void aConditionReachesEveryMemberAnAnswerServes() throws IOException {
+        String[][] rows = {
+            {"paid-carrier-ssh-smtp-bittorrent", "{\"is_carrier\":true}"},
+            {"paid-carrier-ssh-smtp-bittorrent", "{\"carrier\":{\"mcc\":\"310\"}}"},
+            {"paid-carrier-ssh-smtp-bittorrent", "{\"ssh\":{\"port\":{\"gte\":22}}}"},
+            {"paid-carrier-ssh-smtp-bittorrent", "{\"is_smtp\":true,\"smtp\":{\"port\":25}}"},
+            {"paid-carrier-ssh-smtp-bittorrent", "{\"bittorrent\":{\"verified\":true}}"},
+            {"paid-carrier-ssh-smtp-bittorrent", "{\"company\":{\"name\":\"t-mobile usa, inc.\"}}"},
+            {"paid-carrier-ssh-smtp-bittorrent", "{\"abuse\":{\"email\":\"abuse@t-mobile.com\"}}"},
+            {"paid-anycast-web-dns-resolver", "{\"is_anycast\":true,\"is_web\":true}"},
+            {"paid-anycast-web-dns-resolver", "{\"dns_resolver\":{\"port\":53}}"},
+            {"paid-satellite", "{\"is_satellite\":true}"},
+            {"unlimited-anycast-hostname", "{\"hostname\":[\"dns.google\",\"one.one.one.one\"]}"},
+        };
+        JsonNode lookups = MAPPER.readTree(Path.of("testdata", "testdata.json").toFile()).get("lookup");
+        for (String[] row : rows) {
+            JsonNode found = null;
+            for (JsonNode c : lookups) {
+                if (c.get("name").asText().equals(row[0])) {
+                    found = c;
+                }
+            }
+            Result result = resultFor(found);
+            List<Map<String, Object>> conditions = toConditions(MAPPER.readTree(row[1]));
+            String why = row[0] + ": " + row[1];
+            assertEquals(List.of(), Condition.missingMembers(conditions, result), why);
+            assertTrue(Condition.matches(conditions, result), why);
+        }
+    }
+
     @Test
     void corpusRefusesAConditionThatConstrainsNothing() {
         for (JsonNode c : middleware.get("invalidConditions")) {

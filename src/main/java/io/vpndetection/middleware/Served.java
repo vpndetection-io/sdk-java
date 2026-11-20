@@ -5,6 +5,7 @@ import io.vpndetection.Result;
 import io.vpndetection.internal.ApiClient;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -37,6 +38,14 @@ final class Served {
         put(out, "is_dcproxy", result.isDcproxy());
         put(out, "is_mobproxy", result.isMobproxy());
         put(out, "is_pubproxy", result.isPubproxy());
+        put(out, "is_anycast", result.isAnycast());
+        put(out, "is_carrier", result.isCarrier());
+        put(out, "is_satellite", result.isSatellite());
+        put(out, "is_ssh", result.isSsh());
+        put(out, "is_smtp", result.isSmtp());
+        put(out, "is_web", result.isWeb());
+        put(out, "is_dns_resolver", result.isDnsResolver());
+        put(out, "is_bittorrent", result.isBittorrent());
         putDetail(out, "vpn", result.vpn());
         putDetail(out, "hosting", result.hosting());
         putDetail(out, "relay", result.relay());
@@ -46,9 +55,20 @@ final class Served {
         putDetail(out, "dcproxy", result.dcproxy());
         putDetail(out, "mobproxy", result.mobproxy());
         putDetail(out, "pubproxy", result.pubproxy());
+        putDetail(out, "carrier", result.carrier());
+        putDetail(out, "satellite", result.satellite());
+        putDetail(out, "ssh", result.ssh());
+        putDetail(out, "smtp", result.smtp());
+        putDetail(out, "dns_resolver", result.dnsResolver());
+        putDetail(out, "bittorrent", result.bittorrent());
+        // A list of rows, one per port that answered, each mapped as a detail object is.
+        result.web().ifPresent(rows -> out.put("web", MAPPER.convertValue(rows, List.class)));
         // Not detail objects, but mapped the same way: every field set whenever the member is present.
         putDetail(out, "location", result.location());
         putDetail(out, "asn", result.asn());
+        putDetail(out, "company", result.company());
+        putDetail(out, "abuse", result.abuse());
+        result.hostname().ifPresent(hostname -> out.put("hostname", hostname));
         put(out, "trial_expired", result.trialExpired());
         put(out, "cap_reached", result.capReached());
         return out;
@@ -60,8 +80,8 @@ final class Served {
 
     // The detail objects carry their wire names on @JsonProperty, so Jackson is what turns one
     // into the shape a condition is written against. Their fields are scalars, bar pubproxy's
-    // list of protocols, so nothing here depends on how nulls are included: a null simply
-    // matches nothing.
+    // list of protocols and bittorrent's of clients, so nothing here depends on how nulls are
+    // included: a null simply matches nothing.
     private static void putDetail(Map<String, Object> out, String key, Optional<?> value) {
         value.ifPresent(v -> out.put(key, MAPPER.convertValue(v, Map.class)));
     }
