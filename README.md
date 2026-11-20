@@ -25,7 +25,7 @@ Requires Java 17 or newer. HTTP is the JDK's own `java.net.http.HttpClient`, so 
 
 ## Usage
 
-**No API key needed to start.** Unlimited, the free plan, answers `ip`, `is_vpn`, Tor and relay detection, `location` and `asn`, with no daily or monthly cap, with a key or without one.
+**No API key needed to start.** Unlimited, the free plan, answers `ip`, `is_vpn`, Tor and relay detection, `is_anycast`, `hostname`, `location` and `asn` (the AS's country and RPKI status included), with no daily or monthly cap, with a key or without one. This library reads `is_anycast`, `hostname` and the AS's country and RPKI status from 7.0.0.
 
 ```java
 import io.vpndetection.Result;
@@ -43,7 +43,7 @@ Build the client once and keep it. It owns a connection pool, a cache and a thre
 
 ### With an API key
 
-Every paid plan answers every field: `is_hosting`, `is_cdn` and the four proxy flags as well, and the provider (its ID and its name), confidence and last-seen detail behind each flag. The plans differ only in how many lookups they include, and a free account tries every field. Create a key in the [console](https://app.vpndetection.io), then pass it in:
+Every paid plan answers every field: `is_hosting`, `is_cdn` and the four proxy flags as well, and the provider (its ID and its name), confidence and last-seen detail behind each flag; and, read from 7.0.0, `is_carrier`, `is_satellite`, `is_ssh`, `is_smtp`, `is_web`, `is_dns_resolver` and `is_bittorrent` with the detail behind each, the location's region, city, postal code and coordinates, and the address's `company` and `abuse` contact. The plans differ only in how many lookups they include, and a free account tries every field. Create a key in the [console](https://app.vpndetection.io), then pass it in:
 
 ```java
 VPNDetection client = VPNDetection.builder()
@@ -137,6 +137,8 @@ VPNDetection client = VPNDetection.builder()
 
 VPNDetection clientNoCache = VPNDetection.builder().cacheEnabled(false).build();
 ```
+
+From 7.0.0, an answer with `trialExpired()` or `capReached()` true is cached for a minute at most, so a renewed trial or a raised cap reaches you within a minute.
 
 ### Private and reserved addresses
 
@@ -268,7 +270,7 @@ Each redirect URI must be https on a public host name, or http on a loopback add
 
 ### Absent is not false
 
-Unlimited leaves out `isHosting()`, `isCdn()` and the four proxy flags, and of the detail behind each flag it answers only Tor's and relay's; from 7.0.0, a free-plan key's answer carries `trialExpired()`, true once its trial is spent, and a paid key's carries `capReached()`, true once its organization's overage cap is reached and the answer has Unlimited's. Every member but `ip` and `isVpn` is an `Optional`, where empty means "not in your plan" rather than "checked, and no".
+Unlimited leaves out `isHosting()`, `isCdn()` and the four proxy flags (from 7.0.0, the seven network and service flags from `isCarrier()` to `isBittorrent()`, `company()`, `abuse()` and the location's finer fields too), and of the detail behind each flag it answers only Tor's and relay's; from 7.0.0, a free-plan key's answer carries `trialExpired()`, true once its trial is spent, and a paid key's carries `capReached()`, true once its organization's overage cap is reached and the answer has Unlimited's. Every member but `ip` and `isVpn` is an `Optional`, where empty means "not in your plan" rather than "checked, and no".
 
 ```java
 result.isHosting().orElse(false);   // when you only want the flag
