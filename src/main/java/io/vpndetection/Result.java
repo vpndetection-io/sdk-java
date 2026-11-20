@@ -1,13 +1,25 @@
 package io.vpndetection;
 
+import io.vpndetection.model.AbuseContact;
 import io.vpndetection.model.Asn;
+import io.vpndetection.model.BitTorrentDetail;
+import io.vpndetection.model.CarrierDetail;
 import io.vpndetection.model.ClassDetail;
+import io.vpndetection.model.Company;
+import io.vpndetection.model.DnsResolverDetail;
 import io.vpndetection.model.Location;
 import io.vpndetection.model.LookupResponse;
 import io.vpndetection.model.ProxyDetail;
 import io.vpndetection.model.PubproxyDetail;
+import io.vpndetection.model.SatelliteDetail;
+import io.vpndetection.model.SmtpDetail;
+import io.vpndetection.model.SshDetail;
 import io.vpndetection.model.VpnDetail;
+import io.vpndetection.model.WebDetail;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -19,8 +31,8 @@ import java.util.Optional;
  * your plan", {@code false} is "checked, and no". Call {@code orElse(false)} on the Optional
  * for the common case where you only care whether the address is flagged.
  *
- * <p>A detail object that is present but empty means the flag above it is false. A populated one
- * always carries every one of its keys.
+ * <p>A detail object that is present but empty ({@link #web()}'s empty list) means the flag above
+ * it is false. A populated one always carries every one of its keys.
  */
 public final class Result {
     private final LookupResponse raw;
@@ -56,6 +68,14 @@ public final class Result {
                 .isDcproxy(false)
                 .isMobproxy(false)
                 .isPubproxy(false)
+                .isAnycast(false)
+                .isCarrier(false)
+                .isSatellite(false)
+                .isSsh(false)
+                .isSmtp(false)
+                .isWeb(false)
+                .isDnsResolver(false)
+                .isBittorrent(false)
                 .vpn(new VpnDetail())
                 .hosting(new ClassDetail())
                 .relay(new ClassDetail())
@@ -65,6 +85,13 @@ public final class Result {
                 .dcproxy(new ProxyDetail())
                 .mobproxy(new ProxyDetail())
                 .pubproxy(new PubproxyDetail())
+                .carrier(new CarrierDetail())
+                .satellite(new SatelliteDetail())
+                .ssh(new SshDetail())
+                .smtp(new SmtpDetail())
+                .web(new ArrayList<>())
+                .dnsResolver(new DnsResolverDetail())
+                .bittorrent(new BitTorrentDetail())
                 .location(new Location()
                         .continent("")
                         .continentName("")
@@ -75,8 +102,29 @@ public final class Result {
                         .currencyName("")
                         .currencySymbol("")
                         .flagEmoji("")
-                        .flagUnicode(""))
-                .asn(new Asn().asn(0L).name("").domain("").type("").prefix(""));
+                        .flagUnicode("")
+                        .region("")
+                        .regionCode("")
+                        .city("")
+                        .postalCode("")
+                        .latitude(BigDecimal.ZERO)
+                        .longitude(BigDecimal.ZERO)
+                        .accuracyRadius(0)
+                        .geonameId("")
+                        .dmaCode("")
+                        .lastChanged(""))
+                .asn(new Asn().asn(0L).name("").domain("").type("").prefix("").country("").rpkiStatus(""))
+                .company(new Company().name("").domain("").type("").country(""))
+                .hostname("")
+                .abuse(new AbuseContact()
+                        .email("")
+                        .name("")
+                        .phone("")
+                        .address("")
+                        .country("")
+                        .network("")
+                        .validated(false)
+                        .unvalidatedSince(""));
         return new Result(r, true);
     }
 
@@ -135,6 +183,49 @@ public final class Result {
         return Optional.ofNullable(raw.getIsPubproxy());
     }
 
+    /**
+     * Whether the address is announced from many places at once, as a public DNS resolver's or a
+     * CDN's edge is. On every answer, with or without a key.
+     */
+    public Optional<Boolean> isAnycast() {
+        return Optional.ofNullable(raw.getIsAnycast());
+    }
+
+    /** Whether the address is a mobile carrier's, where many phones can share one address. On every paid plan. */
+    public Optional<Boolean> isCarrier() {
+        return Optional.ofNullable(raw.getIsCarrier());
+    }
+
+    /** Whether the address is a satellite operator's. On every paid plan. */
+    public Optional<Boolean> isSatellite() {
+        return Optional.ofNullable(raw.getIsSatellite());
+    }
+
+    /** Whether an SSH server answered on the address. On every paid plan. */
+    public Optional<Boolean> isSsh() {
+        return Optional.ofNullable(raw.getIsSsh());
+    }
+
+    /** Whether a mail server answered on the address. On every paid plan. */
+    public Optional<Boolean> isSmtp() {
+        return Optional.ofNullable(raw.getIsSmtp());
+    }
+
+    /** Whether a web server answered on the address, on port 80 or 443. On every paid plan. */
+    public Optional<Boolean> isWeb() {
+        return Optional.ofNullable(raw.getIsWeb());
+    }
+
+    /** Whether an open DNS resolver answered on the address. On every paid plan. */
+    public Optional<Boolean> isDnsResolver() {
+        return Optional.ofNullable(raw.getIsDnsResolver());
+    }
+
+    /** Whether a BitTorrent client was seen on the address in the last 90 days. On every paid plan. */
+    public Optional<Boolean> isBittorrent() {
+        return Optional.ofNullable(raw.getIsBittorrent());
+    }
+
     public Optional<VpnDetail> vpn() {
         return Optional.ofNullable(raw.getVpn());
     }
@@ -175,23 +266,82 @@ public final class Result {
         return Optional.ofNullable(raw.getPubproxy());
     }
 
+    /** Detail for {@link #isCarrier()}. Empty when it is false. On every paid plan. */
+    public Optional<CarrierDetail> carrier() {
+        return Optional.ofNullable(raw.getCarrier());
+    }
+
+    /** Detail for {@link #isSatellite()}. Empty when it is false. On every paid plan. */
+    public Optional<SatelliteDetail> satellite() {
+        return Optional.ofNullable(raw.getSatellite());
+    }
+
+    /** Detail for {@link #isSsh()}. Empty when it is false. On every paid plan. */
+    public Optional<SshDetail> ssh() {
+        return Optional.ofNullable(raw.getSsh());
+    }
+
+    /** Detail for {@link #isSmtp()}. Empty when it is false. On every paid plan. */
+    public Optional<SmtpDetail> smtp() {
+        return Optional.ofNullable(raw.getSmtp());
+    }
+
     /**
-     * Where the address is, on every answer, with or without a key: every field set, an empty
-     * string where it is not known.
+     * Detail for {@link #isWeb()}: a row per port that answered, lowest first, and an empty list
+     * when it is false. On every paid plan.
+     */
+    public Optional<List<WebDetail>> web() {
+        return Optional.ofNullable(raw.getWeb());
+    }
+
+    /** Detail for {@link #isDnsResolver()}. Empty when it is false. On every paid plan. */
+    public Optional<DnsResolverDetail> dnsResolver() {
+        return Optional.ofNullable(raw.getDnsResolver());
+    }
+
+    /** Detail for {@link #isBittorrent()}. Empty when it is false. On every paid plan. */
+    public Optional<BitTorrentDetail> bittorrent() {
+        return Optional.ofNullable(raw.getBittorrent());
+    }
+
+    /**
+     * Where the address is, on every answer, with or without a key: the country and its currency on
+     * every plan, and the region, city and coordinates on a paid one, null on a plan without them.
+     * A field your plan includes is an empty string or zero where it is not known.
      */
     public Optional<Location> location() {
         return Optional.ofNullable(raw.getLocation());
     }
 
-    /** The AS announcing the address, on every answer, with or without a key: 0 where none does. */
+    /**
+     * The AS announcing the address, on every answer, with or without a key, its country and RPKI
+     * status included: 0 where none does.
+     */
     public Optional<Asn> asn() {
         return Optional.ofNullable(raw.getAsn());
     }
 
+    /** The organization the address belongs to. On every paid plan. */
+    public Optional<Company> company() {
+        return Optional.ofNullable(raw.getCompany());
+    }
+
     /**
-     * On answers to a key on the free plan only: {@code false} while its organization's daily
-     * trial lasts (every field for the first 100 lookups each UTC day), {@code true} once the
-     * answer has Unlimited's.
+     * The name the address's reverse DNS (PTR) record points to, empty when it has none. On every
+     * answer, with or without a key.
+     */
+    public Optional<String> hostname() {
+        return Optional.ofNullable(raw.getHostname());
+    }
+
+    /** Where to report abuse from the address. On every paid plan. */
+    public Optional<AbuseContact> abuse() {
+        return Optional.ofNullable(raw.getAbuse());
+    }
+
+    /**
+     * On answers to a key on the free plan only: {@code false} while its organization's trial of
+     * every field lasts, {@code true} once the answer has Unlimited's.
      */
     public Optional<Boolean> trialExpired() {
         return Optional.ofNullable(raw.getTrialExpired());

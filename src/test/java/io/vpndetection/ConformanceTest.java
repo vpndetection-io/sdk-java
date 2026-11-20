@@ -11,11 +11,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.vpndetection.internal.ApiClient;
 import io.vpndetection.model.Asn;
+import io.vpndetection.model.BitTorrentDetail;
+import io.vpndetection.model.CarrierDetail;
 import io.vpndetection.model.ClassDetail;
+import io.vpndetection.model.DnsResolverDetail;
 import io.vpndetection.model.EntitlementPlan;
 import io.vpndetection.model.Location;
 import io.vpndetection.model.ProxyDetail;
 import io.vpndetection.model.PubproxyDetail;
+import io.vpndetection.model.SatelliteDetail;
+import io.vpndetection.model.SmtpDetail;
+import io.vpndetection.model.SshDetail;
 import io.vpndetection.model.VpnDetail;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -202,9 +208,15 @@ class ConformanceTest {
                 assertTrue(value.isPresent(), name + " must be present");
                 assertEquals(emptyDetail(name), value.get(), name + " must be present and empty");
             }
-            for (String object : List.of("location", "asn")) {
-                assertEquals(MAPPER.treeToValue(data.get("bogonResponse").get(object), detailType(object)),
-                        member(r, object).orElse(null), object + " must carry every field, empty");
+            // Every member the shape names beside its two lists: the location, AS, company and
+            // abuse contact with every field empty, the web list empty and the hostname empty.
+            JsonNode shape = data.get("bogonResponse");
+            for (String object : names(shape)) {
+                if (List.of("why", "flagsFalse", "emptyObjects").contains(object)) {
+                    continue;
+                }
+                assertEquals(MAPPER.readTree(shape.get(object).toString()), tree(member(r, object).orElse(null)),
+                        object + " must carry every field, empty");
             }
             assertEquals(0, http.calls.size(), "a bogon must not reach the network");
         }
@@ -244,11 +256,16 @@ class ConformanceTest {
                     assertEquals(emptyDetail(field), member(r, field).orElse(null),
                             name + ": " + field + " must be present and empty");
                 }
-                for (String detail : List.of("vpn", "hosting", "dcproxy", "pubproxy", "location", "asn")) {
-                    if (expect.get(detail) != null) {
-                        assertEquals(MAPPER.treeToValue(expect.get(detail), detailType(detail)),
-                                member(r, detail).orElse(null), name + ": " + detail);
+                // Every other key is a member compared as JSON, through the typed model, so a key
+                // the model does not carry fails: a detail, the web list, the location, AS, company
+                // and abuse contact, the hostname. None is skipped, so a key the corpus adds fails
+                // here until the result carries it.
+                for (String field : names(expect)) {
+                    if (List.of("ip", "isBogon", "present", "absent", "emptyPresent").contains(field)) {
+                        continue;
                     }
+                    assertEquals(MAPPER.readTree(expect.get(field).toString()),
+                            tree(member(r, field).orElse(null)), name + ": " + field);
                 }
             }
         }
@@ -603,6 +620,18 @@ class ConformanceTest {
         return out;
     }
 
+    private static List<String> names(JsonNode object) {
+        List<String> names = new ArrayList<>();
+        object.fieldNames().forEachRemaining(names::add);
+        return names;
+    }
+
+    // A member as the wire would carry it, written and read back by the client's own mapper, so
+    // only what the typed model holds survives and numbers compare as the corpus writes them.
+    private static JsonNode tree(Object value) throws IOException {
+        return MAPPER.readTree(MAPPER.writeValueAsString(value));
+    }
+
     private static Iterable<JsonNode> orEmpty(JsonNode array) {
         return array == null ? List.of() : array;
     }
@@ -651,24 +680,57 @@ class ConformanceTest {
                 return r.mobproxy();
             case "pubproxy":
                 return r.pubproxy();
+            case "is_anycast":
+                return r.isAnycast();
+            case "is_carrier":
+                return r.isCarrier();
+            case "is_satellite":
+                return r.isSatellite();
+            case "is_ssh":
+                return r.isSsh();
+            case "is_smtp":
+                return r.isSmtp();
+            case "is_web":
+                return r.isWeb();
+            case "is_dns_resolver":
+                return r.isDnsResolver();
+            case "is_bittorrent":
+                return r.isBittorrent();
+            case "carrier":
+                return r.carrier();
+            case "satellite":
+                return r.satellite();
+            case "ssh":
+                return r.ssh();
+            case "smtp":
+                return r.smtp();
+            case "web":
+                return r.web();
+            case "dns_resolver":
+                return r.dnsResolver();
+            case "bittorrent":
+                return r.bittorrent();
             case "location":
                 return r.location();
             case "asn":
                 return r.asn();
+            case "company":
+                return r.company();
+            case "hostname":
+                return r.hostname();
+            case "abuse":
+                return r.abuse();
             default:
                 throw new IllegalArgumentException("the corpus names a member this SDK lacks: " + wire);
         }
     }
 
     private static Object emptyDetail(String wire) {
-        Class<?> type = detailType(wire);
-        if (type == VpnDetail.class) {
-            return new VpnDetail();
+        try {
+            return detailType(wire).getDeclaredConstructor().newInstance();
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
         }
-        if (type == PubproxyDetail.class) {
-            return new PubproxyDetail();
-        }
-        return type == ClassDetail.class ? new ClassDetail() : new ProxyDetail();
     }
 
     private static Class<?> detailType(String wire) {
@@ -686,6 +748,18 @@ class ConformanceTest {
                 return ProxyDetail.class;
             case "pubproxy":
                 return PubproxyDetail.class;
+            case "carrier":
+                return CarrierDetail.class;
+            case "satellite":
+                return SatelliteDetail.class;
+            case "ssh":
+                return SshDetail.class;
+            case "smtp":
+                return SmtpDetail.class;
+            case "dns_resolver":
+                return DnsResolverDetail.class;
+            case "bittorrent":
+                return BitTorrentDetail.class;
             case "location":
                 return Location.class;
             case "asn":
