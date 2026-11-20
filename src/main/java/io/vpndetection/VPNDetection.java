@@ -2,6 +2,8 @@ package io.vpndetection;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
+import com.github.benmanes.caffeine.cache.Ticker;
 
 import io.vpndetection.api.EntitlementWireApi;
 import io.vpndetection.api.LookupWireApi;
@@ -89,7 +91,8 @@ public final class VPNDetection implements AutoCloseable {
         this.oauth = new OauthApi(http, api.getObjectMapper(), b.baseUrl, b.retries, b.requestTimeout,
                 OauthApi.SYSTEM);
         this.cache = b.cacheEnabled
-                ? Caffeine.newBuilder().maximumSize(b.cacheSize).expireAfterWrite(b.cacheTtl).build()
+                ? Caffeine.newBuilder().maximumSize(b.cacheSize).ticker(b.cacheTicker)
+                        .expireAfter(lifetimes(b.cacheTtl)).build()
                 : null;
         this.gate = new Semaphore(b.concurrency);
         this.ownedExecutor = b.executor == null ? Executors.newCachedThreadPool(daemonThreads()) : null;
@@ -608,6 +611,47 @@ public final class VPNDetection implements AutoCloseable {
         };
     }
 
+    /** The longest an answer past the trial or the overage cap stays cached. */
+    static final Duration REDUCED_ANSWER_LIFE = Duration.ofSeconds(60);
+
+    // An answer with Unlimited's fields because the trial is spent or the overage cap is reached
+    // holds only until the trial is renewed or the cap raised, so it is kept a minute at most rather
+    // than the whole TTL. It is still kept, so a busy address is not asked again on every lookup.
+    static Duration lifeOf(Result result, Duration ttl) {
+        boolean reduced = result.trialExpired().orElse(false) || result.capReached().orElse(false);
+        return reduced && ttl.compareTo(REDUCED_ANSWER_LIFE) > 0 ? REDUCED_ANSWER_LIFE : ttl;
+    }
+
+    // Each entry's life from the moment it is written, a lookup's and a batch entry's alike; a read
+    // leaves it as it was.
+    private static Expiry<String, Result> lifetimes(Duration ttl) {
+        return new Expiry<>() {
+            @Override
+            public long expireAfterCreate(String ip, Result result, long now) {
+                return nanos(lifeOf(result, ttl));
+            }
+
+            @Override
+            public long expireAfterUpdate(String ip, Result result, long now, long left) {
+                return nanos(lifeOf(result, ttl));
+            }
+
+            @Override
+            public long expireAfterRead(String ip, Result result, long now, long left) {
+                return left;
+            }
+        };
+    }
+
+    // Saturated, as Caffeine's own expireAfterWrite reads a Duration past Long.MAX_VALUE ns.
+    private static long nanos(Duration life) {
+        try {
+            return life.toNanos();
+        } catch (ArithmeticException e) {
+            return life.isNegative() ? Long.MIN_VALUE : Long.MAX_VALUE;
+        }
+    }
+
     /** Settings for a {@link VPNDetection} client. Every one of them has a working default. */
     public static final class Builder {
         private String apiKey;
@@ -615,6 +659,7 @@ public final class VPNDetection implements AutoCloseable {
         private boolean cacheEnabled = true;
         private long cacheSize = 10_000;
         private Duration cacheTtl = Duration.ofHours(1);
+        private Ticker cacheTicker = Ticker.systemTicker();
         private int concurrency = 8;
         private int retries = 2;
         private Duration requestTimeout = Duration.ofSeconds(30);
@@ -625,8 +670,8 @@ public final class VPNDetection implements AutoCloseable {
 
         /**
          * Your API key. Without one a lookup is on Unlimited, the free plan: {@code ip},
-         * {@code is_vpn}, the Tor and relay members, {@code location} and {@code asn}, with no
-         * daily or monthly cap. A batch needs a key on a paid plan. The key is trimmed, and one of blanks alone is no
+         * {@code is_vpn}, the Tor and relay members, {@code is_anycast}, {@code hostname},
+         * {@code location} and {@code asn}, with no daily or monthly cap. A batch needs a key on a paid plan. The key is trimmed, and one of blanks alone is no
          * key.
          *
          * @throws IllegalArgumentException for a key holding a control character or a character
@@ -662,9 +707,19 @@ public final class VPNDetection implements AutoCloseable {
             return this;
         }
 
-        /** How long an answer stays fresh. Default 1 hour. */
+        /**
+         * How long an answer stays fresh. Default 1 hour. An answer whose {@link
+         * Result#trialExpired()} or {@link Result#capReached()} is true stays a minute at most,
+         * since a renewed trial or a raised cap ends it.
+         */
         public Builder cacheTtl(Duration cacheTtl) {
             this.cacheTtl = Objects.requireNonNull(cacheTtl, "cacheTtl");
+            return this;
+        }
+
+        // The cache's clock, which a test moves rather than waits on.
+        Builder cacheTicker(Ticker cacheTicker) {
+            this.cacheTicker = Objects.requireNonNull(cacheTicker, "cacheTicker");
             return this;
         }
 
