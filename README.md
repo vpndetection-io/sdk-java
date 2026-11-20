@@ -75,7 +75,7 @@ System.out.println(acct.getUsage().getRequests());  // 580
 System.out.println(acct.getUsage().getWindowEnd()); // when the allowance resets
 ```
 
-Usage counts against the anniversary of your subscription on a paid plan, not the calendar month and not the billing period, and against the UTC day on the free plan; it is the same number a lookup is gated on. `getHardLimit()` is `null` on an uncapped plan, which is not the same as zero.
+Usage counts against the anniversary of your subscription on a paid plan, not the calendar month and not the billing period, and against the trial on the free plan; it is the same number a lookup is gated on. `getHardLimit()` is `null` on an uncapped plan, which is not the same as zero.
 
 From 7.0.0, show `getName()` and compare against `getKey()`: a plan's name can change, and its key never does.
 
