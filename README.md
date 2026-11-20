@@ -43,7 +43,7 @@ Build the client once and keep it. It owns a connection pool, a cache and a thre
 
 ### With an API key
 
-Every paid plan answers every field: `is_hosting`, `is_cdn` and the four proxy flags as well, and the provider (its ID and its name), confidence and last-seen detail behind each flag. The plans differ only in how many lookups they include, and a free account tries every field, 100 lookups a day. Create a key in the [console](https://app.vpndetection.io), then pass it in:
+Every paid plan answers every field: `is_hosting`, `is_cdn` and the four proxy flags as well, and the provider (its ID and its name), confidence and last-seen detail behind each flag. The plans differ only in how many lookups they include, and a free account tries every field. Create a key in the [console](https://app.vpndetection.io), then pass it in:
 
 ```java
 VPNDetection client = VPNDetection.builder()
@@ -268,12 +268,12 @@ Each redirect URI must be https on a public host name, or http on a loopback add
 
 ### Absent is not false
 
-Unlimited leaves out `isHosting()`, `isCdn()` and the four proxy flags, and of the detail behind each flag it answers only Tor's and relay's; from 7.0.0, a free-plan key's answer carries `trialExpired()`, true once its daily trial is spent, and a paid key's carries `capReached()`, true once its organization's overage cap is reached and the answer has Unlimited's. Every member but `ip` and `isVpn` is an `Optional`, where empty means "not in your plan" rather than "checked, and no".
+Unlimited leaves out `isHosting()`, `isCdn()` and the four proxy flags, and of the detail behind each flag it answers only Tor's and relay's; from 7.0.0, a free-plan key's answer carries `trialExpired()`, true once its trial is spent, and a paid key's carries `capReached()`, true once its organization's overage cap is reached and the answer has Unlimited's. Every member but `ip` and `isVpn` is an `Optional`, where empty means "not in your plan" rather than "checked, and no".
 
 ```java
 result.isHosting().orElse(false);   // when you only want the flag
 result.isHosting().isEmpty();       // on Unlimited: not in your plan
-result.trialExpired().orElse(false); // a free-plan key's daily trial is spent (from 7.0.0)
+result.trialExpired().orElse(false); // a free-plan key's trial is spent (from 7.0.0)
 result.capReached().orElse(false);   // a paid key past its overage cap (from 7.0.0)
 ```
 
