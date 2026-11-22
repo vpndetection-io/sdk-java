@@ -182,6 +182,8 @@ final class Staging {
         map.put("relay", new Detail(CLASS_KEYS, List.of()));
         map.put("tor", new Detail(CLASS_KEYS, List.of()));
         map.put("cdn", new Detail(CLASS_KEYS, List.of()));
+        map.put("bot", new Detail(List.of("provider", "provider_name", "agents", "categories", "verified", "identity",
+                "verified_by", "confidence", "first_seen", "last_seen"), List.of()));
         map.put("resproxy", new Detail(PROXY_KEYS, List.of()));
         map.put("dcproxy", new Detail(PROXY_KEYS, List.of()));
         map.put("mobproxy", new Detail(PROXY_KEYS, List.of()));
