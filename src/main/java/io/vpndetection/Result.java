@@ -3,6 +3,7 @@ package io.vpndetection;
 import io.vpndetection.model.AbuseContact;
 import io.vpndetection.model.Asn;
 import io.vpndetection.model.BitTorrentDetail;
+import io.vpndetection.model.BotDetail;
 import io.vpndetection.model.CarrierDetail;
 import io.vpndetection.model.ClassDetail;
 import io.vpndetection.model.Company;
@@ -64,6 +65,7 @@ public final class Result {
                 .isRelay(false)
                 .isTor(false)
                 .isCdn(false)
+                .isBot(false)
                 .isResproxy(false)
                 .isDcproxy(false)
                 .isMobproxy(false)
@@ -81,6 +83,7 @@ public final class Result {
                 .relay(new ClassDetail())
                 .tor(new ClassDetail())
                 .cdn(new ClassDetail())
+                .bot(new BotDetail())
                 .resproxy(new ProxyDetail())
                 .dcproxy(new ProxyDetail())
                 .mobproxy(new ProxyDetail())
@@ -161,6 +164,14 @@ public final class Result {
 
     public Optional<Boolean> isCdn() {
         return Optional.ofNullable(raw.getIsCdn());
+    }
+
+    /**
+     * Whether an automated client uses the address: a search engine's or an AI company's crawler, an
+     * uptime monitor, an internet scanner or a webhook sender. On every answer, with or without a key.
+     */
+    public Optional<Boolean> isBot() {
+        return Optional.ofNullable(raw.getIsBot());
     }
 
     public Optional<Boolean> isResproxy() {
@@ -244,6 +255,14 @@ public final class Result {
 
     public Optional<ClassDetail> cdn() {
         return Optional.ofNullable(raw.getCdn());
+    }
+
+    /**
+     * Detail for {@link #isBot()}: whose bot uses the address, the bots it serves, what they do and
+     * whether the operator vouches for the address. Empty when it is false. On every paid plan.
+     */
+    public Optional<BotDetail> bot() {
+        return Optional.ofNullable(raw.getBot());
     }
 
     public Optional<ProxyDetail> resproxy() {

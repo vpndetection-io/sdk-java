@@ -2,9 +2,13 @@ package io.vpndetection;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.vpndetection.internal.ApiClient;
 import io.vpndetection.middleware.Bound;
 import io.vpndetection.middleware.Condition;
+import io.vpndetection.middleware.Core;
+import io.vpndetection.middleware.Lookup;
+import io.vpndetection.middleware.Options;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -15,9 +19,11 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -75,6 +81,8 @@ class MiddlewareConformanceTest {
             {"paid-anycast-web-dns-resolver", "{\"dns_resolver\":{\"port\":53}}"},
             {"paid-satellite", "{\"is_satellite\":true}"},
             {"unlimited-anycast-hostname", "{\"hostname\":[\"dns.google\",\"one.one.one.one\"]}"},
+            {"unlimited-bot", "{\"is_bot\":true}"},
+            {"paid-verified-bot", "{\"bot\":{\"verified\":true}}"},
         };
         JsonNode lookups = MAPPER.readTree(Path.of("testdata", "testdata.json").toFile()).get("lookup");
         for (String[] row : rows) {
@@ -89,6 +97,35 @@ class MiddlewareConformanceTest {
             String why = row[0] + ": " + row[1];
             assertEquals(List.of(), Condition.missingMembers(conditions, result), why);
             assertTrue(Condition.matches(conditions, result), why);
+        }
+    }
+
+    // Public peers, so neither answer is a bogon's local one and passes vacuously.
+    @Test
+    void aConditionOnIsBotBlocksABotAndPassesAnyoneElse() throws IOException {
+        JsonNode bot = null;
+        for (JsonNode c : MAPPER.readTree(Path.of("testdata", "testdata.json").toFile()).get("lookup")) {
+            if (c.get("name").asText().equals("paid-verified-bot")) {
+                bot = c.get("body");
+            }
+        }
+        ObjectNode human = bot.deepCopy();
+        human.put("ip", "98.97.1.1").put("is_bot", false).putObject("bot");
+        StubHttpClient http = StubHttpClient.of(Map.of(
+                "66.249.66.1", StubHttpClient.Route.ok(MAPPER.writeValueAsString(bot)),
+                "98.97.1.1", StubHttpClient.Route.ok(MAPPER.writeValueAsString(human))));
+
+        try (VPNDetection client = VPNDetection.builder().httpClient(http).build()) {
+            Core<String> core = new Core<>(new Options<String>().client(client)
+                    .blockCondition(Map.of("is_bot", true)), request -> request);
+            Lookup blocked = core.evaluate("66.249.66.1");
+            Lookup passed = core.evaluate("98.97.1.1");
+
+            assertTrue(blocked.isBlocked(), "a served bot answer is blocked");
+            assertEquals(Optional.of(true), blocked.result().orElseThrow().isBot());
+            assertFalse(passed.isBlocked(), "an answer with is_bot false passes");
+            assertEquals(Optional.of(false), passed.result().orElseThrow().isBot());
+            assertEquals(2, http.calls.size(), "both answers were served, neither answered locally");
         }
     }
 

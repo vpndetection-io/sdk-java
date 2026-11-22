@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vpndetection.internal.ApiClient;
 import io.vpndetection.model.Asn;
 import io.vpndetection.model.BitTorrentDetail;
+import io.vpndetection.model.BotDetail;
 import io.vpndetection.model.CarrierDetail;
 import io.vpndetection.model.ClassDetail;
 import io.vpndetection.model.DnsResolverDetail;
@@ -492,6 +493,40 @@ class ConformanceTest {
         }
     }
 
+    // Each member of the corpus's bot through its typed getter, the lists in the order served.
+    @Test
+    void aServedBotIsReadMemberByMember() throws IOException {
+        JsonNode c = lookupCase("paid-verified-bot");
+        JsonNode want = c.get("expect").get("bot");
+        String ip = c.get("body").get("ip").asText();
+        StubHttpClient http = StubHttpClient.of(Map.of(ip, StubHttpClient.Route.ok(
+                MAPPER.writeValueAsString(c.get("body")))));
+
+        try (VPNDetection client = clientOn(http).build()) {
+            Result result = client.lookup(ip);
+            assertEquals(Optional.of(true), result.isBot());
+            BotDetail bot = result.bot().orElseThrow();
+            assertEquals(want.get("provider").asText(), bot.getProvider());
+            assertEquals(want.get("provider_name").asText(), bot.getProviderName());
+            assertEquals(strings(want.get("agents")), bot.getAgents());
+            assertEquals(strings(want.get("categories")), bot.getCategories());
+            assertEquals(want.get("verified").asBoolean(), bot.getVerified());
+            assertEquals(want.get("identity").asText(), bot.getIdentity());
+            assertEquals(want.get("verified_by").asText(), bot.getVerifiedBy());
+            assertEquals(want.get("confidence").asText(), bot.getConfidence());
+            assertEquals(want.get("first_seen").asText(), bot.getFirstSeen());
+            assertEquals(want.get("last_seen").asText(), bot.getLastSeen());
+        }
+
+        JsonNode unlimited = lookupCase("unlimited-bot").get("body");
+        http = StubHttpClient.of(Map.of(ip, StubHttpClient.Route.ok(MAPPER.writeValueAsString(unlimited))));
+        try (VPNDetection client = clientOn(http).build()) {
+            Result result = client.lookup(ip);
+            assertEquals(Optional.of(true), result.isBot());
+            assertEquals(Optional.empty(), result.bot(), "Unlimited's bot is absent, never empty");
+        }
+    }
+
     // The spec's user agent parameters are not this release's to send: a lookup carries no query
     // and a batch body nothing beside its addresses.
     @Test
@@ -636,6 +671,15 @@ class ConformanceTest {
         throw new IllegalArgumentException("no batch case named " + name);
     }
 
+    private static JsonNode lookupCase(String name) {
+        for (JsonNode c : data.get("lookup")) {
+            if (c.get("name").asText().equals(name)) {
+                return c;
+            }
+        }
+        throw new IllegalArgumentException("no lookup case named " + name);
+    }
+
     private static List<String> strings(JsonNode array) {
         List<String> out = new ArrayList<>();
         array.forEach(n -> out.add(n.asText()));
@@ -672,6 +716,8 @@ class ConformanceTest {
                 return r.isTor();
             case "is_cdn":
                 return r.isCdn();
+            case "is_bot":
+                return r.isBot();
             case "is_resproxy":
                 return r.isResproxy();
             case "is_dcproxy":
@@ -694,6 +740,8 @@ class ConformanceTest {
                 return r.tor();
             case "cdn":
                 return r.cdn();
+            case "bot":
+                return r.bot();
             case "resproxy":
                 return r.resproxy();
             case "dcproxy":
@@ -770,6 +818,8 @@ class ConformanceTest {
                 return ProxyDetail.class;
             case "pubproxy":
                 return PubproxyDetail.class;
+            case "bot":
+                return BotDetail.class;
             case "carrier":
                 return CarrierDetail.class;
             case "satellite":
