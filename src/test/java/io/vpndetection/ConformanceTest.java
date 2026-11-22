@@ -182,9 +182,12 @@ class ConformanceTest {
     void anAsNumberPastAnIntReads() {
         StubHttpClient http = StubHttpClient.of(Map.of("45.83.91.1", StubHttpClient.Route.ok(
                 "{\"ip\": \"45.83.91.1\", \"is_vpn\": false, \"asn\": {\"asn\": 4200000001, \"name\": \"n\","
-                + " \"domain\": \"d\", \"type\": \"isp\", \"prefix\": \"45.83.91.0/24\"}}")));
+                + " \"domain\": \"d\", \"type\": \"isp\", \"prefix\": \"45.83.91.0/24\", \"country\": \"US\","
+                + " \"rpki_status\": \"unknown\"}, \"is_satellite\": true, \"satellite\": {\"asn\": 4200000002}}")));
         try (VPNDetection client = clientOn(http).build()) {
-            assertEquals(4200000001L, client.lookup("45.83.91.1").asn().orElseThrow().getAsn());
+            Result result = client.lookup("45.83.91.1");
+            assertEquals(4200000001L, result.asn().orElseThrow().getAsn());
+            assertEquals(4200000002L, result.satellite().orElseThrow().getAsn());
         }
     }
 
@@ -487,6 +490,25 @@ class ConformanceTest {
             assertEquals("M247", result.hosting().orElseThrow().getProviderName());
             assertEquals("Bright Data", result.dcproxy().orElseThrow().getProviderName());
         }
+    }
+
+    // The spec's user agent parameters are not this release's to send: a lookup carries no query
+    // and a batch body nothing beside its addresses.
+    @Test
+    void noUserAgentGoesOutWithALookupOrABatch() {
+        String answer = "{\"ip\": \"%s\", \"is_vpn\": false}";
+        StubHttpClient http = StubHttpClient.of(Map.of(
+                "8.8.8.8", StubHttpClient.Route.ok(String.format(answer, "8.8.8.8")),
+                "8.8.4.4", StubHttpClient.Route.ok(String.format(answer, "8.8.4.4")),
+                "1.1.1.1", StubHttpClient.Route.ok(String.format(answer, "1.1.1.1")),
+                "myip", StubHttpClient.Route.ok(String.format(answer, "8.8.8.8"))));
+        try (VPNDetection client = clientOn(http).build()) {
+            client.lookup("1.1.1.1");
+            client.myIp();
+            client.lookupBatch(List.of("8.8.8.8", "8.8.4.4"));
+        }
+        assertEquals(List.of(List.of("ips")), http.batchMembers);
+        http.calls.forEach(call -> assertFalse(call.contains("?"), call + " carries a query"));
     }
 
     @Test

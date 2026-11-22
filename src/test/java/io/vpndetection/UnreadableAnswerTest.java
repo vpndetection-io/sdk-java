@@ -43,7 +43,9 @@ final class UnreadableAnswerTest {
         WHOLE.put("8.8.8.8", "{\"ip\": \"8.8.8.8\", \"is_vpn\": false, \"is_hosting\": true,"
                 + " \"hosting\": {\"provider\": \"Google\", \"confidence\": \"high\", \"last_seen\": \"2026-10-17\"},"
                 + " \"is_dcproxy\": true, \"dcproxy\": {\"provider\": \"p\", \"first_seen\": \"2026-06-14\","
-                + " \"last_seen\": \"2026-10-17\", \"hits\": 3, \"hits_days_pct\": 4, \"providers_num\": 1}}");
+                + " \"last_seen\": \"2026-10-17\", \"hits\": 3, \"hits_days_pct\": 4, \"providers_num\": 1},"
+                + " \"asn\": {\"asn\": 15169, \"name\": \"Google LLC\", \"domain\": \"google.com\","
+                + " \"type\": \"hosting\", \"prefix\": \"8.8.8.0/24\", \"country\": \"US\", \"rpki_status\": \"valid\"}}");
         WHOLE.put("myip", "{\"ip\": \"203.0.114.7\", \"is_vpn\": true}");
         WHOLE.put("api/v1/entitlement", "{\"org_id\": \"6f1c2a52-6c83-4c8a-9a3e-2f3b8c1d0e9f\","
                 + " \"apikey\": {\"id\": \"0b6e2d8a-1c4f-4a5e-8d7b-3e2f1a0c9b8d\", \"expires\": null,"
@@ -106,6 +108,7 @@ final class UnreadableAnswerTest {
     void anAnswerWithoutAMemberTheSpecRequiresIsARetriedServerError() throws IOException {
         List<List<String>> cases = List.of(
                 List.of("8.8.8.8", "", "ip", "is_vpn"),
+                List.of("8.8.8.8", "/asn", "asn", "name", "domain", "type", "prefix", "country", "rpki_status"),
                 List.of("myip", "", "ip", "is_vpn"),
                 List.of("api/v1/entitlement", "", "org_id", "apikey", "plan", "usage"),
                 List.of("api/v1/entitlement", "/apikey", "id", "allowed_cidrs"),
@@ -414,7 +417,8 @@ final class UnreadableAnswerTest {
                 io.vpndetection.model.ProxyDetail.class, io.vpndetection.model.PubproxyDetail.class,
                 io.vpndetection.model.CarrierDetail.class, io.vpndetection.model.SatelliteDetail.class,
                 io.vpndetection.model.SshDetail.class, io.vpndetection.model.SmtpDetail.class,
-                io.vpndetection.model.DnsResolverDetail.class, io.vpndetection.model.BitTorrentDetail.class);
+                io.vpndetection.model.DnsResolverDetail.class, io.vpndetection.model.BitTorrentDetail.class,
+                io.vpndetection.model.BotDetail.class);
         Set<Class<?>> reached = new LinkedHashSet<>();
         List<Class<?>> pending = new ArrayList<>(envelopes);
         pending.add(io.vpndetection.model.DatabaseMetadata.class);

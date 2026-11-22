@@ -75,6 +75,8 @@ final class StubHttpClient extends HttpClient {
     final List<Integer> batchSizes = Collections.synchronizedList(new ArrayList<>());
     /** Every address a POST /batch carried, as sent, in the order the requests arrived. */
     final List<String> batchIps = Collections.synchronizedList(new ArrayList<>());
+    /** The member names of each POST /batch body, in the order the requests arrived. */
+    final List<List<String>> batchMembers = Collections.synchronizedList(new ArrayList<>());
     final AtomicInteger inFlight = new AtomicInteger();
     final AtomicInteger peak = new AtomicInteger();
 
@@ -165,13 +167,16 @@ final class StubHttpClient extends HttpClient {
     @SuppressWarnings("unchecked")
     public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> handler) {
         URI uri = request.uri();
-        JsonNode sentIps = "POST".equals(request.method()) && "/batch".equals(uri.getPath()) ? ips(request) : null;
+        JsonNode sent = "POST".equals(request.method()) && "/batch".equals(uri.getPath()) ? batchBody(request) : null;
         calls.add(uri.toString());
         authorizations.add(request.headers().firstValue("Authorization").orElse(null));
-        if (sentIps != null) {
-            for (JsonNode ip : sentIps) {
+        if (sent != null) {
+            for (JsonNode ip : sent.path("ips")) {
                 batchIps.add(ip.asText());
             }
+            List<String> members = new ArrayList<>();
+            sent.fieldNames().forEachRemaining(members::add);
+            batchMembers.add(members);
         }
         arrived.release();
         peak.accumulateAndGet(inFlight.incrementAndGet(), Math::max);
@@ -207,7 +212,7 @@ final class StubHttpClient extends HttpClient {
     private Route batch(HttpRequest request) {
         ObjectNode results = MAPPER.createObjectNode();
         ObjectNode failures = MAPPER.createObjectNode();
-        JsonNode ips = ips(request);
+        JsonNode ips = batchBody(request).path("ips");
         batchSizes.add(ips.size());
         for (JsonNode ip : ips) {
             Route route = responder.apply(ip.asText());
@@ -230,7 +235,7 @@ final class StubHttpClient extends HttpClient {
     // The addresses in a POST body. A BodyPublisher only hands its bytes to a subscriber, so one is
     // attached and drained; the generated client publishes from a byte array, which completes at
     // once.
-    private static JsonNode ips(HttpRequest request) {
+    private static JsonNode batchBody(HttpRequest request) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         CompletableFuture<Void> done = new CompletableFuture<>();
         request.bodyPublisher().orElse(HttpRequest.BodyPublishers.noBody())
@@ -258,7 +263,7 @@ final class StubHttpClient extends HttpClient {
                     }
                 });
         done.join();
-        return parse(bytes.toString(StandardCharsets.UTF_8)).path("ips");
+        return parse(bytes.toString(StandardCharsets.UTF_8));
     }
 
     private static JsonNode parse(String body) {

@@ -179,7 +179,7 @@ public final class VPNDetection implements AutoCloseable {
     private Result fetch(String ip, LookupOptions options) {
         LookupWireApi wire = lookupApi(options);
         Result result = Wire.execute(retries(options),
-                () -> Result.of(Wire.answer(wire.lookupIpWithHttpInfo(ip), "lookup answer")));
+                () -> Result.of(Wire.answer(wire.lookupIpWithHttpInfo(ip, null), "lookup answer")));
         if (cache != null) {
             cache.put(ip, result);
         }
@@ -245,7 +245,7 @@ public final class VPNDetection implements AutoCloseable {
         Objects.requireNonNull(options, "options");
         LookupWireApi wire = lookupApi(options);
         return Wire.execute(retries(options),
-                () -> Result.of(Wire.answer(wire.lookupMyIpWithHttpInfo(), "lookup answer")));
+                () -> Result.of(Wire.answer(wire.lookupMyIpWithHttpInfo(null), "lookup answer")));
     }
 
     public CompletableFuture<Result> myIpAsync() {
@@ -555,9 +555,10 @@ public final class VPNDetection implements AutoCloseable {
     private Map<String, BatchResult> lookupChunk(List<String> chunk, LookupWireApi wire, int callRetries) {
         BatchLookupResponse body;
         try {
+            // The generated request starts user_agents as an empty map, which would go out on every batch.
+            BatchLookupRequest request = new BatchLookupRequest().ips(chunk).userAgents(null);
             body = Wire.execute(callRetries,
-                    () -> Wire.answer(wire.lookupBatchWithHttpInfo(new BatchLookupRequest().ips(chunk)),
-                            "batch answer"));
+                    () -> Wire.answer(wire.lookupBatchWithHttpInfo(request), "batch answer"));
         } catch (VPNDetectionException e) {
             return failedChunk(chunk, e);
         }
