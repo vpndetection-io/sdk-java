@@ -43,7 +43,7 @@ Build the client once and keep it. It owns a connection pool, a cache and a thre
 
 ### With an API key
 
-Every paid plan answers every field: `is_hosting`, `is_cdn` and the four proxy flags as well, and the provider (its ID and its name), confidence and last-seen detail behind each flag; and, read from 7.0.0, `bot` (whose bot uses the address, what it does and whether its operator vouches for it), `is_carrier`, `is_satellite`, `is_ssh`, `is_smtp`, `is_web`, `is_dns_resolver` and `is_bittorrent` with the detail behind each, the location's region, city, postal code and coordinates, and the address's `company` and `abuse` contact. The plans differ only in how many lookups they include, and a free account tries every field. Create a key in the [console](https://app.vpndetection.io), then pass it in:
+A paid plan answers every field: `is_hosting`, `is_cdn` and the four proxy flags as well, and the provider (its ID and its name), confidence and last-seen detail behind each flag; and, read from 7.0.0, `bot` (whose bot uses the address, what it does and whether its operator vouches for it), `is_carrier`, `is_satellite`, `is_ssh`, `is_smtp`, `is_web`, `is_dns_resolver` and `is_bittorrent` with the detail behind each, the location's region, city, postal code and coordinates, and the address's `company` and `abuse` contact. Its quotas differ only in how many lookups they include, and a free account tries every field. Create a key in the [console](https://app.vpndetection.io), then pass it in:
 
 ```java
 VPNDetection client = VPNDetection.builder()
@@ -69,8 +69,8 @@ Same answer `lookup` would give for that address, and the same cost against your
 
 ```java
 Entitlement acct = client.myEntitlement();
-System.out.println(acct.getPlan().getName());        // Max, what to show (from 7.0.0)
-System.out.println(acct.getPlan().getKey());         // max, what to compare against
+System.out.println(acct.getPlan().getName());        // Data, what to show (from 7.0.0)
+System.out.println(acct.getPlan().getKey());         // data_4, what to compare against
 System.out.println(acct.getUsage().getRequests());  // 580
 System.out.println(acct.getUsage().getWindowEnd()); // when the allowance resets
 ```
