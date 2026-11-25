@@ -1,6 +1,8 @@
 package io.vpndetection;
 
 import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Per-call overrides for one batch. Anything left unset falls back to the client's setting.
@@ -10,6 +12,7 @@ import java.time.Duration;
  */
 public final class BatchOptions extends LookupOptions {
     private Integer concurrency;
+    private Map<String, String> userAgents = Map.of();
 
     /**
      * Concurrent batch requests - chunks of up to 1000 addresses - for THIS batch only. Below 1, the
@@ -31,6 +34,31 @@ public final class BatchOptions extends LookupOptions {
     public BatchOptions requestTimeout(Duration requestTimeout) {
         super.requestTimeout(requestTimeout);
         return this;
+    }
+
+    /**
+     * The user agent sent with every address of THIS batch, bar one {@link #userAgents} names. A
+     * request keys {@code user_agents} by address, so one address asked with two agents is asked in
+     * two requests.
+     */
+    @Override
+    public BatchOptions userAgent(String userAgent) {
+        super.userAgent(userAgent);
+        return this;
+    }
+
+    /**
+     * Each address's user agent, keyed by the address exactly as passed to the batch, sent as
+     * {@code user_agents} keyed by the address as the request carries it, and only in a request
+     * where an address has one. An empty agent is none. Copied when set.
+     */
+    public BatchOptions userAgents(Map<String, String> userAgents) {
+        this.userAgents = userAgents == null ? Map.of() : new LinkedHashMap<>(userAgents);
+        return this;
+    }
+
+    Map<String, String> userAgentsOrEmpty() {
+        return userAgents;
     }
 
     Integer concurrencyOrNull() {

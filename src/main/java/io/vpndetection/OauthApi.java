@@ -429,7 +429,7 @@ public final class OauthApi {
 
     // URLEncoder sends a space as + and leaves * literal, and a lone surrogate would go out as ?, so
     // the encoding is spelled out.
-    private static String percentEncode(String name, String value) {
+    static String percentEncode(String name, String value) {
         ByteBuffer bytes = utf8Bytes(name, value);
         StringBuilder out = new StringBuilder();
         while (bytes.hasRemaining()) {

@@ -528,8 +528,7 @@ class ConformanceTest {
         }
     }
 
-    // The spec's user agent parameters are not this release's to send: a lookup carries no query
-    // and a batch body nothing beside its addresses.
+    // Without a user agent a lookup carries no query, and a batch body nothing beside its addresses.
     @Test
     void noUserAgentGoesOutWithALookupOrABatch() {
         String answer = "{\"ip\": \"%s\", \"is_vpn\": false}";

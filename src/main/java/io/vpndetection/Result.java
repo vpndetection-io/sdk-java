@@ -15,6 +15,7 @@ import io.vpndetection.model.PubproxyDetail;
 import io.vpndetection.model.SatelliteDetail;
 import io.vpndetection.model.SmtpDetail;
 import io.vpndetection.model.SshDetail;
+import io.vpndetection.model.UserAgentVerdict;
 import io.vpndetection.model.VpnDetail;
 import io.vpndetection.model.WebDetail;
 
@@ -356,6 +357,16 @@ public final class Result {
     /** Where to report abuse from the address. On a paid plan. */
     public Optional<AbuseContact> abuse() {
         return Optional.ofNullable(raw.getAbuse());
+    }
+
+    /**
+     * The verdict on the user agent the lookup sent: the agent it names, its kind, and whether this
+     * address bears it out ({@code verified}, {@code spoofed}, {@code unverifiable} or {@code
+     * not_bot}). With every field, on a paid plan or the trial. Empty when none was sent, when the
+     * plan leaves it out, and on a bogon, which is answered locally.
+     */
+    public Optional<UserAgentVerdict> userAgent() {
+        return Optional.ofNullable(raw.getUserAgent());
     }
 
     /**

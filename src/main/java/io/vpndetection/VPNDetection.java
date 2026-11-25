@@ -17,7 +17,9 @@ import io.vpndetection.model.LookupResponse;
 import java.net.Authenticator;
 import java.net.CookieHandler;
 import java.net.ProxySelector;
+import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,6 +38,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 
@@ -60,11 +63,13 @@ public final class VPNDetection implements AutoCloseable {
     private final EntitlementWireApi entitlementApi;
     private final DatabaseApi database;
     private final OauthApi oauth;
-    private final Cache<String, Result> cache;
-    // The requests in the air, by address, so concurrent misses for one address share one
+    // Keyed on the address and the user agent sent with it: an answer for an agent carries that
+    // agent's verdict, so it is never served for the address's plain lookup or another agent's.
+    private final Cache<Key, Result> cache;
+    // The requests in the air, by address and agent, so concurrent misses for one pair share one
     // request: a lookup's, or the batch chunk carrying it. Only used with a cache, since without
     // one every lookup is served. Guarded by synchronizing on the map itself.
-    private final Map<String, CompletableFuture<Result>> flights = new HashMap<>();
+    private final Map<Key, CompletableFuture<Result>> flights = new HashMap<>();
     private final Semaphore gate;
     private final ExecutorService ownedExecutor;
     private final Executor executor;
@@ -137,10 +142,15 @@ public final class VPNDetection implements AutoCloseable {
         // Judged, cached and sent as the IPv4 address it carries, if it is mapped.
         String carried = Bogon.unmapped(ip);
         if (Bogon.isBogon(carried)) {
+            // Answered here, so it carries no user agent verdict and sends nothing.
             return Result.bogon(carried);
         }
+        return lookup(new Key(carried, agentOf(options.userAgentOrNull())), options);
+    }
+
+    private Result lookup(Key key, LookupOptions options) {
         if (cache == null) {
-            return fetch(carried, options);
+            return fetch(key, options);
         }
         CompletableFuture<Result> led;
         while (true) {
@@ -148,14 +158,14 @@ public final class VPNDetection implements AutoCloseable {
             synchronized (flights) {
                 // Checked under the lock: a request that lands caches its answer before it leaves
                 // the board, so a miss here with nothing on the board means nobody is asking.
-                Result hit = cache.getIfPresent(carried);
+                Result hit = cache.getIfPresent(key);
                 if (hit != null) {
                     return hit;
                 }
-                flight = flights.get(carried);
+                flight = flights.get(key);
                 if (flight == null) {
                     led = new CompletableFuture<>();
-                    flights.put(carried, led);
+                    flights.put(key, led);
                     break;
                 }
             }
@@ -166,22 +176,22 @@ public final class VPNDetection implements AutoCloseable {
             }
         }
         try {
-            Result result = fetch(carried, options);
-            land(carried, led, result, null);
+            Result result = fetch(key, options);
+            land(key, led, result, null);
             return result;
         } catch (RuntimeException | Error e) {
-            land(carried, led, null, e);
+            land(key, led, null, e);
             throw e;
         }
     }
 
-    // One GET for one address, cached once it answers.
-    private Result fetch(String ip, LookupOptions options) {
-        LookupWireApi wire = lookupApi(options);
+    // One GET for one address and agent, cached once it answers.
+    private Result fetch(Key key, LookupOptions options) {
+        LookupWireApi wire = lookupApi(options, key.agent());
         Result result = Wire.execute(retries(options),
-                () -> Result.of(Wire.answer(wire.lookupIpWithHttpInfo(ip, null), "lookup answer")));
+                () -> Result.of(Wire.answer(wire.lookupIpWithHttpInfo(key.ip(), null), "lookup answer")));
         if (cache != null) {
-            cache.put(ip, result);
+            cache.put(key, result);
         }
         return result;
     }
@@ -211,10 +221,10 @@ public final class VPNDetection implements AutoCloseable {
     // the flight instead, which sends each waiter to ask again rather than fail with it. Called
     // after the answer is cached, so nobody finds the board and the cache both empty for an
     // address that has just been answered.
-    private void land(String ip, CompletableFuture<Result> flight, Result result, Throwable error) {
+    private void land(Key key, CompletableFuture<Result> flight, Result result, Throwable error) {
         synchronized (flights) {
-            if (flights.get(ip) == flight) {
-                flights.remove(ip);
+            if (flights.get(key) == flight) {
+                flights.remove(key);
             }
         }
         if (result != null) {
@@ -243,7 +253,7 @@ public final class VPNDetection implements AutoCloseable {
      */
     public Result myIp(LookupOptions options) {
         Objects.requireNonNull(options, "options");
-        LookupWireApi wire = lookupApi(options);
+        LookupWireApi wire = lookupApi(options, agentOf(options.userAgentOrNull()));
         return Wire.execute(retries(options),
                 () -> Result.of(Wire.answer(wire.lookupMyIpWithHttpInfo(null), "lookup answer")));
     }
@@ -281,7 +291,11 @@ public final class VPNDetection implements AutoCloseable {
      */
     public Entitlement myEntitlement(LookupOptions options) {
         Objects.requireNonNull(options, "options");
-        ApiClient scoped = scoped(options);
+        if (agentOf(options.userAgentOrNull()) != null) {
+            throw new VPNDetectionException(ErrorKind.BAD_REQUEST,
+                    "an entitlement takes no user agent: it classifies no address");
+        }
+        ApiClient scoped = scoped(options, null);
         EntitlementWireApi wire = scoped == api ? entitlementApi : new EntitlementWireApi(scoped);
         return Wire.execute(retries(options),
                 () -> Wire.answer(wire.myEntitlementWithHttpInfo(), "entitlement"));
@@ -340,65 +354,92 @@ public final class VPNDetection implements AutoCloseable {
         Semaphore limit = perCall == null ? gate : new Semaphore(perCall);
 
         // An IPv4-mapped address is sent as the address it carries, once however many of its
-        // spellings were asked, and answered under each one asked.
+        // spellings were asked with one agent, and answered under each one asked. Each address goes
+        // with the agent userAgents names for it as given, else the batch's userAgent.
         LinkedHashSet<String> asked = new LinkedHashSet<>(ips);
-        LinkedHashSet<String> unique = new LinkedHashSet<>();
+        Map<String, String> agents = options.userAgentsOrEmpty();
+        String everyAgent = agentOf(options.userAgentOrNull());
+        Map<String, Key> keyOf = new HashMap<>();
+        LinkedHashSet<Key> unique = new LinkedHashSet<>();
         for (String ip : asked) {
-            unique.add(Bogon.unmapped(ip));
+            String agent = agents.containsKey(ip) ? agentOf(agents.get(ip)) : everyAgent;
+            Key key = new Key(Bogon.unmapped(ip), agent);
+            keyOf.put(ip, key);
+            unique.add(key);
         }
-        Map<String, BatchResult> answers = new HashMap<>();
-        List<String> pending = new ArrayList<>();
+        Map<Key, BatchResult> answers = new HashMap<>();
+        List<Key> pending = new ArrayList<>();
         // An address already in the air is awaited rather than sent again, and every address this
         // batch sends is boarded before a chunk is built, so a lookup arriving meanwhile awaits the
         // batch's answer.
-        Map<String, CompletableFuture<Result>> joined = new LinkedHashMap<>();
-        Map<String, CompletableFuture<Result>> boarded = new HashMap<>();
-        for (String ip : unique) {
-            if (Bogon.isBogon(ip)) {
-                answers.put(ip, BatchResult.found(Result.bogon(ip)));
+        Map<Key, CompletableFuture<Result>> joined = new LinkedHashMap<>();
+        Map<Key, CompletableFuture<Result>> boarded = new HashMap<>();
+        for (Key key : unique) {
+            if (Bogon.isBogon(key.ip())) {
+                answers.put(key, BatchResult.found(Result.bogon(key.ip())));
                 continue;
             }
             if (cache != null) {
                 synchronized (flights) {
-                    Result hit = cache.getIfPresent(ip);
+                    Result hit = cache.getIfPresent(key);
                     if (hit != null) {
-                        answers.put(ip, BatchResult.found(hit));
+                        answers.put(key, BatchResult.found(hit));
                         continue;
                     }
-                    CompletableFuture<Result> inAir = flights.get(ip);
+                    CompletableFuture<Result> inAir = flights.get(key);
                     if (inAir != null) {
-                        joined.put(ip, inAir);
+                        joined.put(key, inAir);
                         continue;
                     }
                     CompletableFuture<Result> flight = new CompletableFuture<>();
-                    flights.put(ip, flight);
-                    boarded.put(ip, flight);
+                    flights.put(key, flight);
+                    boarded.put(key, flight);
                 }
             }
-            pending.add(ip);
+            pending.add(key);
         }
 
-        LookupWireApi wire = lookupApi(options);
+        LookupWireApi wire = lookupApi(options, null);
         int callRetries = retries(options);
         try {
-            List<CompletableFuture<Map<String, BatchResult>>> chunks = new ArrayList<>();
-            for (int from = 0; from < pending.size(); from += BATCH_MAX) {
-                List<String> chunk = List.copyOf(pending.subList(from, Math.min(from + BATCH_MAX, pending.size())));
+            List<CompletableFuture<Map<Key, BatchResult>>> chunks = new ArrayList<>();
+            for (List<Key> chunk : chunks(pending)) {
                 chunks.add(submit(limit, chunk, wire, callRetries, boarded));
             }
-            for (CompletableFuture<Map<String, BatchResult>> chunk : chunks) {
+            for (CompletableFuture<Map<Key, BatchResult>> chunk : chunks) {
                 answers.putAll(chunk.join());
             }
         } catch (RuntimeException | Error e) {
             // A chunk that never answered still releases whoever waits on its addresses. Landing
             // twice is harmless: a flight takes its first outcome only.
-            boarded.forEach((ip, flight) -> land(ip, flight, null, null));
+            boarded.forEach((key, flight) -> land(key, flight, null, null));
             throw e;
         }
-        joined.forEach((ip, flight) -> answers.put(ip, awaitForBatch(ip, flight, options)));
+        joined.forEach((key, flight) -> answers.put(key, awaitForBatch(key, flight, options)));
         LinkedHashMap<String, BatchResult> out = new LinkedHashMap<>();
         for (String ip : asked) {
-            out.put(ip, answers.get(Bogon.unmapped(ip)));
+            out.put(ip, answers.get(keyOf.get(ip)));
+        }
+        return out;
+    }
+
+    // Chunks of up to 1000 that each hold an address once, since a request keys its answers and its
+    // user_agents by address: one address asked with two agents goes in two requests.
+    private static List<List<Key>> chunks(List<Key> pending) {
+        Map<String, Integer> seen = new HashMap<>();
+        List<List<Key>> rounds = new ArrayList<>();
+        for (Key key : pending) {
+            int round = seen.merge(key.ip(), 1, Integer::sum) - 1;
+            if (round == rounds.size()) {
+                rounds.add(new ArrayList<>());
+            }
+            rounds.get(round).add(key);
+        }
+        List<List<Key>> out = new ArrayList<>();
+        for (List<Key> round : rounds) {
+            for (int from = 0; from < round.size(); from += BATCH_MAX) {
+                out.add(List.copyOf(round.subList(from, Math.min(from + BATCH_MAX, round.size()))));
+            }
         }
         return out;
     }
@@ -480,40 +521,55 @@ public final class VPNDetection implements AutoCloseable {
         return perCall != null ? perCall : retries;
     }
 
-    private LookupWireApi lookupApi(LookupOptions options) {
-        ApiClient scoped = scoped(options);
+    private LookupWireApi lookupApi(LookupOptions options, String agent) {
+        ApiClient scoped = scoped(options, agent);
         return scoped == api ? lookupApi : new LookupWireApi(scoped);
     }
 
     // A generated API class reads its timeout once, when it is built, so a per-call timeout needs
     // an instance of its own. That is a handful of field copies over the SAME HttpClient, not a
-    // second connection pool.
-    private ApiClient scoped(LookupOptions options) {
+    // second connection pool. So does a user agent, whose query parameter is set here rather than
+    // by the generated layer: URLEncoder leaves `*` literal and sends a lone surrogate as `?`, so it
+    // is percent-encoded over UTF-8 with only A-Z a-z 0-9 - . _ ~ literal, and sent at any length.
+    private ApiClient scoped(LookupOptions options, String agent) {
         Duration perCall = options.requestTimeoutOrNull();
-        if (perCall == null || perCall.equals(requestTimeout)) {
+        boolean ownTimeout = perCall != null && !perCall.equals(requestTimeout);
+        if (!ownTimeout && agent == null) {
             return api;
         }
         ApiClient scoped = new ApiClient(new FixedHttpClientBuilder(api.getHttpClient()),
                 api.getObjectMapper(), api.getBaseUri());
-        scoped.setReadTimeout(perCall);
-        scoped.setRequestInterceptor(api.getRequestInterceptor());
+        scoped.setReadTimeout(ownTimeout ? perCall : requestTimeout);
+        Consumer<HttpRequest.Builder> key = api.getRequestInterceptor();
+        if (agent == null) {
+            scoped.setRequestInterceptor(key);
+            return scoped;
+        }
+        String query = "user_agent=" + OauthApi.percentEncode("userAgent", agent);
+        scoped.setRequestInterceptor(rb -> {
+            URI uri = rb.build().uri();
+            rb.uri(URI.create(uri + (uri.getRawQuery() == null ? "?" : "&") + query));
+            if (key != null) {
+                key.accept(rb);
+            }
+        });
         return scoped;
     }
 
     // The permit is taken on the CALLING thread, before the task is handed to the executor, so at
     // most `concurrency` chunks ever exist. Acquiring inside the task would queue every chunk at
     // once and let a large batch conjure a thread per chunk.
-    private CompletableFuture<Map<String, BatchResult>> submit(Semaphore limit, List<String> chunk,
-            LookupWireApi wire, int callRetries, Map<String, CompletableFuture<Result>> boarded) {
+    private CompletableFuture<Map<Key, BatchResult>> submit(Semaphore limit, List<Key> chunk,
+            LookupWireApi wire, int callRetries, Map<Key, CompletableFuture<Result>> boarded) {
         try {
             limit.acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             // This batch was interrupted: whoever waits on these addresses asks again.
-            for (String ip : chunk) {
-                CompletableFuture<Result> flight = boarded.get(ip);
+            for (Key key : chunk) {
+                CompletableFuture<Result> flight = boarded.get(key);
                 if (flight != null) {
-                    land(ip, flight, null, null);
+                    land(key, flight, null, null);
                 }
             }
             return CompletableFuture.completedFuture(failedChunk(chunk,
@@ -521,11 +577,11 @@ public final class VPNDetection implements AutoCloseable {
         }
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Map<String, BatchResult> answered = lookupChunk(chunk, wire, callRetries);
-                answered.forEach((ip, answer) -> {
-                    CompletableFuture<Result> flight = boarded.get(ip);
+                Map<Key, BatchResult> answered = lookupChunk(chunk, wire, callRetries);
+                answered.forEach((key, answer) -> {
+                    CompletableFuture<Result> flight = boarded.get(key);
                     if (flight != null) {
-                        land(ip, flight, answer.result().orElse(null), answer.error().orElse(null));
+                        land(key, flight, answer.result().orElse(null), answer.error().orElse(null));
                     }
                 });
                 return answered;
@@ -537,12 +593,12 @@ public final class VPNDetection implements AutoCloseable {
 
     // A batch's answer for an address a lookup was already fetching. Should that lookup be
     // interrupted, the address is asked again, as a lookup of its own under this batch's options.
-    private BatchResult awaitForBatch(String ip, CompletableFuture<Result> flight, BatchOptions options) {
+    private BatchResult awaitForBatch(Key key, CompletableFuture<Result> flight, BatchOptions options) {
         try {
             try {
                 return BatchResult.found(await(flight));
             } catch (CancellationException e) {
-                return BatchResult.found(lookup(ip, options));
+                return BatchResult.found(lookup(key, options));
             }
         } catch (VPNDetectionException e) {
             return BatchResult.failed(e);
@@ -552,11 +608,22 @@ public final class VPNDetection implements AutoCloseable {
     // One POST /batch, mapped back onto the addresses it was asked about. A chunk-level failure -
     // the call refused, the transport failing, the retries exhausted - becomes every address's
     // error, exactly as it would have been had each been looked up alone.
-    private Map<String, BatchResult> lookupChunk(List<String> chunk, LookupWireApi wire, int callRetries) {
+    private Map<Key, BatchResult> lookupChunk(List<Key> chunk, LookupWireApi wire, int callRetries) {
         BatchLookupResponse body;
         try {
-            // The generated request starts user_agents as an empty map, which would go out on every batch.
-            BatchLookupRequest request = new BatchLookupRequest().ips(chunk).userAgents(null);
+            List<String> ips = new ArrayList<>(chunk.size());
+            Map<String, String> agents = new LinkedHashMap<>();
+            for (Key key : chunk) {
+                ips.add(key.ip());
+                if (key.agent() != null) {
+                    agents.put(key.ip(), key.agent());
+                }
+            }
+            // Keyed by each address as `ips` sends it, and only in a chunk where one carries an
+            // agent: the generated request starts user_agents as an empty map, which would go out
+            // on every batch.
+            BatchLookupRequest request = new BatchLookupRequest().ips(ips)
+                    .userAgents(agents.isEmpty() ? null : agents);
             body = Wire.execute(callRetries,
                     () -> Wire.answer(wire.lookupBatchWithHttpInfo(request), "batch answer"));
         } catch (VPNDetectionException e) {
@@ -564,35 +631,44 @@ public final class VPNDetection implements AutoCloseable {
         }
         Map<String, LookupResponse> served = body.getResults() == null ? Map.of() : body.getResults();
         Map<String, BatchLookupError> failed = body.getErrors() == null ? Map.of() : body.getErrors();
-        Map<String, BatchResult> out = new HashMap<>();
-        for (String ip : chunk) {
+        Map<Key, BatchResult> out = new HashMap<>();
+        for (Key key : chunk) {
+            String ip = key.ip();
             LookupResponse answer = served.get(ip);
             if (answer != null) {
                 Result result = Result.of(answer);
                 if (cache != null) {
-                    cache.put(ip, result);
+                    cache.put(key, result);
                 }
-                out.put(ip, BatchResult.found(result));
+                out.put(key, BatchResult.found(result));
                 continue;
             }
             BatchLookupError entry = failed.get(ip);
             if (entry != null) {
                 int status = entry.getStatus() == null ? 500 : entry.getStatus();
-                out.put(ip, BatchResult.failed(Wire.fromEntry(status, entry.getError())));
+                out.put(key, BatchResult.failed(Wire.fromEntry(status, entry.getError())));
                 continue;
             }
-            out.put(ip, BatchResult.failed(new VPNDetectionException(
+            out.put(key, BatchResult.failed(new VPNDetectionException(
                     ErrorKind.SERVER_ERROR, "the batch answer did not include " + ip, 200, null, null)));
         }
         return out;
     }
 
-    private static Map<String, BatchResult> failedChunk(List<String> chunk, VPNDetectionException error) {
-        Map<String, BatchResult> out = new HashMap<>();
-        for (String ip : chunk) {
-            out.put(ip, BatchResult.failed(error));
+    private static Map<Key, BatchResult> failedChunk(List<Key> chunk, VPNDetectionException error) {
+        Map<Key, BatchResult> out = new HashMap<>();
+        for (Key key : chunk) {
+            out.put(key, BatchResult.failed(error));
         }
         return out;
+    }
+
+    // An address as sent, and the user agent sent with it, null for none.
+    private record Key(String ip, String agent) {}
+
+    // An empty user agent is none, as the API reads `user_agent=`.
+    private static String agentOf(String agent) {
+        return agent == null || agent.isEmpty() ? null : agent;
     }
 
     private static HttpClient defaultHttpClient() {
@@ -625,20 +701,20 @@ public final class VPNDetection implements AutoCloseable {
 
     // Each entry's life from the moment it is written, a lookup's and a batch entry's alike; a read
     // leaves it as it was.
-    private static Expiry<String, Result> lifetimes(Duration ttl) {
+    private static Expiry<Key, Result> lifetimes(Duration ttl) {
         return new Expiry<>() {
             @Override
-            public long expireAfterCreate(String ip, Result result, long now) {
+            public long expireAfterCreate(Key key, Result result, long now) {
                 return nanos(lifeOf(result, ttl));
             }
 
             @Override
-            public long expireAfterUpdate(String ip, Result result, long now, long left) {
+            public long expireAfterUpdate(Key key, Result result, long now, long left) {
                 return nanos(lifeOf(result, ttl));
             }
 
             @Override
-            public long expireAfterRead(String ip, Result result, long now, long left) {
+            public long expireAfterRead(Key key, Result result, long now, long left) {
                 return left;
             }
         };
