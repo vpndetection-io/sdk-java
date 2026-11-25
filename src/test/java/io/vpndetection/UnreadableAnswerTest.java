@@ -348,6 +348,75 @@ final class UnreadableAnswerTest {
     }
 
     /**
+     * The twelve seen days of a bot and of a service (spec 2026.11.23) are dates, read as every other
+     * day is: the well-formed answer reads each as a {@code LocalDate}, the whole date probe is refused
+     * on one, and {@code x} on each of the twelve. A BitTorrent peer's {@code last_reachable} stays a
+     * string.
+     */
+    @Test
+    void aBotsAndAServicesSeenDaysAreDates() throws IOException {
+        ObjectNode whole = (ObjectNode) MAPPER.readTree(WHOLE.get("8.8.8.8"));
+        whole.put("is_bot", true).put("is_ssh", true).put("is_smtp", true).put("is_web", true)
+                .put("is_dns_resolver", true).put("is_bittorrent", true);
+        whole.set("bot", MAPPER.readTree("{\"provider\": \"google\", \"provider_name\": \"Google\","
+                + " \"agents\": [\"Googlebot\"], \"categories\": [\"search_engine\"], \"verified\": true,"
+                + " \"identity\": \"verified\", \"verified_by\": \"list\", \"confidence\": \"high\","
+                + " \"first_seen\": \"2026-11-01\", \"last_seen\": \"2026-11-02\"}"));
+        whole.set("ssh", MAPPER.readTree("{\"port\": 22, \"banner\": \"SSH-2.0-OpenSSH_9.6\","
+                + " \"host_key_fp\": \"SHA256:x\", \"session_ok\": true,"
+                + " \"first_seen\": \"2026-11-03\", \"last_seen\": \"2026-11-04\"}"));
+        whole.set("smtp", MAPPER.readTree("{\"port\": 25, \"banner\": \"220 mail ESMTP\", \"session_ok\": false,"
+                + " \"first_seen\": \"2026-11-05\", \"last_seen\": \"2026-11-06\"}"));
+        whole.set("web", MAPPER.readTree("[{\"port\": 443, \"tls_ok\": true, \"session_ok\": true,"
+                + " \"status_code\": 200, \"server\": \"gws\", \"location\": \"\", \"title\": \"\","
+                + " \"cert_subject_cn\": \"\", \"cert_subject_o\": \"\", \"cert_issuer_dn\": \"\","
+                + " \"cert_browser_trusted\": true, \"tls_version\": \"TLS 1.3\","
+                + " \"first_seen\": \"2026-11-07\", \"last_seen\": \"2026-11-08\"}]"));
+        whole.set("dns_resolver", MAPPER.readTree("{\"port\": 53, \"recursion_available\": true, \"rcode\": 0,"
+                + " \"answer_correct\": true, \"first_seen\": \"2026-11-09\", \"last_seen\": \"2026-11-10\"}"));
+        whole.set("bittorrent", MAPPER.readTree("{\"verified\": true, \"id_matches_ip\": false,"
+                + " \"first_seen\": \"2026-11-11\", \"last_seen\": \"2026-11-12\", \"last_reachable\": \"not a day\","
+                + " \"days_seen\": 3, \"num_ports\": 1, \"peak_num_ports\": 1, \"indexer\": false,"
+                + " \"clients\": [\"qB\"]}"));
+
+        try (VPNDetection client = clientOn(StubHttpClient.of(Map.of(
+                "8.8.8.8", StubHttpClient.Route.ok(MAPPER.writeValueAsString(whole))))).build()) {
+            Result result = client.lookup("8.8.8.8");
+            assertEquals(LocalDate.of(2026, 11, 1), result.bot().orElseThrow().getFirstSeen());
+            assertEquals(LocalDate.of(2026, 11, 2), result.bot().orElseThrow().getLastSeen());
+            assertEquals(LocalDate.of(2026, 11, 3), result.ssh().orElseThrow().getFirstSeen());
+            assertEquals(LocalDate.of(2026, 11, 4), result.ssh().orElseThrow().getLastSeen());
+            assertEquals(LocalDate.of(2026, 11, 5), result.smtp().orElseThrow().getFirstSeen());
+            assertEquals(LocalDate.of(2026, 11, 6), result.smtp().orElseThrow().getLastSeen());
+            assertEquals(LocalDate.of(2026, 11, 7), result.web().orElseThrow().get(0).getFirstSeen());
+            assertEquals(LocalDate.of(2026, 11, 8), result.web().orElseThrow().get(0).getLastSeen());
+            assertEquals(LocalDate.of(2026, 11, 9), result.dnsResolver().orElseThrow().getFirstSeen());
+            assertEquals(LocalDate.of(2026, 11, 10), result.dnsResolver().orElseThrow().getLastSeen());
+            assertEquals(LocalDate.of(2026, 11, 11), result.bittorrent().orElseThrow().getFirstSeen());
+            assertEquals(LocalDate.of(2026, 11, 12), result.bittorrent().orElseThrow().getLastSeen());
+            assertEquals("not a day", result.bittorrent().orElseThrow().getLastReachable());
+        }
+
+        List<Object> probe = List.of("x", "tomorrow", "monday", "2026-02-30", "2026-10-05T24:00:00Z",
+                "2026-10-05T10:00:00", "2026-10-05T10:00:00Z", "2026-10-05+05", "2026-10-05T10:00Z",
+                "2026-10-05\n", "\u0662026-10-05", " 2026-10-05", "2026-10-05 ", "+12026-10-05", "-2026-10-05",
+                "2026-10-05Z", "20261005", "2026-W41-1", "2026-278", "2026-10-5", "", 20000, true,
+                List.of(2026, 10, 5));
+        for (Object value : probe) {
+            ObjectNode body = whole.deepCopy();
+            ((ObjectNode) body.get("ssh")).set("last_seen", MAPPER.valueToTree(value));
+            assertRetriedServerError("8.8.8.8", MAPPER.writeValueAsString(body), "ssh last_seen = " + value);
+        }
+        for (String detail : List.of("/bot", "/ssh", "/smtp", "/web/0", "/dns_resolver", "/bittorrent")) {
+            for (String member : List.of("first_seen", "last_seen")) {
+                ObjectNode body = whole.deepCopy();
+                ((ObjectNode) body.at(detail)).put(member, "x");
+                assertRetriedServerError("8.8.8.8", MAPPER.writeValueAsString(body), detail + " " + member + " = x");
+            }
+        }
+    }
+
+    /**
      * A chunk the batch cannot read fails every address in it, retried; an entry it cannot read is
      * that address's failure alone, and the rest of the chunk is answered.
      */

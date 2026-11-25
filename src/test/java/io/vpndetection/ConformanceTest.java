@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -514,8 +515,8 @@ class ConformanceTest {
             assertEquals(want.get("identity").asText(), bot.getIdentity());
             assertEquals(want.get("verified_by").asText(), bot.getVerifiedBy());
             assertEquals(want.get("confidence").asText(), bot.getConfidence());
-            assertEquals(want.get("first_seen").asText(), bot.getFirstSeen());
-            assertEquals(want.get("last_seen").asText(), bot.getLastSeen());
+            assertEquals(LocalDate.parse(want.get("first_seen").asText()), bot.getFirstSeen());
+            assertEquals(LocalDate.parse(want.get("last_seen").asText()), bot.getLastSeen());
         }
 
         JsonNode unlimited = lookupCase("unlimited-bot").get("body");
