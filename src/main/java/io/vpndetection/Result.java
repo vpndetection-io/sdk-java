@@ -188,7 +188,7 @@ public final class Result {
 
     /**
      * Whether a public proxy, one anyone can connect through, listens on the address or sends its
-     * traffic out from it. Scale and above.
+     * traffic out from it. On a paid plan.
      */
     public Optional<Boolean> isPubproxy() {
         return Optional.ofNullable(raw.getIsPubproxy());
@@ -202,37 +202,37 @@ public final class Result {
         return Optional.ofNullable(raw.getIsAnycast());
     }
 
-    /** Whether the address is a mobile carrier's, where many phones can share one address. On every paid plan. */
+    /** Whether the address is a mobile carrier's, where many phones can share one address. On a paid plan. */
     public Optional<Boolean> isCarrier() {
         return Optional.ofNullable(raw.getIsCarrier());
     }
 
-    /** Whether the address is a satellite operator's. On every paid plan. */
+    /** Whether the address is a satellite operator's. On a paid plan. */
     public Optional<Boolean> isSatellite() {
         return Optional.ofNullable(raw.getIsSatellite());
     }
 
-    /** Whether an SSH server answered on the address. On every paid plan. */
+    /** Whether an SSH server answered on the address. On a paid plan. */
     public Optional<Boolean> isSsh() {
         return Optional.ofNullable(raw.getIsSsh());
     }
 
-    /** Whether a mail server answered on the address. On every paid plan. */
+    /** Whether a mail server answered on the address. On a paid plan. */
     public Optional<Boolean> isSmtp() {
         return Optional.ofNullable(raw.getIsSmtp());
     }
 
-    /** Whether a web server answered on the address, on port 80 or 443. On every paid plan. */
+    /** Whether a web server answered on the address, on port 80 or 443. On a paid plan. */
     public Optional<Boolean> isWeb() {
         return Optional.ofNullable(raw.getIsWeb());
     }
 
-    /** Whether an open DNS resolver answered on the address. On every paid plan. */
+    /** Whether an open DNS resolver answered on the address. On a paid plan. */
     public Optional<Boolean> isDnsResolver() {
         return Optional.ofNullable(raw.getIsDnsResolver());
     }
 
-    /** Whether a BitTorrent client was seen on the address in the last 90 days. On every paid plan. */
+    /** Whether a BitTorrent client was seen on the address in the last 90 days. On a paid plan. */
     public Optional<Boolean> isBittorrent() {
         return Optional.ofNullable(raw.getIsBittorrent());
     }
@@ -259,7 +259,7 @@ public final class Result {
 
     /**
      * Detail for {@link #isBot()}: whose bot uses the address, the bots it serves, what they do and
-     * whether the operator vouches for the address. Empty when it is false. On every paid plan.
+     * whether the operator vouches for the address. Empty when it is false. On a paid plan.
      */
     public Optional<BotDetail> bot() {
         return Optional.ofNullable(raw.getBot());
@@ -279,46 +279,46 @@ public final class Result {
 
     /**
      * Detail for {@link #isPubproxy()}: which end of a proxy the address is, its protocols, and how
-     * many ports and proxies it counts at each end. On every paid plan.
+     * many ports and proxies it counts at each end. On a paid plan.
      */
     public Optional<PubproxyDetail> pubproxy() {
         return Optional.ofNullable(raw.getPubproxy());
     }
 
-    /** Detail for {@link #isCarrier()}. Empty when it is false. On every paid plan. */
+    /** Detail for {@link #isCarrier()}. Empty when it is false. On a paid plan. */
     public Optional<CarrierDetail> carrier() {
         return Optional.ofNullable(raw.getCarrier());
     }
 
-    /** Detail for {@link #isSatellite()}. Empty when it is false. On every paid plan. */
+    /** Detail for {@link #isSatellite()}. Empty when it is false. On a paid plan. */
     public Optional<SatelliteDetail> satellite() {
         return Optional.ofNullable(raw.getSatellite());
     }
 
-    /** Detail for {@link #isSsh()}. Empty when it is false. On every paid plan. */
+    /** Detail for {@link #isSsh()}. Empty when it is false. On a paid plan. */
     public Optional<SshDetail> ssh() {
         return Optional.ofNullable(raw.getSsh());
     }
 
-    /** Detail for {@link #isSmtp()}. Empty when it is false. On every paid plan. */
+    /** Detail for {@link #isSmtp()}. Empty when it is false. On a paid plan. */
     public Optional<SmtpDetail> smtp() {
         return Optional.ofNullable(raw.getSmtp());
     }
 
     /**
      * Detail for {@link #isWeb()}: a row per port that answered, lowest first, and an empty list
-     * when it is false. On every paid plan.
+     * when it is false. On a paid plan.
      */
     public Optional<List<WebDetail>> web() {
         return Optional.ofNullable(raw.getWeb());
     }
 
-    /** Detail for {@link #isDnsResolver()}. Empty when it is false. On every paid plan. */
+    /** Detail for {@link #isDnsResolver()}. Empty when it is false. On a paid plan. */
     public Optional<DnsResolverDetail> dnsResolver() {
         return Optional.ofNullable(raw.getDnsResolver());
     }
 
-    /** Detail for {@link #isBittorrent()}. Empty when it is false. On every paid plan. */
+    /** Detail for {@link #isBittorrent()}. Empty when it is false. On a paid plan. */
     public Optional<BitTorrentDetail> bittorrent() {
         return Optional.ofNullable(raw.getBittorrent());
     }
@@ -340,7 +340,7 @@ public final class Result {
         return Optional.ofNullable(raw.getAsn());
     }
 
-    /** The organization the address belongs to. On every paid plan. */
+    /** The organization the address belongs to. On a paid plan. */
     public Optional<Company> company() {
         return Optional.ofNullable(raw.getCompany());
     }
@@ -353,7 +353,7 @@ public final class Result {
         return Optional.ofNullable(raw.getHostname());
     }
 
-    /** Where to report abuse from the address. On every paid plan. */
+    /** Where to report abuse from the address. On a paid plan. */
     public Optional<AbuseContact> abuse() {
         return Optional.ofNullable(raw.getAbuse());
     }
