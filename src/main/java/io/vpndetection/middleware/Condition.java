@@ -24,10 +24,13 @@ import java.util.Set;
  * }</pre>
  *
  * <p>A value may be a scalar (equality, strings without regard to case), a {@link Collection}
- * meaning any-of, a {@link Bound} comparing a number, or a nested condition. A member set to
- * {@code false} or {@code null} is ignored entirely - a condition states the positive signals you
- * act on, so there is no way to write "block when this is false", which would otherwise read as
- * blocking everybody.
+ * meaning any-of, a {@link Bound} comparing a number, or a nested condition. Against a member the
+ * answer holds as a list ({@code web}'s rows, {@code pubproxy.protocols}, {@code bot.agents}) a
+ * value matches when any one element matches it, so {@code Map.of("web", Map.of("port", 443))}
+ * needs a row on port 443, and every member of a nested condition has to match that same row. A
+ * member set to {@code false} or {@code null} is ignored entirely - a condition states the positive
+ * signals you act on, so there is no way to write "block when this is false", which would otherwise
+ * read as blocking everybody.
  */
 public final class Condition {
     private Condition() {}
@@ -140,6 +143,16 @@ public final class Condition {
      * member fail a match rather than pass it.
      */
     private static boolean matchesValue(Object want, Object got) {
+        // A list in the answer matches when one of its elements does, so the branches below each
+        // compare one element.
+        if (got instanceof List<?> elements) {
+            for (Object element : elements) {
+                if (matchesValue(want, element)) {
+                    return true;
+                }
+            }
+            return false;
+        }
         if (want instanceof Bound bound) {
             return bound.matches(got);
         }
