@@ -278,7 +278,7 @@ result.isHosting().isEmpty();       // on Unlimited: not in your plan
 result.trialExpired().orElse(false); // a free-plan key's trial is spent (from 7.0.0)
 result.capReached().orElse(false);   // a paid key past its overage cap (from 7.0.0)
 result.isBot().orElse(false);        // an automated client uses the address, on every plan (from 7.0.0)
-result.bot().map(BotDetail::getVerified).orElse(false); // its operator vouches for it, paid plans (from 7.0.0)
+result.bot().map(BotDetail::getVerified).orElse(false); // its operator vouches for it, on a paid plan (from 7.0.0)
 ```
 
 ### A value the API adds
