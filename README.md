@@ -113,6 +113,22 @@ client.lookupAsync("45.83.91.1").thenAccept(r -> System.out.println(r.isVpn()));
 client.lookupBatchAsync(manyIps).thenAccept(results -> System.out.println(results.size()));
 ```
 
+### A visitor's user agent
+
+From 7.0.0, pass the `User-Agent` of the request you are deciding on, and with every field (a paid plan or the trial) the answer says whose bot it names and whether this address bears that out, so a real crawler can be told from one forging its agent:
+
+```java
+Result result = client.lookup(ip, new LookupOptions().userAgent(request.getHeader("User-Agent")));
+if (result.userAgent().map(UserAgentVerdict::getVerdict).orElse(null) == UserAgentVerdict.VerdictEnum.VERIFIED) {
+    // Googlebot, from one of Google's own addresses.
+}
+
+Map<String, BatchResult> results = client.lookupBatch(ips, new BatchOptions().userAgents(Map.of(
+        "66.249.66.1", "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")));
+```
+
+The verdict is `VERIFIED`, `SPOOFED`, `UNVERIFIABLE` or `NOT_BOT`. `userAgent` works on `myIp` too, and on a batch it is every address's agent except one `userAgents` names. An empty agent sends none, and `userAgent()` is empty without a key, on a free key past its trial, and for a private or reserved address. An answer for an address and an agent is cached apart from that address's plain answer.
+
 ### Caching
 
 Answers are cached by default, so repeat lookups of the same address are free:
