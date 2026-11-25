@@ -39,6 +39,7 @@ public final class Options<R> {
     OnMissingField onMissingField = OnMissingField.WARN;
     Predicate<R> skip;
     Consumer<String> onWarn;
+    boolean allowBots;
 
     /**
      * An existing client to use. Prefer this if you already hold one: two clients mean two caches,
@@ -116,6 +117,21 @@ public final class Options<R> {
     /** Skip classification for this request entirely. */
     public Options<R> skip(Predicate<R> skip) {
         this.skip = skip;
+        return this;
+    }
+
+    /**
+     * Let a verified crawler through. Off by default. On, each lookup sends the request's own
+     * {@code User-Agent}, and a request whose answer's {@code user_agent} verdict is {@code
+     * verified} is never refused, whatever its condition matches; the answer is still attached. An
+     * absent or empty header sends none. The verdict needs every field, a paid plan or the trial:
+     * once an agent was sent and a served answer carries no verdict, that is reported once under
+     * {@link #onMissingField}. Off, no agent is sent, so the client's cache keeps one entry per
+     * address rather than one per agent. A condition naming {@code user_agent} (refusing a
+     * {@code spoofed} crawler) can match only with this on.
+     */
+    public Options<R> allowBots(boolean allowBots) {
+        this.allowBots = allowBots;
         return this;
     }
 

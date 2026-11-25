@@ -71,6 +71,7 @@ final class Served {
         putDetail(out, "company", result.company());
         putDetail(out, "abuse", result.abuse());
         result.hostname().ifPresent(hostname -> out.put("hostname", hostname));
+        putDetail(out, "user_agent", result.userAgent());
         put(out, "trial_expired", result.trialExpired());
         put(out, "cap_reached", result.capReached());
         return out;
