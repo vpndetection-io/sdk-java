@@ -121,14 +121,18 @@ public final class Options<R> {
     }
 
     /**
-     * Let a verified crawler through. Off by default. On, each lookup sends the request's own
-     * {@code User-Agent}, and a request whose answer's {@code user_agent} verdict is {@code
-     * verified} is never refused, whatever its condition matches; the answer is still attached. An
-     * absent or empty header sends none. The verdict needs every field, a paid plan or the trial:
-     * once an agent was sent and a served answer carries no verdict, that is reported once under
-     * {@link #onMissingField}. Off, no agent is sent, so the client's cache keeps one entry per
-     * address rather than one per agent. A condition naming {@code user_agent} (refusing a
-     * {@code spoofed} crawler) can match only with this on.
+     * Let a verified crawler through. Off by default. On, a lookup sends the request's own
+     * {@code User-Agent} when it names a crawler, and a request whose answer's {@code user_agent}
+     * verdict is {@code verified} is never refused, whatever its condition matches; the answer is
+     * still attached. Any other agent, an absent or an empty header sends none, since its verdict
+     * could only be {@code not_bot}. One address is looked up with at most {@link
+     * Core#MAX_AGENTS_PER_ADDRESS} crawler agents an hour: past those its lookup sends none, and a
+     * request passes as a crawler only where the answer's {@code bot.verified} is true. The verdict
+     * needs every field, a paid plan or the trial: once an agent was sent and a served answer
+     * carries no verdict, that is reported once under {@link #onMissingField}. Off, no agent is
+     * sent, so the client's cache keeps one entry per address rather than one per agent. A
+     * condition naming {@code user_agent} (refusing a {@code spoofed} crawler) can match only with
+     * this on.
      */
     public Options<R> allowBots(boolean allowBots) {
         this.allowBots = allowBots;

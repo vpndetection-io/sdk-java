@@ -10,6 +10,7 @@ import io.vpndetection.model.UserAgentVerdict;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -23,6 +24,9 @@ import java.util.function.Function;
  * for Java rather than once per framework.
  */
 public final class Core<R> {
+    /** The most crawler agents one address is looked up with while it is remembered. */
+    public static final int MAX_AGENTS_PER_ADDRESS = 4;
+
     private static final System.Logger LOG = System.getLogger("io.vpndetection");
 
     private final Options<R> options;
@@ -30,6 +34,7 @@ public final class Core<R> {
     private final LookupOptions lookupOptions;
     private final Function<R, String> selector;
     private final Function<R, String> userAgentOf;
+    private final CrawlerAgents agents;
     private final List<Map<String, Object>> condition;
     private final Set<String> warned = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -56,6 +61,7 @@ public final class Core<R> {
         this.condition = options.blockCondition;
         this.selector = options.ipSelector != null ? options.ipSelector : defaultIpSelector;
         this.userAgentOf = options.allowBots ? userAgentOf : null;
+        this.agents = options.allowBots ? new CrawlerAgents() : null;
 
         if (options.client != null) {
             this.client = options.client;
@@ -74,6 +80,31 @@ public final class Core<R> {
         // Per call rather than only on the client built above, so an injected client is held to
         // the request path's bound too.
         this.lookupOptions = new LookupOptions().retries(options.retries).requestTimeout(options.timeout);
+    }
+
+    /**
+     * Whether a {@code User-Agent} names a crawler, the only kind of agent whose verdict can be {@code
+     * verified} or {@code spoofed}. It errs toward a match, which costs a lookup.
+     */
+    public static boolean namesCrawler(String agent) {
+        String lower = asciiLowerCase(agent);
+        for (String term : Crawlers.TERMS) {
+            if (lower.contains(term)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // A-Z only: a Unicode lowercase would turn the Kelvin sign into a k, and the terms are ASCII.
+    private static String asciiLowerCase(String s) {
+        char[] chars = s.toCharArray();
+        for (int i = 0; i < chars.length; i++) {
+            if (chars[i] >= 'A' && chars[i] <= 'Z') {
+                chars[i] += 'a' - 'A';
+            }
+        }
+        return new String(chars);
     }
 
     /** Whether a condition was configured at all. */
@@ -109,9 +140,9 @@ public final class Core<R> {
                     + "trusted-proxy setting or pass an ipSelector that reads your edge's header.");
         }
 
-        String agent = userAgentOf == null ? null : userAgentOf.apply(request);
-        boolean sendsAgent = agent != null && !agent.isEmpty();
-        LookupOptions perCall = sendsAgent
+        CrawlerAgents.Claim claim = agents == null ? null : agents.claim(ip, userAgentOf.apply(request));
+        String agent = claim == null ? null : claim.agent();
+        LookupOptions perCall = agent != null
                 ? new LookupOptions().retries(options.retries).requestTimeout(options.timeout).userAgent(agent)
                 : lookupOptions;
         Result result;
@@ -123,16 +154,19 @@ public final class Core<R> {
         if (condition != null) {
             reportMissing(result);
         }
-        if (sendsAgent && !result.isBogon() && result.userAgent().isEmpty()) {
+        if (agent != null && !result.isBogon() && result.userAgent().isEmpty()) {
             report("allowBots sent the request's User-Agent, and the answer carries no user_agent "
                     + "verdict, so no crawler can be let through: it needs every field, a paid plan "
                     + "or the trial.");
         }
-        // A crawler the answer verifies is never refused, whatever the condition says.
-        boolean verified = result.userAgent().map(UserAgentVerdict::getVerdict)
-                .map(UserAgentVerdict.VerdictEnum.VERIFIED::equals).orElse(false);
-        return new Lookup(condition != null && !(userAgentOf != null && verified)
-                && Condition.matches(condition, result), ip, result, null);
+        // A crawler the answer verifies is never refused, whatever the condition says. Past the
+        // address's bound no agent was sent, so only the address's own operator can vouch for it.
+        boolean verified = claim != null && (agent == null
+                ? result.bot().flatMap(b -> Optional.ofNullable(b.getVerified())).orElse(false)
+                : result.userAgent().map(UserAgentVerdict::getVerdict)
+                        .map(UserAgentVerdict.VerdictEnum.VERIFIED::equals).orElse(false));
+        return new Lookup(condition != null && !verified && Condition.matches(condition, result),
+                ip, result, null);
     }
 
     private void reportMissing(Result result) {
