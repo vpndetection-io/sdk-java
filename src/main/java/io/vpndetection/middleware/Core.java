@@ -7,6 +7,7 @@ import io.vpndetection.VPNDetection;
 import io.vpndetection.VPNDetectionException;
 import io.vpndetection.model.UserAgentVerdict;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -152,7 +153,8 @@ public final class Core<R> {
             return new Lookup(options.failClosed, ip, null, e);
         }
         if (condition != null) {
-            reportMissing(result);
+            // A request that sent no agent has no verdict to lack, whatever the plan serves.
+            reportMissing(result, agents != null && agent == null);
         }
         if (agent != null && !result.isBogon() && result.userAgent().isEmpty()) {
             report("allowBots sent the request's User-Agent, and the answer carries no user_agent "
@@ -169,11 +171,14 @@ public final class Core<R> {
                 ip, result, null);
     }
 
-    private void reportMissing(Result result) {
+    private void reportMissing(Result result, boolean noAgentSent) {
         if (options.onMissingField == Options.OnMissingField.IGNORE) {
             return;
         }
-        List<String> missing = Condition.missingMembers(condition, result);
+        List<String> missing = new ArrayList<>(Condition.missingMembers(condition, result));
+        if (noAgentSent) {
+            missing.remove("user_agent");
+        }
         if (missing.isEmpty()) {
             return;
         }

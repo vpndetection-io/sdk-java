@@ -250,6 +250,59 @@ class AllowBotsTest {
     }
 
     @Test
+    void aConditionOnTheVerdictIsNoPlanGapForARequestThatSentNoAgent() {
+        Map<String, Object> forged = Map.of("user_agent", Map.of("verdict", "spoofed"));
+        for (String header : new String[] {CHROME, null}) {
+            StubHttpClient http = anyOrigin("spoofed", null);
+            List<String> warnings = new ArrayList<>();
+            Core<Req> core = core(http, new Options<Req>().allowBots(true).blockCondition(forged)
+                    .onMissingField(Options.OnMissingField.THROW).onWarn(warnings::add));
+            assertFalse(core.evaluate(new Req("66.249.66.1", header)).isBlocked(), String.valueOf(header));
+            assertEquals(Arrays.asList((String) null), agents(http));
+            assertEquals(List.of(), warnings);
+        }
+
+        StubHttpClient http = anyOrigin("spoofed", null);
+        Core<Req> past = core(http, new Options<Req>().allowBots(true).blockCondition(forged)
+                .onMissingField(Options.OnMissingField.THROW));
+        for (int n = 1; n <= 4; n++) {
+            assertTrue(past.evaluate(new Req("66.249.66.1", crawler(n))).isBlocked(), "agent " + n);
+        }
+        assertFalse(past.evaluate(new Req("66.249.66.1", crawler(5))).isBlocked(), "past the bound, no gap either");
+        assertEquals(null, sentAgent(http, http.calls.size() - 1));
+
+        StubHttpClient offHttp = anyOrigin("spoofed", null);
+        List<String> warned = new ArrayList<>();
+        core(offHttp, new Options<Req>().blockCondition(forged).onWarn(warned::add))
+                .evaluate(new Req("66.249.66.1", CHROME));
+        assertEquals(1, warned.size(), "off, a condition on the verdict can never match, and says so");
+    }
+
+    @Test
+    void everyOtherMemberIsStillReportedForARequestThatSentNoAgent() {
+        StubHttpClient http = anyOrigin("spoofed", null);
+        List<String> warnings = new ArrayList<>();
+        core(http, new Options<Req>().allowBots(true)
+                .blockCondition(Map.of("user_agent", Map.of("verdict", "spoofed"), "is_tor", true))
+                .onWarn(warnings::add)).evaluate(new Req("66.249.66.1", CHROME));
+        assertEquals(Arrays.asList((String) null), agents(http));
+        assertEquals(1, warnings.size(), String.valueOf(warnings));
+        assertTrue(warnings.get(0).contains("is_tor") && !warnings.get(0).contains("user_agent"), warnings.get(0));
+    }
+
+    @Test
+    void aVerdictConditionIsStillReportedWhenTheAgentWasSentAndTheAnswerLacksIt() {
+        StubHttpClient http = origin();
+        List<String> warnings = new ArrayList<>();
+        core(http, new Options<Req>().allowBots(true)
+                .blockCondition(Map.of("user_agent", Map.of("verdict", "spoofed"))).onWarn(warnings::add))
+                .evaluate(new Req("203.0.114.7", GOOGLEBOT));
+        assertEquals(GOOGLEBOT_SENT, query(http, 0));
+        assertTrue(warnings.stream().anyMatch(w -> w.startsWith("blockCondition names user_agent")),
+                String.valueOf(warnings));
+    }
+
+    @Test
     void aBogonPeerSendsNothingAndIsNotReported() {
         StubHttpClient http = origin();
         List<String> warnings = new ArrayList<>();

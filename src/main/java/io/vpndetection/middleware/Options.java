@@ -132,7 +132,7 @@ public final class Options<R> {
      * carries no verdict, that is reported once under {@link #onMissingField}. Off, no agent is
      * sent, so the client's cache keeps one entry per address rather than one per agent. A
      * condition naming {@code user_agent} (refusing a {@code spoofed} crawler) can match only with
-     * this on.
+     * this on, and is no plan gap for a request that sent no agent.
      */
     public Options<R> allowBots(boolean allowBots) {
         this.allowBots = allowBots;
