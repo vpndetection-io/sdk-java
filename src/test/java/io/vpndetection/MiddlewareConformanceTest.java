@@ -81,7 +81,7 @@ class MiddlewareConformanceTest {
             {"paid-anycast-web-dns-resolver", "{\"dns_resolver\":{\"port\":53}}"},
             {"paid-satellite", "{\"is_satellite\":true}"},
             {"unlimited-anycast-hostname", "{\"hostname\":[\"dns.google\",\"one.one.one.one\"]}"},
-            {"unlimited-bot", "{\"is_bot\":true}"},
+            {"paid-verified-bot", "{\"is_bot\":true}"},
             {"paid-verified-bot", "{\"bot\":{\"verified\":true}}"},
         };
         JsonNode lookups = MAPPER.readTree(Path.of("testdata", "testdata.json").toFile()).get("lookup");

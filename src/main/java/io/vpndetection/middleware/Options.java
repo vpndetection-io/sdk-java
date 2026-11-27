@@ -91,7 +91,9 @@ public final class Options<R> {
 
     /**
      * What to block on. Leave it unset to only enrich the request and leave the decision to your
-     * own code. A list means OR: any one entry blocking is enough.
+     * own code. A list means OR: any one entry blocking is enough. A term on {@code is_bot} or
+     * {@code asn.type}, paid members, can never match without a key: it is reported missing, by its
+     * path for the AS's type.
      */
     public Options<R> blockCondition(List<Map<String, Object>> blockCondition) {
         this.blockCondition = blockCondition;
@@ -129,7 +131,8 @@ public final class Options<R> {
      * Core#MAX_AGENTS_PER_ADDRESS} crawler agents an hour: past those its lookup sends none, and a
      * request passes as a crawler only where the answer's {@code bot.verified} is true. The verdict
      * needs every field, a paid plan or the trial: once an agent was sent and a served answer
-     * carries no verdict, that is reported once under {@link #onMissingField}. Off, no agent is
+     * carries no verdict, that is reported once under {@link #onMissingField}. The {@code bot} verdict
+     * is a paid member too, so an app without a key gets no bot pass. Off, no agent is
      * sent, so the client's cache keeps one entry per address rather than one per agent. A
      * condition naming {@code user_agent} (refusing a {@code spoofed} crawler) can match only with
      * this on, and is no plan gap for a request that sent no agent.

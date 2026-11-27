@@ -128,6 +128,12 @@ final class UnreadableAnswerTest {
             String path = each.get(0);
             for (String member : each.subList(2, each.size())) {
                 for (boolean drop : new boolean[] {true, false}) {
+                    // A plan's to leave out (RequiredMembers.PLAN_MEMBERS), so only null refuses it;
+                    // KeylessAnswerTest reads the answer without it.
+                    if (drop && RequiredMembers.PLAN_MEMBERS.get(io.vpndetection.model.Asn.class).contains(member)
+                            && each.get(1).equals("/asn")) {
+                        continue;
+                    }
                     JsonNode body = MAPPER.readTree(WHOLE.get(path));
                     ObjectNode holder = (ObjectNode) body.at(each.get(1));
                     if (drop) {
@@ -474,9 +480,32 @@ final class UnreadableAnswerTest {
     }
 
     /**
-     * The table is the spec's {@code required} lists less what each marks nullable, which the
-     * generator writes as the models' {@code @Nonnull} fields, so a re-pin that adds one turns this
-     * red until the table has it. Every model an answer reaches must be in the table.
+     * Every member generation keeps required, which the spec no longer lists, is one the decoder
+     * accepts left out: {@code RequiredMembers.PLAN_MEMBERS} is {@code scripts/keep_types.py}'s list,
+     * which stops the generation once the spec lists a member again.
+     */
+    @Test
+    void theMembersAPlanMayLeaveOutAreTheOnesGenerationKeepsRequired() throws IOException {
+        String script = java.nio.file.Files.readString(java.nio.file.Path.of("scripts", "keep_types.py"));
+        int from = script.indexOf("PLAN_MEMBERS = [");
+        String list = script.substring(from, script.indexOf("\n]", from));
+        Map<String, Set<String>> kept = new java.util.TreeMap<>();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\(\"(\\w+)\", \"(\\w+)\"\\)").matcher(list);
+        while (m.find()) {
+            kept.computeIfAbsent(m.group(1), k -> new TreeSet<>()).add(m.group(2));
+        }
+        Map<String, Set<String>> accepted = new java.util.TreeMap<>();
+        RequiredMembers.PLAN_MEMBERS.forEach((model, members) ->
+                accepted.put(model.getSimpleName(), new TreeSet<>(members)));
+        assertEquals(Map.of("Asn", Set.of("type")), kept, "keep_types.py's list");
+        assertEquals(kept, accepted);
+    }
+
+    /**
+     * The table, with the members a plan may leave out, is the spec's {@code required} lists less
+     * what each marks nullable, which the generator writes as the models' {@code @Nonnull} fields,
+     * so a re-pin that adds one turns this red until the table has it. Every model an answer
+     * reaches must be in the table.
      */
     @Test
     void theRequiredMembersAreTheModelsNonnullOnes() throws ReflectiveOperationException {
@@ -516,7 +545,9 @@ final class UnreadableAnswerTest {
             }
             List<String> table = RequiredMembers.MEMBERS.get(model);
             assertTrue(table != null, model.getSimpleName() + " is not in the table");
-            assertEquals(nonnull, new TreeSet<>(table), model.getSimpleName());
+            Set<String> expected = new TreeSet<>(table);
+            expected.addAll(RequiredMembers.PLAN_MEMBERS.getOrDefault(model, List.of()));
+            assertEquals(nonnull, expected, model.getSimpleName());
         }
         reached.removeAll(unchecked);
         assertEquals(RequiredMembers.MEMBERS.keySet(), reached);

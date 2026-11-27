@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.vpndetection.internal.ApiClient;
 import io.vpndetection.model.Asn;
@@ -269,8 +270,14 @@ class ConformanceTest {
                     if (List.of("ip", "isBogon", "present", "absent", "emptyPresent").contains(field)) {
                         continue;
                     }
-                    assertEquals(MAPPER.readTree(expect.get(field).toString()),
-                            tree(member(r, field).orElse(null)), name + ": " + field);
+                    JsonNode got = tree(member(r, field).orElse(null));
+                    // A member the plan leaves out reads null through the model, which serializes it
+                    // as null where the corpus says it is absent; the read is held on its own.
+                    if (field.equals("asn") && got.path("type").isNull() && !expect.get(field).has("type")) {
+                        assertEquals(null, r.asn().orElseThrow().getType(), name + ": asn.type reads null");
+                        ((ObjectNode) got).remove("type");
+                    }
+                    assertEquals(MAPPER.readTree(expect.get(field).toString()), got, name + ": " + field);
                 }
             }
         }
@@ -523,7 +530,7 @@ class ConformanceTest {
         http = StubHttpClient.of(Map.of(ip, StubHttpClient.Route.ok(MAPPER.writeValueAsString(unlimited))));
         try (VPNDetection client = clientOn(http).build()) {
             Result result = client.lookup(ip);
-            assertEquals(Optional.of(true), result.isBot());
+            assertEquals(Optional.empty(), result.isBot(), "Unlimited's is_bot is absent, never false");
             assertEquals(Optional.empty(), result.bot(), "Unlimited's bot is absent, never empty");
         }
     }

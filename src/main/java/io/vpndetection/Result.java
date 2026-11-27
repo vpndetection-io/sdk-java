@@ -169,7 +169,7 @@ public final class Result {
 
     /**
      * Whether an automated client uses the address: a search engine's or an AI company's crawler, an
-     * uptime monitor, an internet scanner or a webhook sender. On every answer, with or without a key.
+     * uptime monitor, an internet scanner or a webhook sender. On a paid plan.
      */
     public Optional<Boolean> isBot() {
         return Optional.ofNullable(raw.getIsBot());
@@ -335,7 +335,9 @@ public final class Result {
 
     /**
      * The AS announcing the address, on every answer, with or without a key, its country and RPKI
-     * status included: 0 where none does.
+     * status included: 0 where none does. Its {@code getType()} is the kind of network the AS runs,
+     * on a paid plan: null on a plan without it, which is how an answer without it differs from one
+     * naming a type.
      */
     public Optional<Asn> asn() {
         return Optional.ofNullable(raw.getAsn());

@@ -47,12 +47,22 @@ public final class Condition {
     }
 
     /**
-     * The top-level members a condition names that this answer did not carry.
+     * The members inside an object every plan answers that a plan may leave out, by the object's
+     * name: the AS's {@code type}, a paid plan's, which Unlimited's {@code asn} lacks. The answer
+     * reads one as null, and a lookup refuses a {@code null} sent on the wire, so null here is a
+     * member the wire left out.
+     */
+    private static final Map<String, Set<String>> PLAN_MEMBERS = Map.of("asn", Set.of("type"));
+
+    /**
+     * The members a condition names that this answer did not carry: a top-level member by its name,
+     * and a member inside {@code asn} that Unlimited leaves out by its path ({@code asn.type}).
      *
      * <p>A field your plan does not include is absent rather than false, so a condition naming one
      * can never match and the block would silently never fire. Gating is per top-level member,
      * which is why only the first path segment is checked: a detail object present but empty is a
-     * real answer meaning the flag is false, not a plan gap.
+     * real answer meaning the flag is false, not a plan gap. The exception is the few members a
+     * plan may leave out of an object every plan answers ({@link #PLAN_MEMBERS}), named by path.
      *
      * <p>A locally answered bogon needs no special case: it is synthesized in the widest shape, so
      * every member is present and nothing reads as missing.
@@ -67,10 +77,34 @@ public final class Condition {
                 }
                 if (!served.containsKey(entry.getKey())) {
                     missing.add(entry.getKey());
+                    continue;
+                }
+                for (String member : PLAN_MEMBERS.getOrDefault(entry.getKey(), Set.of())) {
+                    String path = entry.getKey() + "." + member;
+                    if (!missing.contains(path) && names(entry.getValue(), member)
+                            && served.get(entry.getKey()) instanceof Map<?, ?> object
+                            && object.get(member) == null) {
+                        missing.add(path);
+                    }
                 }
             }
         }
         return missing;
+    }
+
+    // Whether a nested condition constrains `member`, directly or inside an any-of.
+    private static boolean names(Object condition, String member) {
+        if (condition instanceof Map<?, ?> map) {
+            return constraintCount(map.get(member)) > 0;
+        }
+        if (condition instanceof Collection<?> anyOf) {
+            for (Object entry : anyOf) {
+                if (names(entry, member)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
