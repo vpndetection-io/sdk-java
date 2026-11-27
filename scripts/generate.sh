@@ -45,10 +45,14 @@ NAMES="${NAMES},databaseChecksum_200_response=DatabaseChecksumsResponse"
 MEMBERS="mslm:apikey_id=apikeyId,mslm:apikey=apikey"
 
 rm -rf .gen
-mkdir -p .gen
+mkdir -p .gen/spec
+
+# The generator reads an edited copy, never the pin: a re-pin that would move a public type keeps
+# it there until a major (scripts/keep_types.py says which members, and why).
+python3 scripts/keep_types.py spec/openapi.yaml .gen/spec/openapi.yaml
 
 docker run --rm \
-    -v "$PWD/spec:/spec:ro" \
+    -v "$PWD/.gen/spec:/spec:ro" \
     -v "$PWD/.gen:/out" \
     "$GENERATOR_IMAGE" generate \
     -i /spec/openapi.yaml \
