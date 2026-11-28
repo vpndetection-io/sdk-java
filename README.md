@@ -154,7 +154,7 @@ VPNDetection client = VPNDetection.builder()
 VPNDetection clientNoCache = VPNDetection.builder().cacheEnabled(false).build();
 ```
 
-From 7.0.0, an answer with `trialExpired()` or `capReached()` true is cached for a minute at most, so a renewed trial or a raised cap reaches you within a minute.
+From 7.0.0, an answer with `trialExpired()` or `capReached()` true is cached for a minute at most, so a change to the trial or a raised cap reaches you within a minute.
 
 ### Private and reserved addresses
 
