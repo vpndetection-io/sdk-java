@@ -692,9 +692,9 @@ public final class VPNDetection implements AutoCloseable {
     static final Duration REDUCED_ANSWER_LIFE = Duration.ofSeconds(60);
 
     // An answer with Unlimited's fields because the free plan's trial is spent or the overage cap is
-    // reached holds only until the organization's trial or its cap changes, so it is kept a minute at
-    // most rather than the whole TTL. It is still kept, so a busy address is not asked again on every
-    // lookup.
+    // reached can change as soon as the organization's trial, plan or cap does, so it is kept a
+    // minute at most rather than the whole TTL. It is still kept, so a busy address is not asked
+    // again on every lookup.
     static Duration lifeOf(Result result, Duration ttl) {
         boolean reduced = result.trialExpired().orElse(false) || result.capReached().orElse(false);
         return reduced && ttl.compareTo(REDUCED_ANSWER_LIFE) > 0 ? REDUCED_ANSWER_LIFE : ttl;
@@ -788,7 +788,7 @@ public final class VPNDetection implements AutoCloseable {
         /**
          * How long an answer stays fresh. Default 1 hour. An answer whose {@link
          * Result#trialExpired()} or {@link Result#capReached()} is true stays a minute at most,
-         * since a renewed trial or a raised cap ends it.
+         * since it can change as soon as the organization's trial, plan or cap does.
          */
         public Builder cacheTtl(Duration cacheTtl) {
             this.cacheTtl = Objects.requireNonNull(cacheTtl, "cacheTtl");
