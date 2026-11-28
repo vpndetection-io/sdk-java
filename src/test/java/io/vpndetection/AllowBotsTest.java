@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vpndetection.middleware.Condition;
 import io.vpndetection.middleware.Core;
 import io.vpndetection.middleware.Lookup;
 import io.vpndetection.middleware.Options;
@@ -312,6 +313,49 @@ class AllowBotsTest {
         assertTrue(lookup.result().orElseThrow().isBogon());
         assertEquals(0, http.calls.size());
         warnings.forEach(w -> assertFalse(w.contains("user_agent"), w));
+    }
+
+    // A bogon peer, local development behind no proxy, is answered locally in the widest shape and
+    // carries no verdict, which no plan gap explains: onMissingField set to throw answered a
+    // crawler's request there with an error, and warn logged that the plan lacks the member. Every
+    // peer and action is run and each failure named, so one red case does not hide the others.
+    @Test
+    void aBogonPeerWithACrawlerAgentIsNoPlanGap() {
+        Map<String, Object> forged = Map.of("user_agent", Map.of("verdict", "spoofed"));
+        List<String> problems = new ArrayList<>();
+        for (String peer : new String[] {"127.0.0.1", "10.0.0.1", "::1"}) {
+            for (Options.OnMissingField action
+                    : new Options.OnMissingField[] {Options.OnMissingField.THROW, Options.OnMissingField.WARN}) {
+                String label = peer + ", " + action;
+                StubHttpClient http = anyOrigin("spoofed", null);
+                List<String> warnings = new ArrayList<>();
+                Core<Req> core = core(http, new Options<Req>().allowBots(true).blockCondition(forged)
+                        .onMissingField(action).onWarn(warnings::add));
+                Lookup lookup;
+                try {
+                    lookup = core.evaluate(new Req(peer, GOOGLEBOT));
+                } catch (IllegalStateException e) {
+                    problems.add(label + ": reported a plan gap for a bogon: " + e.getMessage());
+                    continue;
+                }
+                if (lookup.isBlocked() || !lookup.result().orElseThrow().isBogon()) {
+                    problems.add(label + ": want an unblocked bogon answer, got " + lookup);
+                }
+                for (String warning : warnings) {
+                    if (warning.contains("does not include")) {
+                        problems.add(label + ": warned of a plan gap: " + warning);
+                    }
+                }
+                if (!http.calls.isEmpty()) {
+                    problems.add(label + ": a bogon reached the origin: " + http.calls);
+                }
+                List<String> missing = Condition.missingMembers(List.of(forged), lookup.result().orElseThrow());
+                if (!missing.isEmpty()) {
+                    problems.add(label + ": the answer reports " + missing + " missing");
+                }
+            }
+        }
+        assertEquals(List.of(), problems);
     }
 
     @Test

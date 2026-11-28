@@ -64,10 +64,14 @@ public final class Condition {
      * real answer meaning the flag is false, not a plan gap. The exception is the few members a
      * plan may leave out of an object every plan answers ({@link #PLAN_MEMBERS}), named by path.
      *
-     * <p>A locally answered bogon needs no special case: it is synthesized in the widest shape, so
-     * every member is present and nothing reads as missing.
+     * <p>A bogon's answer reports nothing missing: it is synthesized in the widest shape, so every
+     * member is present but a user agent's verdict, which the API answers for a bogon and the client
+     * does not, and which no plan gap explains.
      */
     public static List<String> missingMembers(List<Map<String, Object>> conditions, Result result) {
+        if (result.isBogon()) {
+            return List.of();
+        }
         Map<String, Object> served = Served.of(result);
         List<String> missing = new ArrayList<>();
         for (Map<String, Object> one : conditions) {
